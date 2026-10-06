@@ -57,6 +57,20 @@
       "when": 1791324457154,
       "tag": "0007_eigentumsanteile_versionierung",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791325826345,
+      "tag": "0008_objekt_kauf_grundbuch",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791325827340,
+      "tag": "0009_objekt_nebenkostensumme_entfernen",
+      "breakpoints": true
     }
   ]
 }

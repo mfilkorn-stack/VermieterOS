@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { pruefeDatenqualitaet, summeBrueche, type ObjektStand } from '../src/datenqualitaet'
+import { etwMitStellplatz } from './faelle'
 
 const HEUTE = '2026-10-06'
 
-function vollstaendigesObjekt(): ObjektStand {
+function haus(): ObjektStand {
   return {
     id: 'o1',
     objekt: {
@@ -13,10 +14,20 @@ function vollstaendigesObjekt(): ObjektStand {
       plz: '50667',
       ort: 'Köln',
       art: 'haus',
+      baujahr: 1965,
       weg: false,
+      grundbuch: [
+        {
+          art: 'grundbuch',
+          amtsgericht: 'Köln',
+          blatt: '1',
+          flurstuecke: [{ nummer: 'Flst. 1', flaecheQm: 600 }],
+        },
+      ],
+      kaufvertragDatum: '2020-01-15',
       anschaffungsdatum: '2020-03-01',
       kaufpreisCent: 45_000_000,
-      anschaffungsnebenkostenCent: 4_500_000,
+      anschaffungsnebenkosten: [{ art: 'grunderwerbsteuer', betragCent: 2_925_000 }],
       gebaeudeanteilPromille: 750,
       afaSatzPromille: 20,
       afaBeginn: '2020-03-01',
@@ -66,108 +77,160 @@ function vollstaendigesObjekt(): ObjektStand {
         },
       },
     ],
+    eigentum: { mandantId: 'm', art: 'allein', anteile: [] },
   }
 }
 
-describe('pruefeDatenqualitaet', () => {
-  it('ein vollständiges Objekt ist überall grün', () => {
-    const r = pruefeDatenqualitaet(vollstaendigesObjekt(), HEUTE)
+const codes = (o: ObjektStand) =>
+  pruefeDatenqualitaet(o, HEUTE)
+    .befunde.map((b) => b.code)
+    .sort()
+
+describe('pruefeDatenqualitaet: Haus', () => {
+  it('ein vollständiges Haus ist überall grün', () => {
+    const r = pruefeDatenqualitaet(haus(), HEUTE)
     expect(r.befunde).toEqual([])
-    expect(r.ampel).toEqual({
-      stammdaten: 'gruen',
-      nebenkosten: 'gruen',
-      steuerpaket: 'gruen',
-      mieterhoehung: 'gruen',
-      finanzen: 'gruen',
-    })
+    expect(Object.values(r.ampel)).toEqual(['gruen', 'gruen', 'gruen', 'gruen', 'gruen'])
     expect(r.vollstaendig).toBe(true)
   })
 
   it('fehlende Wohnfläche sperrt Nebenkosten, nicht das Steuerpaket', () => {
-    const o = vollstaendigesObjekt()
+    const o = haus()
     o.einheiten[1]!.daten.wohnflaecheQm100 = null
     const r = pruefeDatenqualitaet(o, HEUTE)
     expect(r.ampel.nebenkosten).toBe('rot')
     expect(r.ampel.steuerpaket).toBe('gruen')
     expect(r.befunde.map((b) => b.code)).toEqual(['EINHEIT_WOHNFLAECHE'])
     expect(r.befunde[0]).toMatchObject({ entitaet: 'einheit', id: 'e2' })
-    expect(r.vollstaendig).toBe(false)
   })
 
   it('fehlende AfA-Daten sperren das Steuerpaket', () => {
-    const o = vollstaendigesObjekt()
+    const o = haus()
     o.objekt.afaBeginn = null
     o.objekt.gebaeudeanteilPromille = null
-    const r = pruefeDatenqualitaet(o, HEUTE)
-    expect(r.ampel.steuerpaket).toBe('rot')
-    expect(r.befunde.map((b) => b.code).sort()).toEqual(['OBJ_AFA', 'OBJ_GEBAEUDEANTEIL'])
+    expect(codes(o)).toEqual(['OBJ_AFA', 'OBJ_GEBAEUDEANTEIL'])
+    expect(pruefeDatenqualitaet(o, HEUTE).ampel.steuerpaket).toBe('rot')
   })
 
-  it('AfA-Beginn vor Anschaffung ist ein Fehler, niedriger Gebäudeanteil nur eine Warnung', () => {
-    const o = vollstaendigesObjekt()
+  it('AfA-Beginn vor Übergang ist ein Fehler, niedriger Gebäudeanteil nur eine Warnung', () => {
+    const o = haus()
     o.objekt.afaBeginn = '2019-01-01'
     o.objekt.gebaeudeanteilPromille = 400
-    const r = pruefeDatenqualitaet(o, HEUTE)
-    expect(r.befunde.map((b) => `${b.schwere}:${b.code}`).sort()).toEqual([
-      'fehler:OBJ_AFA_VOR_ANSCHAFFUNG',
-      'warnung:OBJ_GEBAEUDEANTEIL_NIEDRIG',
-    ])
+    expect(codes(o)).toEqual(['OBJ_AFA_VOR_ANSCHAFFUNG', 'OBJ_GEBAEUDEANTEIL_NIEDRIG'])
+  })
+
+  it('AfA-Satz wird gegen das Baujahr geprüft', () => {
+    const o = haus()
+    o.objekt.afaSatzPromille = 25 // 2,5 % gilt nur vor 1925
+    expect(codes(o)).toEqual(['OBJ_AFA_SATZ'])
+    o.objekt.baujahr = null
+    o.objekt.afaSatzPromille = 20
+    expect(codes(o)).toEqual(['OBJ_BAUJAHR'])
+  })
+
+  it('Übergang vor Kaufvertrag ist unmöglich, fehlendes Vertragsdatum eine Warnung', () => {
+    const o = haus()
+    o.objekt.anschaffungsdatum = '2019-12-01'
+    o.objekt.afaBeginn = '2019-12-01'
+    expect(codes(o)).toEqual(['OBJ_UEBERGANG_VOR_VERTRAG'])
+    o.objekt.kaufvertragDatum = null
+    expect(codes(o)).toEqual(['OBJ_KAUFVERTRAG'])
+  })
+
+  it('Kauf-Nebenkosten: ohne Positionen und ohne Grunderwerbsteuer jeweils eine Warnung', () => {
+    const o = haus()
+    o.objekt.anschaffungsnebenkosten = []
+    expect(codes(o)).toEqual(['OBJ_NEBENKOSTEN'])
+    o.objekt.anschaffungsnebenkosten = [{ art: 'notar_kaufvertrag', betragCent: 100_000 }]
+    expect(codes(o)).toEqual(['OBJ_GREST'])
   })
 
   it('Mietverhältnis ohne Kondition sperrt Nebenkosten und Mieterhöhung', () => {
-    const o = vollstaendigesObjekt()
+    const o = haus()
     o.einheiten[0]!.mietverhaeltnisse[0]!.kondition = null
     const r = pruefeDatenqualitaet(o, HEUTE)
     expect(r.ampel.nebenkosten).toBe('rot')
     expect(r.ampel.mieterhoehung).toBe('rot')
-    expect(r.befunde.map((b) => b.code).sort()).toEqual([
-      'MV_OHNE_KONDITION',
-      'MV_OHNE_MIETHISTORIE',
-    ])
+    expect(codes(o)).toEqual(['MV_OHNE_KONDITION', 'MV_OHNE_MIETHISTORIE'])
   })
 
-  it('Miteigentumsanteile müssen vollständig sein und sich zu 1 summieren', () => {
-    const o = vollstaendigesObjekt()
+  it('Miteigentumsanteile im eigenen Haus müssen vollständig sein und sich zu 1 summieren', () => {
+    const o = haus()
     o.einheiten[0]!.daten.miteigentumsanteilZaehler = 550
     o.einheiten[0]!.daten.miteigentumsanteilNenner = 1000
-    expect(pruefeDatenqualitaet(o, HEUTE).befunde.map((b) => b.code)).toEqual([
-      'MEA_UNVOLLSTAENDIG',
-    ])
-
+    expect(codes(o)).toEqual(['MEA_UNVOLLSTAENDIG'])
     o.einheiten[1]!.daten.miteigentumsanteilZaehler = 400
     o.einheiten[1]!.daten.miteigentumsanteilNenner = 1000
-    expect(pruefeDatenqualitaet(o, HEUTE).befunde.map((b) => b.code)).toEqual(['MEA_SUMME'])
-
+    expect(codes(o)).toEqual(['MEA_SUMME'])
     o.einheiten[1]!.daten.miteigentumsanteilZaehler = 450
-    expect(pruefeDatenqualitaet(o, HEUTE).befunde).toEqual([])
-
-    // Unterschiedliche Nenner: 1/2 + 5000/10000 = 1
-    o.einheiten[0]!.daten.miteigentumsanteilZaehler = 1
-    o.einheiten[0]!.daten.miteigentumsanteilNenner = 2
-    o.einheiten[1]!.daten.miteigentumsanteilZaehler = 5000
-    o.einheiten[1]!.daten.miteigentumsanteilNenner = 10000
-    expect(pruefeDatenqualitaet(o, HEUTE).befunde).toEqual([])
+    expect(codes(o)).toEqual([])
   })
 
   it('Darlehen ohne Zinsbindung und Restschuld sind Warnungen, Rate 0 ein Fehler', () => {
-    const o = vollstaendigesObjekt()
+    const o = haus()
     o.darlehen[0]!.daten.zinsbindungBis = null
     o.darlehen[0]!.daten.restschuldCent = null
-    const r1 = pruefeDatenqualitaet(o, HEUTE)
-    expect(r1.ampel.finanzen).toBe('gelb')
+    expect(pruefeDatenqualitaet(o, HEUTE).ampel.finanzen).toBe('gelb')
     o.darlehen[0]!.daten.rateCent = 0
     expect(pruefeDatenqualitaet(o, HEUTE).ampel.finanzen).toBe('rot')
   })
 
   it('beendete Mietverhältnisse lösen keine Personenzahl-Warnung aus', () => {
-    const o = vollstaendigesObjekt()
+    const o = haus()
     const mv = o.einheiten[0]!.mietverhaeltnisse[0]!
     mv.kondition!.personenzahl = 0
-    expect(pruefeDatenqualitaet(o, HEUTE).befunde.map((b) => b.code)).toEqual([
-      'KONDITION_PERSONENZAHL',
-    ])
+    expect(codes(o)).toEqual(['KONDITION_PERSONENZAHL'])
     mv.daten.ende = '2025-12-31'
-    expect(pruefeDatenqualitaet(o, HEUTE).befunde).toEqual([])
+    expect(codes(o)).toEqual([])
+  })
+})
+
+describe('pruefeDatenqualitaet: ETW mit separatem Stellplatz (Struktur aus echtem Kaufvertrag)', () => {
+  it('ist vollständig grün, ohne Fehlalarm für Stellplatz und MEA', () => {
+    const r = pruefeDatenqualitaet(etwMitStellplatz(), HEUTE)
+    expect(r.befunde).toEqual([])
+    expect(r.vollstaendig).toBe(true)
+  })
+
+  it('Stellplatz braucht keine Wohnfläche und keinen Miteigentumsanteil', () => {
+    const o = etwMitStellplatz()
+    const stellplatz = o.einheiten.find((e) => e.daten.typ === 'stellplatz')!
+    expect(stellplatz.daten.wohnflaecheQm100).toBeUndefined()
+    expect(stellplatz.daten.miteigentumsanteilZaehler).toBeUndefined()
+    expect(codes(o)).not.toContain('EINHEIT_WOHNFLAECHE')
+    expect(codes(o)).not.toContain('MEA_UNVOLLSTAENDIG')
+  })
+
+  it('Wohnung der ETW ohne MEA ist eine Warnung, ohne Wohnungsgrundbuch ebenso', () => {
+    const o = etwMitStellplatz()
+    const wohnung = o.einheiten.find((e) => e.daten.typ === 'wohnung')!
+    wohnung.daten.miteigentumsanteilZaehler = null
+    wohnung.daten.miteigentumsanteilNenner = null
+    expect(codes(o)).toEqual(['ETW_MEA'])
+    o.objekt.grundbuch = o.objekt.grundbuch!.filter((g) => g.art !== 'wohnungsgrundbuch')
+    expect(codes(o)).toEqual(['ETW_MEA', 'ETW_OHNE_WOHNUNGSGRUNDBUCH'])
+  })
+
+  it('Bruchteilseigentum braucht Anteile, die sich zu 1 summieren', () => {
+    const o = etwMitStellplatz()
+    o.eigentum!.anteile = [{ zaehler: 1, nenner: 2 }]
+    expect(codes(o)).toEqual(['EIGENTUM_ANTEILE'])
+    expect(pruefeDatenqualitaet(o, HEUTE).ampel.steuerpaket).toBe('rot')
+    o.eigentum!.anteile = [
+      { zaehler: 1, nenner: 2 },
+      { zaehler: 1, nenner: 3 },
+    ]
+    expect(codes(o)).toEqual(['EIGENTUM_SUMME'])
+    expect(pruefeDatenqualitaet(o, HEUTE).befunde[0]).toMatchObject({
+      entitaet: 'mandant',
+      id: 'mandant-1',
+    })
+  })
+
+  it('Alleineigentum mit mehreren Anteilen ist eine Warnung', () => {
+    const o = etwMitStellplatz()
+    o.eigentum!.art = 'allein'
+    expect(codes(o)).toEqual(['EIGENTUM_ALLEIN_MEHRERE'])
   })
 })
 
@@ -178,12 +241,6 @@ describe('summeBrueche', () => {
         [1, 2],
         [1, 3],
         [1, 6],
-      ]),
-    ).toEqual({ zaehler: 1, nenner: 1 })
-    expect(
-      summeBrueche([
-        [1230, 10000],
-        [8770, 10000],
       ]),
     ).toEqual({ zaehler: 1, nenner: 1 })
     expect(

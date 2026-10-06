@@ -14,22 +14,36 @@ export function cent(n: number): Cent {
 
 /** Parst "1.234,56", "1234.56", "1234,5", "-12" zu Cent. Wirft bei Unsinn. */
 export function parseEuro(text: string): Cent {
-  const t = text.trim().replace(/\s|€/g, '')
-  if (t === '') throw new RangeError('leerer Betrag')
-  // Deutsches Format: Punkt als Tausender, Komma als Dezimal. Englisches Format: umgekehrt.
-  const deutsch = /^-?\d{1,3}(\.\d{3})*(,\d{1,2})?$|^-?\d+(,\d{1,2})?$/.test(t)
-  const englisch = /^-?\d{1,3}(,\d{3})*(\.\d{1,2})?$|^-?\d+(\.\d{1,2})?$/.test(t)
+  return cent(parseDezimal(text.replace(/€/g, ''), 2))
+}
+
+/**
+ * Parst eine Dezimalzahl in ganze Einheiten mit `stellen` Nachkommastellen:
+ * `parseDezimal("72,50", 2)` → 7250 (Hundertstel-m²), `parseDezimal("2,5", 1)` → 25.
+ * Deutsches Format (Punkt Tausender, Komma Dezimal) hat bei Mehrdeutigkeit Vorrang.
+ */
+export function parseDezimal(text: string, stellen: number): number {
+  if (!Number.isInteger(stellen) || stellen < 0 || stellen > 6)
+    throw new RangeError('stellen 0 bis 6')
+  const t = text.trim().replace(/\s/g, '')
+  if (t === '') throw new RangeError('leere Zahl')
+  const s = stellen === 0 ? '' : `{1,${stellen}}`
+  const dez = (z: string) => (stellen === 0 ? '' : `(\\${z}\\d${s})?`)
+  const deutsch = new RegExp(`^-?\\d{1,3}(\\.\\d{3})*${dez(',')}$|^-?\\d+${dez(',')}$`).test(t)
+  // Englisches Format nur mit Dezimalpunkt; „12,345“ ist mehrdeutig und wird abgelehnt.
+  const englischDez = stellen === 0 ? '' : `\\.\\d${s}`
+  const englisch =
+    stellen > 0 && new RegExp(`^-?\\d{1,3}(,\\d{3})*${englischDez}$|^-?\\d+${englischDez}$`).test(t)
   let normalisiert: string
-  if (deutsch && !englisch) normalisiert = t.replace(/\./g, '').replace(',', '.')
-  else if (englisch && !deutsch) normalisiert = t.replace(/,/g, '')
-  else if (deutsch && englisch)
-    normalisiert = t // reine Ganzzahl
-  else throw new RangeError(`Betrag nicht lesbar: "${text}"`)
+  if (deutsch) normalisiert = t.replace(/\./g, '').replace(',', '.')
+  else if (englisch) normalisiert = t.replace(/,/g, '')
+  else throw new RangeError(`Zahl nicht lesbar: "${text}"`)
   const negativ = normalisiert.startsWith('-')
   const [ganz = '0', bruch = ''] = normalisiert.replace('-', '').split('.')
-  const centTeil = (bruch + '00').slice(0, 2)
-  const wert = Number(ganz) * 100 + Number(centTeil)
-  return cent(negativ ? -wert : wert)
+  const teil = stellen === 0 ? 0 : Number((bruch + '0'.repeat(stellen)).slice(0, stellen))
+  const wert = Number(ganz) * 10 ** stellen + teil
+  if (!Number.isSafeInteger(wert)) throw new RangeError(`Zahl zu groß: "${text}"`)
+  return negativ ? -wert : wert
 }
 
 /** Formatiert Cent als "1.234,56 €". */

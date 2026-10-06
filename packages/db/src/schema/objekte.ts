@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   integer,
+  jsonb,
   pgTable,
   text,
   uniqueIndex,
@@ -10,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { identitaetsSpalten, versionsSpalten } from './versionierung'
 
-import type { ObjektArt } from '@vermieteros/schema'
+import type { GrundbuchEintrag, NebenkostenPosition, ObjektArt } from '@vermieteros/schema'
 
 /** Identität eines Objekts (Haus oder Eigentumswohnung). Ändert sich nie. */
 export const objekte = pgTable('objekte', {
@@ -36,10 +37,15 @@ export const objektVersionen = pgTable(
     /** Eigentumswohnung mit WEG-Hausgeldabrechnung als Nebenkosten-Hauptquelle */
     weg: boolean('weg').notNull().default(false),
 
+    grundbuch: jsonb('grundbuch').$type<GrundbuchEintrag[]>(),
+
     // Steuerliche Grunddaten (Anlage V, AfA)
+    /** Beurkundung; Spekulationsfrist § 23 EStG */
+    kaufvertragDatum: date('kaufvertrag_datum', { mode: 'string' }),
+    /** Übergang von Nutzen und Lasten; AfA-Beginn, 15-%-Grenze */
     anschaffungsdatum: date('anschaffungsdatum', { mode: 'string' }),
     kaufpreisCent: bigint('kaufpreis_cent', { mode: 'number' }),
-    anschaffungsnebenkostenCent: bigint('anschaffungsnebenkosten_cent', { mode: 'number' }),
+    anschaffungsnebenkosten: jsonb('anschaffungsnebenkosten').$type<NebenkostenPosition[]>(),
     /** Anteil Gebäude am Kaufpreis in Promille (Rest = Grund und Boden) */
     gebaeudeanteilPromille: integer('gebaeudeanteil_promille'),
     /** AfA-Satz in Promille pro Jahr, z. B. 20 = 2,0 % */

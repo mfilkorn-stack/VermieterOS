@@ -7,6 +7,7 @@ import {
 } from '@vermieteros/rechenkern'
 import type {
   DarlehenDaten,
+  EigentuemerschaftArt,
   EinheitDaten,
   MietkonditionDaten,
   MietverhaeltnisDaten,
@@ -61,11 +62,27 @@ export async function datenqualitaet(tx: Tx, objektId: string): Promise<Datenqua
     if (d) darlehen.push({ id, daten: ohneSystemspalten<DarlehenDaten>(d) })
   }
 
+  const [mandant] = await tx.execute<{ id: string; art: EigentuemerschaftArt }>(
+    sql`select id, art from mandanten limit 1`,
+  )
+  const anteile = await tx.execute<{ zaehler: number; nenner: number }>(
+    sql`select zaehler, nenner from eigentumsanteile_aktuell`,
+  )
+
   return pruefeDatenqualitaet({
     id: objektId,
     objekt: ohneSystemspalten<ObjektDaten>(objekt),
     einheiten,
     darlehen,
+    ...(mandant
+      ? {
+          eigentum: {
+            mandantId: mandant.id,
+            art: mandant.art,
+            anteile: anteile.map((a) => ({ zaehler: a.zaehler, nenner: a.nenner })),
+          },
+        }
+      : {}),
   })
 }
 
