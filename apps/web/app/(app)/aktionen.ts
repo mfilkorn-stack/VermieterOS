@@ -49,8 +49,12 @@ export async function einladen(_: FormStatus, daten: FormData): Promise<FormStat
 }
 
 export async function objektAnlegen(_: FormStatus, daten: FormData): Promise<FormStatus> {
+  const bestandSeit = feld(daten, 'bestandSeit')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(bestandSeit))
+    return { fehler: 'Bitte „Im Bestand seit“ angeben.' }
   const roh = {
     bezeichnung: feld(daten, 'bezeichnung'),
+    anschaffungsdatum: bestandSeit,
     art: feld(daten, 'art'),
     strasse: feld(daten, 'strasse') || null,
     hausnummer: feld(daten, 'hausnummer') || null,
@@ -60,28 +64,31 @@ export async function objektAnlegen(_: FormStatus, daten: FormData): Promise<For
   const p = ObjektDaten.safeParse(roh)
   if (!p.success)
     return { fehler: p.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' · ') }
+  let objektId: string
   try {
     await verlange({ stammdaten: ['schreiben'] })
-    await mitMandant((tx, k) => {
+    objektId = await mitMandant(async (tx, k) => {
       const herkunft: Herkunft = Object.fromEntries(
         Object.entries(p.data)
           .filter(([, v]) => v != null)
           .map(([f]) => [f, { quelle: 'manuell' as const }]),
       )
-      return neueVersion(tx, {
+      const r = await neueVersion(tx, {
         entitaet: 'objekt',
         mandantId: k.mandantId,
         akteur: { art: 'nutzer', id: k.nutzerId },
-        gueltigAb: new Date().toISOString().slice(0, 10),
+        // Stammdaten gelten ab Beginn des Bestands, sonst fehlen sie in früheren Steuerjahren.
+        gueltigAb: bestandSeit,
         identitaet: {},
         herkunft,
         daten: p.data,
       })
+      return r.identId
     })
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
-  redirect('/')
+  redirect(`/objekte/${objektId}`)
 }
 
 function slug(name: string): string {

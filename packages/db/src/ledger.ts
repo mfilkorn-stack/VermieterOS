@@ -29,6 +29,7 @@ import {
   type EigentuemerschaftArt,
   type Herkunft,
 } from './schema/index'
+import { versionsSpalten } from './schema/versionierung'
 
 /**
  * Register der versionierten Entitäten. Eine neue Entität braucht genau drei Dinge:
@@ -417,4 +418,31 @@ function camel(row: Record<string, unknown>): Record<string, unknown> {
   for (const [k, v] of Object.entries(row))
     out[k.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())] = v
   return out
+}
+
+const VERSIONS_SYSTEMSPALTEN = new Set(Object.keys(versionsSpalten))
+
+/** Fachdaten einer Versionszeile: ohne Systemspalten und ohne Verweis auf die Identität. */
+export function fachdaten<E extends EntitaetName>(
+  entitaet: E,
+  version: Record<string, unknown>,
+): VersionsDaten<E> {
+  const fk = ENTITAETEN[entitaet].fk
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(version)) {
+    if (!VERSIONS_SYSTEMSPALTEN.has(k) && k !== fk) out[k] = v
+  }
+  return out as VersionsDaten<E>
+}
+
+/**
+ * Jüngste gültige Version unabhängig vom heutigen Datum (auch eine erst künftig geltende).
+ * Grundlage für Formulare: eine Änderung baut immer auf dem letzten erfassten Stand auf.
+ */
+export async function letzteVersion<E extends EntitaetName>(
+  tx: Tx,
+  entitaet: E,
+  identId: string,
+): Promise<Version<E> | null> {
+  return stand(tx, entitaet, identId, '9999-12-31')
 }

@@ -386,6 +386,15 @@ describe('Registry', () => {
         fn: 1,
         trg: 1,
       })
+
+      // Die Sicht muss jede Spalte der Versionstabelle führen, sonst fehlt sie in aktuell().
+      const vers = (def.versionen as unknown as { [k: symbol]: string })[Symbol.for('drizzle:Name')]
+      const fehlend = await v.owner.execute<{ column_name: string }>(
+        sql`select column_name from information_schema.columns where table_name = ${vers}
+            except
+            select column_name from information_schema.columns where table_name = ${ident + '_aktuell'}`,
+      )
+      expect({ name, fehlend: fehlend.map((r) => r.column_name) }).toEqual({ name, fehlend: [] })
     }
   })
 })

@@ -90,3 +90,25 @@ export type DokumentTyp = z.infer<typeof DokumentTyp>
 export const DOKUMENT_STATUS = ['gueltig', 'ersetzt', 'abgelaufen'] as const
 export const DokumentStatus = z.enum(DOKUMENT_STATUS)
 export type DokumentStatus = z.infer<typeof DokumentStatus>
+
+/**
+ * Arten von Kauf-Nebenkosten. Ob eine Art zu den Anschaffungskosten zählt oder als
+ * Finanzierungskosten sofort abziehbar ist, entscheidet der Rechenkern, nicht das Formular.
+ */
+export const NEBENKOSTEN_ARTEN = [
+  'grunderwerbsteuer',
+  'notar_kaufvertrag',
+  'grundbuch_eigentum',
+  'makler',
+  'gutachten',
+  'sonstige_anschaffung',
+  'notar_grundschuld',
+  'grundbuch_grundschuld',
+  'sonstige_finanzierung',
+] as const
+export const NebenkostenArt = z.enum(NEBENKOSTEN_ARTEN)
+export type NebenkostenArt = z.infer<typeof NebenkostenArt>
+
+export const GRUNDBUCH_ARTEN = ['grundbuch', 'wohnungsgrundbuch', 'teileigentumsgrundbuch'] as const
+export const GrundbuchArt = z.enum(GRUNDBUCH_ARTEN)
+export type GrundbuchArt = z.infer<typeof GrundbuchArt>

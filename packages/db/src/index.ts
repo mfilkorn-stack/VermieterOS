@@ -11,6 +11,8 @@ export {
   type ZaehlerstandParams,
   aktuell,
   stand,
+  letzteVersion,
+  fachdaten,
   pruefeKette,
   type EntitaetName,
   type VersionsDaten,

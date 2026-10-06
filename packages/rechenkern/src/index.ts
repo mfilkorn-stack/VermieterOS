@@ -4,6 +4,7 @@ export {
   type Cent,
   cent,
   parseEuro,
+  parseDezimal,
   formatEuro,
   rundeKaufmaennisch,
   anteil,
@@ -25,4 +26,19 @@ export {
   type ObjektStand,
   type EinheitStand,
   type MietverhaeltnisStand,
+  type EigentumStand,
 } from './datenqualitaet'
+
+export {
+  istAnschaffungskosten,
+  anschaffungskosten,
+  afaSatzVorschlag,
+  afaJahresbetrag,
+  afaImJahr,
+  anteiligeGrundstuecksflaeche,
+  fristen,
+  grenzeAnschaffungsnaheHk,
+  type Anschaffungskosten,
+  type AfaVorschlag,
+  type Fristen,
+} from './anschaffung'

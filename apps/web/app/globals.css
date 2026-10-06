@@ -179,3 +179,57 @@ button:disabled {
 code {
   overflow-wrap: anywhere;
 }
+fieldset {
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+legend {
+  color: var(--leise);
+  font-size: 0.9rem;
+  padding: 0 4px;
+}
+.editor {
+  display: grid;
+  gap: 12px;
+}
+.zeile > label {
+  flex: 1 1 140px;
+}
+.kennzahlen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+.kennzahl {
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.kennzahl span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--leise);
+}
+.befunde {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.befund-fehler::before {
+  content: '● ';
+  color: var(--rot);
+}
+.befund-warnung::before {
+  content: '● ';
+  color: var(--gelb);
+}
+.feld {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 140px;
+}

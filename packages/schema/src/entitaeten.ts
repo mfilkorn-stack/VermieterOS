@@ -3,6 +3,8 @@ import {
   DokumentStatus,
   DokumentTyp,
   EinheitTyp,
+  GrundbuchArt,
+  NebenkostenArt,
   KautionArt,
   KonditionGrund,
   Mietart,
@@ -30,6 +32,41 @@ import {
  * Felder, die in der Datenbank NULL sein dürfen, sind hier `.nullish()`.
  */
 
+export const Bruch = z
+  .object({ zaehler: z.number().int().nonnegative(), nenner: z.number().int().positive() })
+  .refine((b) => b.zaehler <= b.nenner, { message: 'Anteil größer als 1' })
+export type Bruch = z.infer<typeof Bruch>
+
+export const Flurstueck = z.object({
+  /** Gemarkung und Flurstücksnummer, z. B. „Gemarkung X, Flst. 123/4“ */
+  nummer: Text,
+  bezeichnung: Text.nullish(),
+  flaecheQm: z.number().int().positive(),
+})
+export type Flurstueck = z.infer<typeof Flurstueck>
+
+/**
+ * Ein Grundbuchblatt des Objekts. Eine Eigentumswohnung mit separat gekauftem Stellplatz
+ * hat zwei: Wohnungsgrundbuch mit Miteigentumsanteil, Grundbuch des Stellplatzes ohne.
+ */
+export const GrundbuchEintrag = z.object({
+  art: GrundbuchArt,
+  amtsgericht: Text,
+  blatt: z.string().trim().min(1).max(50),
+  /** Miteigentumsanteil an den Flurstücken; fehlt bei Alleineigentum am Flurstück. */
+  miteigentumsanteil: Bruch.nullish(),
+  flurstuecke: z.array(Flurstueck).min(1),
+})
+export type GrundbuchEintrag = z.infer<typeof GrundbuchEintrag>
+
+export const NebenkostenPosition = z.object({
+  art: NebenkostenArt,
+  bezeichnung: Text.nullish(),
+  betragCent: CentNichtNegativ,
+  bezahltAm: Datum.nullish(),
+})
+export type NebenkostenPosition = z.infer<typeof NebenkostenPosition>
+
 export const ObjektDaten = z.object({
   bezeichnung: Text,
   strasse: Text.nullish(),
@@ -39,9 +76,13 @@ export const ObjektDaten = z.object({
   art: ObjektArt,
   baujahr: z.number().int().min(1500).max(2100).nullish(),
   weg: z.boolean().default(false),
+  grundbuch: z.array(GrundbuchEintrag).nullish(),
+  /** Tag der Beurkundung; maßgeblich für die Spekulationsfrist (§ 23 EStG). */
+  kaufvertragDatum: Datum.nullish(),
+  /** Übergang von Nutzen und Lasten; maßgeblich für AfA und 15-%-Grenze. */
   anschaffungsdatum: Datum.nullish(),
   kaufpreisCent: CentNichtNegativ.nullish(),
-  anschaffungsnebenkostenCent: CentNichtNegativ.nullish(),
+  anschaffungsnebenkosten: z.array(NebenkostenPosition).nullish(),
   gebaeudeanteilPromille: Promille.nullish(),
   afaSatzPromille: Promille.nullish(),
   afaBeginn: Datum.nullish(),
@@ -194,11 +235,6 @@ export type DokumentDaten = z.infer<typeof DokumentDaten>
 export { Cent }
 
 /** Eigentumsanteil einer Person am Mandanten, als Bruch (1/2, 1/3, 5000/10000). */
-export const EigentumsanteilDaten = z
-  .object({
-    zaehler: z.number().int().nonnegative(),
-    nenner: z.number().int().positive(),
-  })
-  .refine((a) => a.zaehler <= a.nenner, { message: 'Anteil größer als 1' })
+export const EigentumsanteilDaten = Bruch
 export type EigentumsanteilDaten = z.infer<typeof EigentumsanteilDaten>
 export const EigentumsanteilIdentitaet = z.object({ personId: Uuid })

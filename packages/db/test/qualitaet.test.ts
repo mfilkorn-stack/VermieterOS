@@ -65,8 +65,19 @@ describe('datenqualitaet (DB-Loader)', () => {
           strasse: 'Weg',
           plz: '50667',
           ort: 'Köln',
+          baujahr: 1980,
+          grundbuch: [
+            {
+              art: 'grundbuch',
+              amtsgericht: 'Köln',
+              blatt: '1',
+              flurstuecke: [{ nummer: 'Flst. 1', flaecheQm: 500 }],
+            },
+          ],
+          kaufvertragDatum: '2019-11-15',
           anschaffungsdatum: '2020-01-01',
           kaufpreisCent: 30_000_000,
+          anschaffungsnebenkosten: [{ art: 'grunderwerbsteuer', betragCent: 1_950_000 }],
           gebaeudeanteilPromille: 700,
           afaSatzPromille: 20,
           afaBeginn: '2020-01-01',
@@ -85,5 +96,31 @@ describe('datenqualitaet (DB-Loader)', () => {
     const r = await withMandant(v.app, mandant, (tx) => datenqualitaet(tx, objektId))
     expect(r?.befunde).toEqual([])
     expect(r?.vollstaendig).toBe(true)
+  })
+
+  it('prüft die Eigentumsanteile des Mandanten mit', async () => {
+    // Mandant aus dem Helfer ist „allein“; zwei Anteile ergeben eine Warnung.
+    await withMandant(v.app, mandant, async (tx) => {
+      for (const nachname of ['Eins', 'Zwei']) {
+        const p = await neueVersion(tx, {
+          entitaet: 'person',
+          mandantId: mandant,
+          akteur: NUTZER,
+          gueltigAb: '2020-01-01',
+          identitaet: {},
+          daten: { rolle: 'miteigentuemer', nachname },
+        })
+        await neueVersion(tx, {
+          entitaet: 'eigentumsanteil',
+          mandantId: mandant,
+          akteur: NUTZER,
+          gueltigAb: '2020-01-01',
+          identitaet: { personId: p.identId },
+          daten: { zaehler: 1, nenner: 2 },
+        })
+      }
+    })
+    const r = await withMandant(v.app, mandant, (tx) => datenqualitaet(tx, objektId))
+    expect(r?.befunde.map((b) => b.code)).toEqual(['EIGENTUM_ALLEIN_MEHRERE'])
   })
 })

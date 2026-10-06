@@ -57,7 +57,9 @@ export default async function Startseite() {
         <ul className="liste" data-testid="objektliste">
           {objekte.map((o) => (
             <li key={o.id} className="karte">
-              <strong>{o.bezeichnung}</strong>
+              <Link href={`/objekte/${o.id}`}>
+                <strong>{o.bezeichnung}</strong>
+              </Link>
               {o.ort ? <span className="leise"> · {o.ort}</span> : null}
               {o.ampel ? (
                 <div className="ampeln" aria-label="Datenqualität">

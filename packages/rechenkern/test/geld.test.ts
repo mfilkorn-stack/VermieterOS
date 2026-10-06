@@ -29,7 +29,8 @@ describe('parseEuro', () => {
     expect(parseEuro(' 850,00 € ')).toBe(85000)
     expect(parseEuro('0,07')).toBe(7)
     expect(parseEuro('1.234')).toBe(123400) // drei Stellen nach Trenner = Tausender
-    expect(parseEuro('12,345')).toBe(1234500)
+    // Komma mit drei Stellen ist mehrdeutig (Tausender oder Dezimal) und wird abgelehnt.
+    expect(() => parseEuro('12,345')).toThrow()
   })
   it('wirft bei unlesbarem Text', () => {
     expect(() => parseEuro('')).toThrow()

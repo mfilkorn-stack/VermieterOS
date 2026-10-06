@@ -9,7 +9,8 @@ export default async function ObjektNeuSeite() {
     <div className="karte">
       <h1>Objekt anlegen</h1>
       <p className="leise">
-        Grunddaten genügen. Kaufpreis, AfA und Einheiten ergänzt der Onboarding-Assistent (WP 0.6).
+        Grunddaten genügen. Grundbuch, Kauf, Einheiten, Mieter und Darlehen ergänzt die Objektakte
+        Schritt für Schritt.
       </p>
       <Formular aktion={objektAnlegen} knopf="Anlegen" testId="objekt-anlegen">
         <label>
@@ -22,6 +23,13 @@ export default async function ObjektNeuSeite() {
             <option value="haus">Haus</option>
             <option value="etw">Eigentumswohnung</option>
           </select>
+        </label>
+        <label>
+          Im Bestand seit
+          <input name="bestandSeit" type="date" required />
+          <span className="leise">
+            Übergang von Nutzen und Lasten, meist mit Zahlung des Kaufpreises.
+          </span>
         </label>
         <label>
           Straße
