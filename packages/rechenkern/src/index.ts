@@ -12,3 +12,17 @@ export {
   tageInklusive,
   tageImJahr,
 } from './geld'
+
+export {
+  MODULE,
+  pruefeDatenqualitaet,
+  summeBrueche,
+  type Modul,
+  type Schwere,
+  type Ampel,
+  type Befund,
+  type Datenqualitaet,
+  type ObjektStand,
+  type EinheitStand,
+  type MietverhaeltnisStand,
+} from './datenqualitaet'

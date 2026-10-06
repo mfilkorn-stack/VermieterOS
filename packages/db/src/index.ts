@@ -7,6 +7,8 @@ export {
   legeMandantAn,
   type NeuerMandantParams,
   storniereVersion,
+  neuerZaehlerstand,
+  type ZaehlerstandParams,
   aktuell,
   stand,
   pruefeKette,
@@ -20,3 +22,4 @@ export {
   type Kettenpruefung,
 } from './ledger'
 export * as schema from './schema/index'
+export { datenqualitaet } from './qualitaet'

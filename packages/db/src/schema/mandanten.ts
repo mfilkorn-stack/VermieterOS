@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
-export const EIGENTUEMERSCHAFT_ARTEN = ['allein', 'ehepaar', 'bruchteil', 'gbr'] as const
-export type EigentuemerschaftArt = (typeof EIGENTUEMERSCHAFT_ARTEN)[number]
+import type { EigentuemerschaftArt } from '@vermieteros/schema'
+export type { EigentuemerschaftArt }
 
 /**
  * Der Mandant ist die Eigentümerschaft (ADR 0002). Entspricht 1:1 einer

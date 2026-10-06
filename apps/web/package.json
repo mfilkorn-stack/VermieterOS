@@ -7,12 +7,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "echo 'keine Tests in apps/web (Phase 0)'"
   },
   "dependencies": {
     "@vermieteros/db": "workspace:*",
     "@vermieteros/rechenkern": "workspace:*",
+    "@vermieteros/schema": "workspace:*",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
     "next": "^16.3.8",

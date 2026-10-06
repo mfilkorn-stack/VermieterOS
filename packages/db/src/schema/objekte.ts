@@ -10,8 +10,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { identitaetsSpalten, versionsSpalten } from './versionierung'
 
-export const OBJEKT_ARTEN = ['haus', 'etw'] as const
-export type ObjektArt = (typeof OBJEKT_ARTEN)[number]
+import type { ObjektArt } from '@vermieteros/schema'
 
 /** Identität eines Objekts (Haus oder Eigentumswohnung). Ändert sich nie. */
 export const objekte = pgTable('objekte', {

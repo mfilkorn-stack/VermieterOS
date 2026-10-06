@@ -4,6 +4,7 @@ export const EREIGNIS_TYPEN = [
   'mandant_angelegt',
   'version_angelegt',
   'version_storniert',
+  'zaehlerstand_erfasst',
   'festschreibung',
   'dokument_abgelegt',
   'ki_vorschlag',

@@ -17,6 +17,8 @@
     "auth:schema": "tsx scripts/auth-schema.ts && prettier --write src/schema/auth.ts"
   },
   "dependencies": {
+    "@vermieteros/rechenkern": "workspace:*",
+    "@vermieteros/schema": "workspace:*",
     "drizzle-orm": "^0.45.3",
     "postgres": "^3.4.9",
     "uuid": "^14.0.2"

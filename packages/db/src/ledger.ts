@@ -1,14 +1,28 @@
 import { and, eq, getTableName, sql } from 'drizzle-orm'
+import type { ZaehlerstandQuelle } from '@vermieteros/schema'
 import { v7 as uuidv7 } from 'uuid'
 import type { Tx } from './client'
 import {
+  darlehen,
+  darlehenVersionen,
+  dokumente,
+  dokumentVersionen,
   einheiten,
   einheitVersionen,
   ereignisse,
   mandanten,
+  mietkonditionen,
+  mietkonditionVersionen,
+  mietverhaeltnisse,
+  mietverhaeltnisVersionen,
   objekte,
   objektVersionen,
+  personen,
+  personVersionen,
   stornos,
+  zaehler,
+  zaehlerstaende,
+  zaehlerVersionen,
   type Akteur,
   type EigentuemerschaftArt,
   type Herkunft,
@@ -22,6 +36,20 @@ import {
 export const ENTITAETEN = {
   objekt: { identitaet: objekte, versionen: objektVersionen, fk: 'objektId' },
   einheit: { identitaet: einheiten, versionen: einheitVersionen, fk: 'einheitId' },
+  person: { identitaet: personen, versionen: personVersionen, fk: 'personId' },
+  mietverhaeltnis: {
+    identitaet: mietverhaeltnisse,
+    versionen: mietverhaeltnisVersionen,
+    fk: 'mietverhaeltnisId',
+  },
+  mietkondition: {
+    identitaet: mietkonditionen,
+    versionen: mietkonditionVersionen,
+    fk: 'mietkonditionId',
+  },
+  zaehler: { identitaet: zaehler, versionen: zaehlerVersionen, fk: 'zaehlerId' },
+  darlehen: { identitaet: darlehen, versionen: darlehenVersionen, fk: 'darlehenId' },
+  dokument: { identitaet: dokumente, versionen: dokumentVersionen, fk: 'dokumentId' },
 } as const
 
 export type EntitaetName = keyof typeof ENTITAETEN
@@ -209,7 +237,7 @@ export async function legeMandantAn(
 }
 
 export type StornoParams = {
-  entitaet: EntitaetName
+  entitaet: EntitaetName | 'zaehlerstand'
   mandantId: string
   versionId: string
   akteur: Akteur
@@ -224,11 +252,13 @@ export async function storniereVersion(
   const grund = params.grund.trim()
   if (!grund) throw new Error('Storno braucht einen Grund')
 
-  const versionen = ENTITAETEN[params.entitaet].versionen as unknown as typeof objektVersionen
+  const tabelle = (params.entitaet === 'zaehlerstand'
+    ? zaehlerstaende
+    : ENTITAETEN[params.entitaet].versionen) as unknown as typeof objektVersionen
   const [v] = await tx
-    .select({ id: versionen.id })
-    .from(versionen)
-    .where(and(eq(versionen.id, params.versionId), eq(versionen.mandantId, params.mandantId)))
+    .select({ id: tabelle.id })
+    .from(tabelle)
+    .where(and(eq(tabelle.id, params.versionId), eq(tabelle.mandantId, params.mandantId)))
   if (!v) throw new Error(`Version ${params.versionId} nicht gefunden`)
 
   const [ereignis] = await tx
@@ -255,6 +285,61 @@ export async function storniereVersion(
     erfasstVon: params.akteur.id,
   })
   return { ereignisId: ereignis.id }
+}
+
+export type ZaehlerstandParams = {
+  mandantId: string
+  akteur: Akteur
+  zaehlerId: string
+  /** Stand in Tausendsteln der Maßeinheit */
+  standX1000: number
+  abgelesenAm: string
+  quelle: ZaehlerstandQuelle
+  bemerkung?: string
+}
+
+/** Schreibt einen Zählerstand als Ereignis. Korrektur nur per Storno und Neuerfassung. */
+export async function neuerZaehlerstand(
+  tx: Tx,
+  params: ZaehlerstandParams,
+): Promise<{ id: string; ereignisId: string }> {
+  if (!Number.isInteger(params.standX1000) || params.standX1000 < 0) {
+    throw new Error('Zählerstand muss eine nichtnegative ganze Zahl (Tausendstel) sein')
+  }
+  const id = uuidv7()
+  const [ereignis] = await tx
+    .insert(ereignisse)
+    .values({
+      id: uuidv7(),
+      mandantId: params.mandantId,
+      typ: 'zaehlerstand_erfasst',
+      entitaet: 'zaehlerstand',
+      entitaetId: params.zaehlerId,
+      versionId: id,
+      akteurArt: params.akteur.art,
+      akteurId: params.akteur.id,
+      payload: {
+        standX1000: params.standX1000,
+        abgelesenAm: params.abgelesenAm,
+        quelle: params.quelle,
+        bemerkung: params.bemerkung ?? null,
+      },
+    })
+    .returning({ id: ereignisse.id })
+  if (!ereignis) throw new Error('Ereignis wurde nicht geschrieben')
+
+  await tx.insert(zaehlerstaende).values({
+    id,
+    mandantId: params.mandantId,
+    zaehlerId: params.zaehlerId,
+    standX1000: params.standX1000,
+    abgelesenAm: params.abgelesenAm,
+    quelle: params.quelle,
+    ereignisId: ereignis.id,
+    erfasstVon: params.akteur.id,
+    bemerkung: params.bemerkung ?? null,
+  })
+  return { id, ereignisId: ereignis.id }
 }
 
 /** Aktueller Stand einer Entität (heute, alles Erfasste). */
