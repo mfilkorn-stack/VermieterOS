@@ -192,3 +192,13 @@ export const DokumentDaten = z.object({
 export type DokumentDaten = z.infer<typeof DokumentDaten>
 
 export { Cent }
+
+/** Eigentumsanteil einer Person am Mandanten, als Bruch (1/2, 1/3, 5000/10000). */
+export const EigentumsanteilDaten = z
+  .object({
+    zaehler: z.number().int().nonnegative(),
+    nenner: z.number().int().positive(),
+  })
+  .refine((a) => a.zaehler <= a.nenner, { message: 'Anteil größer als 1' })
+export type EigentumsanteilDaten = z.infer<typeof EigentumsanteilDaten>
+export const EigentumsanteilIdentitaet = z.object({ personId: Uuid })

@@ -250,7 +250,7 @@ Wochenangaben sind Aufwand bei kontinuierlicher Arbeit. Jedes Arbeitspaket (WP) 
 
 **Phasen-DoD:** Zwei Vermieter des Freundeskreises haben je ein Objekt vollständig versioniert angelegt, Backup und Restore sind einmal durchgespielt, der Integritätsjob läuft nachts.
 
-Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 außer `referenzdaten` (WP 0.7) sind als Schema, Migration, Sicht, Zod-Schema und Test vorhanden, der Datenqualitäts-Check liefert die Ampel pro Modul. WP 0.5 ist als Skelett angelegt.
+Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 außer `referenzdaten` (WP 0.7) sind als Schema, Migration, Sicht, Zod-Schema und Test vorhanden, der Datenqualitäts-Check liefert die Ampel pro Modul. WP 0.5 steht: Registrierung, Login mit Pflicht-TOTP, E-Mail-Bestätigung, Mandanten anlegen und wechseln, Rollen mit Access Control, Einladungen, Eigentumsanteile; die Isolation zweier Mandanten ist per Playwright nachgewiesen.
 
 ### Phase 1 · Kommunikation & Belegeingang (Wo 4–7)
 
@@ -310,7 +310,7 @@ Mieterportal komplett (Zählerstand per Foto), WhatsApp Business API, Ankaufspr�
 
 ### 7.1 Sicherheit
 
-TOTP-Pflicht für alle Mandanten-Mitglieder. Magic-Links für Portal-Identitäten mit kurzer Gültigkeit und Bindung an genau ein Mietverhältnis. Rate-Limits auf Login, Portal und Upload (Redis). Uploads werden auf MIME-Typ geprüft, PDF werden über Gotenberg „gewaschen“ (neu gerendert) bevor sie an die KI gehen. Secrets ausschließlich über Umgebungsvariablen in Coolify. Keine Rohdaten in Logs.
+TOTP-Pflicht für alle Mandanten-Mitglieder (abschaltbar nur lokal über `ZWEI_FAKTOR_PFLICHT=aus`). Einladungen lassen sich nur mit bestätigter E-Mail-Adresse sehen und annehmen, sonst könnte jemand mit einer fremden, unbestätigten Adresse eine Einladung übernehmen. Weiterleitungsziele nach dem Login sind auf Pfade der App beschränkt. Magic-Links für Portal-Identitäten mit kurzer Gültigkeit und Bindung an genau ein Mietverhältnis. Rate-Limits auf Login, Portal und Upload (Redis). Uploads werden auf MIME-Typ geprüft, PDF werden über Gotenberg „gewaschen“ (neu gerendert) bevor sie an die KI gehen. Secrets ausschließlich über Umgebungsvariablen in Coolify. Keine Rohdaten in Logs.
 
 ### 7.2 Betrieb und Datensicherung
 

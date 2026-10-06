@@ -4,6 +4,7 @@ import type {
   DarlehenDaten,
   DokumentDaten,
   DokumentIdentitaet,
+  EigentumsanteilDaten,
   EinheitDaten,
   MietkonditionDaten,
   MietverhaeltnisDaten,
@@ -70,6 +71,7 @@ describe('Zod-Schemas passen zu den Drizzle-Versionstabellen', () => {
     expectTypeOf<DarlehenDaten>().toExtend<VersionsDaten<'darlehen'>>()
     expectTypeOf<DokumentDaten>().toExtend<VersionsDaten<'dokument'>>()
     expectTypeOf<DokumentIdentitaet>().toExtend<IdentitaetsDaten<'dokument'>>()
+    expectTypeOf<EigentumsanteilDaten>().toExtend<VersionsDaten<'eigentumsanteil'>>()
   })
 })
 
@@ -326,6 +328,38 @@ describe('Darlehen und Dokumente', () => {
           }),
         ),
       /dokumente_bezug_chk/,
+    )
+  })
+})
+
+describe('Eigentumsanteile', () => {
+  it('Anteil an einer Person, versioniert; Bruch > 1 scheitert an der Datenbank', async () => {
+    const a = await withMandant(v.app, mandant, (tx) =>
+      neueVersion(tx, {
+        entitaet: 'eigentumsanteil',
+        mandantId: mandant,
+        akteur: NUTZER,
+        gueltigAb: '2020-01-01',
+        identitaet: { personId },
+        daten: { zaehler: 1, nenner: 2 },
+      }),
+    )
+    const s = await withMandant(v.app, mandant, (tx) => aktuell(tx, 'eigentumsanteil', a.identId))
+    expect([s?.zaehler, s?.nenner]).toEqual([1, 2])
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, mandant, (tx) =>
+          neueVersion(tx, {
+            entitaet: 'eigentumsanteil',
+            mandantId: mandant,
+            akteur: NUTZER,
+            gueltigAb: '2026-01-01',
+            identId: a.identId,
+            begruendung: 'Tippfehler',
+            daten: { zaehler: 3, nenner: 2 },
+          }),
+        ),
+      /eigentumsanteil_bruch_chk/,
     )
   })
 })
