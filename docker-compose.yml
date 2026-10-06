@@ -1,4 +1,4 @@
-# Lokale Entwicklungsumgebung. Produktion: Coolify auf Hetzner (docs/PLAN.md 7.2).
+# Lokale Entwicklungsumgebung. Produktion: ops/compose.yml (docs/BETRIEB.md).
 services:
   postgres:
     image: postgres:16

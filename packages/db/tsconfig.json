@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "noEmit": true, "types": ["node"] },
-  "include": ["src", "test", "drizzle.config.ts"]
+  "include": ["src", "test", "scripts/probedaten.ts", "drizzle.config.ts"]
 }

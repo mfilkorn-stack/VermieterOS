@@ -1,0 +1,90 @@
+# Produktion auf einem Hetzner-Cloud-Server (docs/BETRIEB.md). Alle Werte aus ./.env.
+# Jeder Dienst bekommt nur die Variablen, die er braucht.
+name: vermieteros
+
+x-image-app: &image-app ${IMAGE_APP:-ghcr.io/mfilkorn-stack/vermieteros}:${TAG:?TAG fehlt}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ['80:80', '443:443', '443:443/udp']
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN fehlt}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+
+  web:
+    image: *image-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://vermieteros_app:${VOS_APP_PASSWORT:?}@postgres:5432/vermieteros
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?}
+      BETTER_AUTH_URL: https://${DOMAIN}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # Läuft nur über deploy.sh (docker compose run --rm migrate), nicht bei jedem Neustart.
+  migrate:
+    image: *image-app
+    profiles: [werkzeug]
+    command: ['node', 'db/dist/migrate.mjs']
+    restart: 'no'
+    environment:
+      DATABASE_URL_OWNER: postgres://vermieteros_owner:${VOS_OWNER_PASSWORT:?}@postgres:5432/vermieteros
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    shm_size: 256mb
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORT:?}
+      POSTGRES_DB: vermieteros
+      VOS_OWNER_PASSWORT: ${VOS_OWNER_PASSWORT}
+      VOS_APP_PASSWORT: ${VOS_APP_PASSWORT}
+      VOS_SICHERUNG_PASSWORT: ${VOS_SICHERUNG_PASSWORT:?}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sh:/docker-entrypoint-initdb.d/10-rollen.sh:ro
+    healthcheck:
+      # Über TCP: während der Erstinitialisierung lauscht Postgres nur auf dem Socket.
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U postgres -d vermieteros']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ops:
+    image: ${IMAGE_OPS:-ghcr.io/mfilkorn-stack/vermieteros-ops}:${TAG}
+    restart: unless-stopped
+    init: true
+    environment:
+      PGHOST: postgres
+      PGDATABASE: vermieteros
+      PGUSER: vermieteros_sicherung
+      PGPASSWORD: ${VOS_SICHERUNG_PASSWORT}
+      RCLONE_CONFIG_ZIEL_TYPE: s3
+      RCLONE_CONFIG_ZIEL_PROVIDER: Other
+      RCLONE_CONFIG_ZIEL_ENDPOINT: ${S3_ENDPOINT:?}
+      RCLONE_CONFIG_ZIEL_REGION: ${S3_REGION:-fsn1}
+      RCLONE_CONFIG_ZIEL_ACCESS_KEY_ID: ${S3_BACKUP_ACCESS_KEY:?}
+      RCLONE_CONFIG_ZIEL_SECRET_ACCESS_KEY: ${S3_BACKUP_SECRET_KEY:?}
+      BACKUP_ZIEL: ziel:${S3_BACKUP_BUCKET:?}/vermieteros
+      BACKUP_EMPFAENGER: ${BACKUP_EMPFAENGER:?}
+      BACKUP_SCHLUESSEL: /geheim/backup.key
+      HEALTHCHECK_BACKUP: ${HEALTHCHECK_BACKUP:-}
+      HEALTHCHECK_INTEGRITAET: ${HEALTHCHECK_INTEGRITAET:-}
+      HEALTHCHECK_RESTORE: ${HEALTHCHECK_RESTORE:-}
+    volumes:
+      - ./geheim:/geheim:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

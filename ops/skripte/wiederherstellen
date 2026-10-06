@@ -1,0 +1,30 @@
+#!/bin/sh
+# Ernstfall: Backup in eine leere Produktionsdatenbank zurückspielen und wie beim Restore-Test prüfen.
+# Ablauf und Voraussetzungen in docs/BETRIEB.md („Wiederherstellung im Ernstfall“).
+# Aufruf: wiederherstellen [backup-name]   ohne Name: das jüngste vollständige Backup.
+# Umgebung: PG* als Superuser auf die Zieldatenbank (Rollen aus postgres-init.sh müssen existieren),
+#           BACKUP_ZIEL, BACKUP_SCHLUESSEL.
+. /ops/gemeinsam.sh
+. /ops/wiederherstellung.sh
+: "${BACKUP_ZIEL:?BACKUP_ZIEL fehlt}" "${BACKUP_SCHLUESSEL:?BACKUP_SCHLUESSEL fehlt}"
+[ -r "$BACKUP_SCHLUESSEL" ] || fehler "Schlüssel $BACKUP_SCHLUESSEL nicht lesbar"
+scheitern() { fehler "$*"; }
+
+name=${1:-$(juengstes_backup)}
+[ -n "$name" ] || fehler "kein vollständiges Backup unter $BACKUP_ZIEL"
+
+# Nie über bestehende Daten: Die Zieldatenbank muss leer sein, die Rollen müssen da sein.
+tabellen=$(psql -X -At -v ON_ERROR_STOP=1 -c \
+  "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')") ||
+  fehler "Zieldatenbank nicht erreichbar"
+[ "$tabellen" = 0 ] || fehler "Zieldatenbank $PGDATABASE ist nicht leer ($tabellen Tabellen). Abbruch."
+rollen=$(psql -X -At -c "SELECT count(*) FROM pg_roles WHERE rolname IN ('vermieteros_owner', 'vermieteros_app')")
+[ "$rollen" = 2 ] || fehler "Rollen vermieteros_owner und vermieteros_app fehlen (postgres-init.sh)"
+
+arbeit=$(mktemp -d)
+trap 'rm -rf "$arbeit"' EXIT
+log "Wiederherstellung von $name nach $PGDATABASE auf $PGHOST"
+backup_holen "$name"
+pg_restore -d "$PGDATABASE" --exit-on-error --single-transaction "$arbeit/dump" || fehler "pg_restore"
+text=$(wiederherstellung_pruefen "$arbeit/$name.manifest.json")
+log "Wiederhergestellt: $name. $text"

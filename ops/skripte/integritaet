@@ -1,0 +1,58 @@
+#!/bin/sh
+# Nächtliche Integritätsprüfung in der Produktivdatenbank:
+#   1. Hash-Kette jedes Mandanten ist in sich stimmig (ledger_pruefe_kette)
+#   2. Anker: Jeder Kettenkopf aus dem letzten Backup-Manifest steht unverändert in der Datenbank.
+#      Erkennt eine komplett neu berechnete Kette, die Prüfung 1 allein nicht findet.
+# Umgebung: PG* (Rolle vermieteros_sicherung, liest an RLS vorbei), optional BACKUP_ZIEL für den Anker,
+# optional HEALTHCHECK_INTEGRITAET.
+. /ops/gemeinsam.sh
+monitor=${HEALTHCHECK_INTEGRITAET:-}
+melde "$monitor" start
+
+ergebnis=$(psql -X -q -v ON_ERROR_STOP=1 -At -F ' ' <<'SQL'
+SELECT d.mandant_id, p.ok, p.geprueft, coalesce(p.erster_fehler_seq::text, '-'), coalesce(p.fehler, '')
+FROM (SELECT DISTINCT mandant_id FROM ereignisse) d
+CROSS JOIN LATERAL ledger_pruefe_kette(d.mandant_id) p
+ORDER BY d.mandant_id;
+SQL
+) || {
+  melde "$monitor" fail "Abfrage fehlgeschlagen"
+  fehler "Abfrage fehlgeschlagen"
+}
+
+ketten=$(printf '%s\n' "$ergebnis" | grep -c . || true)
+gebrochen=$(printf '%s\n' "$ergebnis" | awk '$2 != "t" && NF > 0')
+if [ -n "$gebrochen" ]; then
+  log "Gebrochene Ketten (Mandant ok geprüft seq Fehler):"
+  printf '%s\n' "$gebrochen" >&2
+  melde "$monitor" fail "$gebrochen"
+  exit 1
+fi
+anker="ohne Anker"
+if [ -n "${BACKUP_ZIEL:-}" ]; then
+  letztes=$(rclone lsf --s3-no-check-bucket --include '*.manifest.json' "$BACKUP_ZIEL" | sort | tail -n 1)
+  if [ -n "$letztes" ]; then
+    manifest=$(rclone cat --s3-no-check-bucket "$BACKUP_ZIEL/$letztes") || {
+      melde "$monitor" fail "Manifest $letztes nicht lesbar"
+      fehler "Manifest $letztes nicht lesbar"
+    }
+    abweichend=$(psql -X -q -v ON_ERROR_STOP=1 -At -v manifest="$manifest" <<'SQL'
+SELECT (k->>'mandant') || ' seq ' || (k->>'seq')
+FROM jsonb_array_elements((:'manifest')::jsonb -> 'ketten') k
+LEFT JOIN ereignisse e ON e.mandant_id = (k->>'mandant')::uuid AND e.seq = (k->>'seq')::bigint
+WHERE e.hash IS DISTINCT FROM k->>'hash';
+SQL
+)
+    if [ -n "$abweichend" ]; then
+      text="Kettenkopf weicht vom Backup $letztes ab (Kette neu geschrieben?): $abweichend"
+      log "$text"
+      melde "$monitor" fail "$text"
+      exit 1
+    fi
+    anker="Anker $letztes"
+  else
+    log "Noch kein Backup-Manifest als Anker"
+  fi
+fi
+log "Integrität OK: $ketten Ketten intakt, $anker"
+melde "$monitor" ok "$ketten Ketten intakt, $anker"
