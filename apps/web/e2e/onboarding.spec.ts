@@ -40,6 +40,7 @@ test('ETW mit Stellplatz: Onboarding bis alle Ampeln grün', async ({ page }) =>
   // Stammdaten und Grundbuch: zwei Blätter
   await page.goto(`${akte}/stammdaten`)
   const s = page.getByTestId('stammdaten')
+  await s.getByLabel('Bundesland').selectOption('BY')
   await s.getByLabel('Baujahr (Fertigstellung)').fill('1970')
   await s.getByLabel('Teil einer Wohnungseigentümergemeinschaft (WEG)').check()
   await page.getByRole('button', { name: 'Grundbuchblatt hinzufügen' }).click()
@@ -93,6 +94,8 @@ test('ETW mit Stellplatz: Onboarding bis alle Ampeln grün', async ({ page }) =>
 
   // Korrektur eines vorhandenen Werts braucht eine Begründung
   await page.goto(`${akte}/kauf`)
+  // Vorschlag aus den Referenzdaten: Bayern 3,5 % am Vertragsdatum
+  await expect(page.getByTestId('grest-hinweis')).toContainText('3,5 %, also 6.545,00 €')
   await k.getByLabel('Kaufpreis €').fill('187.500,00')
   await k.getByRole('button', { name: 'Speichern' }).click()
   await expect(k.getByRole('alert')).toContainText('Bitte begründen')

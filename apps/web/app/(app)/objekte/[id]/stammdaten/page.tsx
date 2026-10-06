@@ -1,3 +1,4 @@
+import { BUNDESLAENDER, BUNDESLAND_NAME } from '@vermieteros/schema'
 import { notFound, redirect } from 'next/navigation'
 import { Aenderung, Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
@@ -36,6 +37,13 @@ export default async function StammdatenSeite({ params }: { params: Promise<{ id
           <Feld label="PLZ" name="plz" defaultValue={o.plz ?? ''} inputMode="numeric" />
           <Feld label="Ort" name="ort" defaultValue={o.ort ?? ''} />
         </div>
+        <Auswahl
+          label="Bundesland"
+          name="bundesland"
+          defaultValue={o.bundesland}
+          leer="Bitte wählen"
+          optionen={BUNDESLAENDER.map((b) => [b, BUNDESLAND_NAME[b]] as const)}
+        />
         <Feld
           label="Baujahr (Fertigstellung)"
           name="baujahr"

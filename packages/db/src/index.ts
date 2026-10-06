@@ -24,4 +24,4 @@ export {
   type Kettenpruefung,
 } from './ledger'
 export * as schema from './schema/index'
-export { datenqualitaet } from './qualitaet'
+export { datenqualitaet, ladeReferenzdaten } from './qualitaet'

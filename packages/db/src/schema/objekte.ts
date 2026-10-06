@@ -11,7 +11,12 @@ import {
 } from 'drizzle-orm/pg-core'
 import { identitaetsSpalten, versionsSpalten } from './versionierung'
 
-import type { GrundbuchEintrag, NebenkostenPosition, ObjektArt } from '@vermieteros/schema'
+import type {
+  Bundesland,
+  GrundbuchEintrag,
+  NebenkostenPosition,
+  ObjektArt,
+} from '@vermieteros/schema'
 
 /** Identität eines Objekts (Haus oder Eigentumswohnung). Ändert sich nie. */
 export const objekte = pgTable('objekte', {
@@ -32,6 +37,7 @@ export const objektVersionen = pgTable(
     hausnummer: text('hausnummer'),
     plz: text('plz'),
     ort: text('ort'),
+    bundesland: text('bundesland').$type<Bundesland>(),
     art: text('art').$type<ObjektArt>().notNull(),
     baujahr: integer('baujahr'),
     /** Eigentumswohnung mit WEG-Hausgeldabrechnung als Nebenkosten-Hauptquelle */

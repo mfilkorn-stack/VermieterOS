@@ -7,7 +7,10 @@ import type {
   MietverhaeltnisDaten,
   ObjektDaten,
 } from '@vermieteros/schema'
+import { BUNDESLAND_NAME } from '@vermieteros/schema'
 import { afaSatzVorschlag } from './anschaffung'
+import { cent } from './geld'
+import { grunderwerbsteuer, type ReferenzStatus } from './referenz'
 
 /**
  * Datenqualitäts-Check pro Objekt (Architekturplan Modul 01, PLAN.md 3.5).
@@ -63,6 +66,13 @@ export type ObjektStand = {
   darlehen: Array<{ id: string; daten: DarlehenDaten }>
   /** Eigentümerschaft des Mandanten; ohne Angabe wird nicht geprüft. */
   eigentum?: EigentumStand
+  /** Aufgelöste Referenzdaten zum Objekt; ohne Angabe wird nicht geprüft. */
+  referenz?: ReferenzStand
+}
+
+export type ReferenzStand = {
+  /** Grunderwerbsteuer für Bundesland und Datum des Kaufvertrags */
+  grunderwerbsteuer?: { status: ReferenzStatus; satzPromille: number | null; quelle: string | null }
 }
 
 export type Datenqualitaet = {
@@ -112,6 +122,14 @@ export function pruefeDatenqualitaet(o: ObjektStand, heute: string = heuteIso())
       'stammdaten',
       'ETW_OHNE_WOHNUNGSGRUNDBUCH',
       'Eigentumswohnung ohne Wohnungsgrundbuch mit Miteigentumsanteil',
+    )
+  }
+  if (!ob.bundesland) {
+    objekt(
+      'warnung',
+      'stammdaten',
+      'OBJ_BUNDESLAND',
+      'Bundesland fehlt (Grunderwerbsteuer, Mietrecht)',
     )
   }
   if (o.eigentum) pruefeEigentum(o.eigentum, b)
@@ -204,6 +222,7 @@ export function pruefeDatenqualitaet(o: ObjektStand, heute: string = heuteIso())
   } else if (!nk.some((n) => n.art === 'grunderwerbsteuer')) {
     objekt('warnung', 'steuerpaket', 'OBJ_GREST', 'Keine Grunderwerbsteuer erfasst, prüfen')
   }
+  pruefeGrunderwerbsteuer(o, objekt)
   if (ob.gebaeudeanteilPromille == null) {
     objekt(
       'fehler',
@@ -312,6 +331,64 @@ function pruefeMietverhaeltnis(
       id: mv.id,
     })
   }
+}
+
+function pruefeGrunderwerbsteuer(
+  o: ObjektStand,
+  objekt: (schwere: Schwere, modul: Modul, code: string, text: string) => void,
+): void {
+  const ref = o.referenz?.grunderwerbsteuer
+  const ob = o.objekt
+  if (!ref || !ob.bundesland || !(ob.kaufvertragDatum ?? ob.anschaffungsdatum)) return
+  const datum = datumText(ob.kaufvertragDatum ?? ob.anschaffungsdatum!)
+  const land = BUNDESLAND_NAME[ob.bundesland]
+  if (ref.status === 'fehlt') {
+    objekt(
+      'warnung',
+      'steuerpaket',
+      'REF_GREST_FEHLT',
+      `Kein Grunderwerbsteuersatz für ${land} am ${datum} hinterlegt`,
+    )
+    return
+  }
+  if (ref.status === 'abgelaufen') {
+    objekt(
+      'warnung',
+      'steuerpaket',
+      'REF_GREST_ABGELAUFEN',
+      `Grunderwerbsteuersatz für ${land} am ${datum} ist ausgelaufen`,
+    )
+    return
+  }
+  if (ref.status === 'ungeprueft') {
+    objekt(
+      'warnung',
+      'steuerpaket',
+      'REF_GREST_UNGEPRUEFT',
+      `Grunderwerbsteuersatz für ${land} ist nicht mehr geprüft (Referenzdaten aktualisieren)`,
+    )
+  }
+  const positionen = (ob.anschaffungsnebenkosten ?? []).filter((n) => n.art === 'grunderwerbsteuer')
+  if (ref.satzPromille == null || ob.kaufpreisCent == null || positionen.length === 0) return
+  const erwartet = grunderwerbsteuer(cent(ob.kaufpreisCent), ref.satzPromille)
+  const erfasst = positionen.reduce((s, n) => s + n.betragCent, 0)
+  if (erfasst !== erwartet) {
+    objekt(
+      'warnung',
+      'steuerpaket',
+      'OBJ_GREST_ABWEICHUNG',
+      `Grunderwerbsteuer ${euro(erfasst)} weicht von ${(ref.satzPromille / 10).toLocaleString('de-DE')} % des Kaufpreises (${euro(erwartet)}) ab; Bescheid prüfen, z. B. mitverkauftes Inventar`,
+    )
+  }
+}
+
+function datumText(iso: string): string {
+  const [j, m, t] = iso.split('-')
+  return `${t}.${m}.${j}`
+}
+
+function euro(c: number): string {
+  return `${(c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`
 }
 
 function pruefeEigentum(e: EigentumStand, b: Befund[]): void {

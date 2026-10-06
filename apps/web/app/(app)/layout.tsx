@@ -15,6 +15,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <Link href="/mandanten">Mandanten</Link>
           <Link href="/eigentuemer">Eigentümer</Link>
           <Link href="/mitglieder">Mitglieder</Link>
+          <Link href="/referenzdaten">Referenzdaten</Link>
           <Link href="/sicherheit">Sicherheit</Link>
           <span className="leise">{s.user.name}</span>
           <form action={abmelden}>

@@ -30,16 +30,23 @@ export function Auswahl({
   name,
   optionen,
   defaultValue,
+  leer,
 }: {
   label: string
   name: string
   optionen: ReadonlyArray<readonly [string, string]>
   defaultValue?: string | null | undefined
+  /** Text für eine leere Auswahl; ohne Angabe gibt es keine. */
+  leer?: string
 }) {
   return (
     <label>
       {label}
-      <select name={name} defaultValue={defaultValue ?? optionen[0]?.[0]}>
+      <select
+        name={name}
+        defaultValue={defaultValue ?? (leer !== undefined ? '' : optionen[0]?.[0])}
+      >
+        {leer !== undefined ? <option value="">{leer}</option> : null}
         {optionen.map(([wert, text]) => (
           <option key={wert} value={wert}>
             {text}
