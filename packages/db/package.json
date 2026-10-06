@@ -1,0 +1,33 @@
+{
+  "name": "@vermieteros/db",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Drizzle-Schema, Migrationen, Ledger-Kern, Mandanten-Kontext.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "tsx src/migrate.ts",
+    "auth:schema": "tsx scripts/auth-schema.ts && prettier --write src/schema/auth.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3",
+    "postgres": "^3.4.9",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@better-auth/core": "1.7.7",
+    "@types/node": "^22.19.0",
+    "better-auth": "1.7.7",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@vermieteros/rechenkern",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Reine, getestete Rechenlogik. Keine Datenbank, keine IO.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  }
+}
