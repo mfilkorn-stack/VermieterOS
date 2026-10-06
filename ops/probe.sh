@@ -99,7 +99,10 @@ mandant=$(docker exec "$PG_NEU" psql -X -At -U postgres -d vermieteros -c "selec
 ohne=$(app_neu -c "select count(*) from objekte_aktuell")
 mit=$(app_neu -c "select set_config('app.mandant_id', '$mandant', false)" -c "select count(*) from objekte_aktuell" | tail -n 1)
 echo "App-Rolle nach Restore: ohne Mandant $ohne Objekte, mit Mandant $mit"
-[ "$ohne" = 0 ] && [ "$mit" = 1 ] || { echo "FEHLER: RLS oder Rechte nach Restore falsch"; exit 1; }
+if [ "$ohne" != 0 ] || [ "$mit" != 1 ]; then
+  echo "FEHLER: RLS oder Rechte nach Restore falsch"
+  exit 1
+fi
 
 # Erwartet, dass ein Befehl scheitert, und zwar mit dem genannten Grund.
 scheitert_mit() {
