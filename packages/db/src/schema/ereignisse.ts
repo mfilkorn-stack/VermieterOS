@@ -10,6 +10,10 @@ export const EREIGNIS_TYPEN = [
   'ki_vorschlag',
   'ki_aufruf',
   'integritaet_geprueft',
+  'postfach_angelegt',
+  'postfach_geaendert',
+  'nachricht_eingegangen',
+  'nachricht_zugeordnet',
 ] as const
 export type EreignisTyp = (typeof EREIGNIS_TYPEN)[number]
 

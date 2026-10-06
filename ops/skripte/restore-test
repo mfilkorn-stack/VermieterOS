@@ -44,6 +44,7 @@ unset PGPASSWORD
 psql -X -q -v ON_ERROR_STOP=1 <<'SQL' || scheitern "Rollen anlegen"
 CREATE ROLE vermieteros_owner NOLOGIN;
 CREATE ROLE vermieteros_app NOLOGIN;
+CREATE ROLE vermieteros_worker NOLOGIN;
 CREATE DATABASE vermieteros_restore OWNER vermieteros_owner;
 SQL
 pg_restore -d vermieteros_restore --exit-on-error "$arbeit/dump" || scheitern "pg_restore"

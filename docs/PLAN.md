@@ -8,17 +8,18 @@ Der Architekturplan sagt, _was_ gebaut wird und _warum_. Dieses Dokument sagt, _
 
 ## 1 Getroffene Entscheidungen
 
-| Nr  | Entscheidung                                                                                                                                                                                                                                              | Kurzbegründung                                                                                  | ADR           |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------- |
-| 1   | **Ein Monolith auf Hetzner**, selbst gehostet. Next.js (UI + Server) und ein Worker-Prozess aus demselben Code, ein Docker-Image, zwei Container. Kein Supabase, kein US-Backend.                                                                         | Leitprinzip 1 (Datenhoheit) und 5 (Zurückhaltung). Ein Deployment, ein Sprachraum.              | 0001          |
-| 2   | **Mandant = Eigentümerschaft.** Jede Eigentümerschaft (allein, Ehepaar, Bruchteilsgemeinschaft, GbR) ist ein eigener Mandant mit eigenen Objekten, Handwerkern, Journal. Ein Nutzer kann Mitglied mehrerer Mandanten sein.                                | Saubere RLS-Grenze, saubere Steueraufteilung nach Anteilen, kein Sonderfall „geteiltes Objekt“. | 0002          |
-| 3   | **Entitäts-Versionen mit Feld-Herkunft** statt generischer Feld-Historie. Pro Entität eine Identitätstabelle und eine append-only Versionstabelle mit zwei Zeitachsen (`gueltig_ab`, `erfasst_am`). Herkunft pro geändertem Feld als JSON an der Version. | Typsicher, abfragbar, beantwortet „welche Wohnfläche galt 2025“ exakt, ohne Pivot-Hölle.        | 0003          |
-| 4   | **Better Auth** im Next.js-Prozess. Organizations-Plugin bildet Mandanten ab, TOTP-2FA für Vermieter, Magic-Link für Mieter und Handwerker.                                                                                                               | Kein zusätzlicher Dienst, gleiche Datenbank, gleiche Typen.                                     | 0004          |
-| 5   | **KI ist eine zustandslose Funktion** hinter einem Kontext-Builder. Jede Ausgabe trägt einen Versionsstempel (Ledger-Sequenz, Dokument-Prüfsummen, Prompt-Version, Modell). Fakten setzt der Code ein.                                                    | Kapitel 6 des Architekturplans, acht Regeln, im Code verankert.                                 | 0005          |
-| 6   | **Code-Sprache:** technische Begriffe Englisch, Fachbegriffe Deutsch und unübersetzt (`mietverhaeltnis`, `vorauszahlung`, `umlagefaehig`). Verbindlich ist `docs/GLOSSAR.md`.                                                                             | Fachbegriffe haben rechtliche Bedeutung; eine Übersetzung erzeugt zwei Wahrheiten.              | 0006          |
-| 7   | **Geld als Integer-Cent**, nie als Float. Daten als ISO-Datum (`date`), Zeitpunkte als `timestamptz`. IDs als UUID v7.                                                                                                                                    | Rechenkern muss auf den Cent reproduzierbar sein.                                               | im Rechenkern |
-| 8   | **Referenzdaten mit Prüffrist.** Externe Werte stehen versioniert in `referenzdaten`, mit Gültigkeit, Quelle und Prüffrist. Ein überfälliger oder ausgelaufener Wert erzeugt eine Warnung. AfA-Sätze bleiben im Rechenkern.                               | Kein stilles Weiterrechnen mit veralteten Werten, keine zweite Wahrheit für Gesetzesregeln.     | 0007          |
-| 9   | **Betrieb ohne Coolify:** Docker Compose und Caddy auf einem Hetzner-Server, Images aus CI über GHCR. Backup verschlüsselt ins Object Storage, Manifest der Kettenköpfe als externer Anker, Restore-Test und Integritätsprüfung im eigenen Ops-Image.     | Weniger Angriffsfläche und bewegliche Teile; alles im Repository und in CI geprüft.             | 0008          |
+| Nr  | Entscheidung                                                                                                                                                                                                                                                  | Kurzbegründung                                                                                  | ADR           |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------- |
+| 1   | **Ein Monolith auf Hetzner**, selbst gehostet. Next.js (UI + Server) und ein Worker-Prozess aus demselben Code, ein Docker-Image, zwei Container. Kein Supabase, kein US-Backend.                                                                             | Leitprinzip 1 (Datenhoheit) und 5 (Zurückhaltung). Ein Deployment, ein Sprachraum.              | 0001          |
+| 2   | **Mandant = Eigentümerschaft.** Jede Eigentümerschaft (allein, Ehepaar, Bruchteilsgemeinschaft, GbR) ist ein eigener Mandant mit eigenen Objekten, Handwerkern, Journal. Ein Nutzer kann Mitglied mehrerer Mandanten sein.                                    | Saubere RLS-Grenze, saubere Steueraufteilung nach Anteilen, kein Sonderfall „geteiltes Objekt“. | 0002          |
+| 3   | **Entitäts-Versionen mit Feld-Herkunft** statt generischer Feld-Historie. Pro Entität eine Identitätstabelle und eine append-only Versionstabelle mit zwei Zeitachsen (`gueltig_ab`, `erfasst_am`). Herkunft pro geändertem Feld als JSON an der Version.     | Typsicher, abfragbar, beantwortet „welche Wohnfläche galt 2025“ exakt, ohne Pivot-Hölle.        | 0003          |
+| 4   | **Better Auth** im Next.js-Prozess. Organizations-Plugin bildet Mandanten ab, TOTP-2FA für Vermieter, Magic-Link für Mieter und Handwerker.                                                                                                                   | Kein zusätzlicher Dienst, gleiche Datenbank, gleiche Typen.                                     | 0004          |
+| 5   | **KI ist eine zustandslose Funktion** hinter einem Kontext-Builder. Jede Ausgabe trägt einen Versionsstempel (Ledger-Sequenz, Dokument-Prüfsummen, Prompt-Version, Modell). Fakten setzt der Code ein.                                                        | Kapitel 6 des Architekturplans, acht Regeln, im Code verankert.                                 | 0005          |
+| 6   | **Code-Sprache:** technische Begriffe Englisch, Fachbegriffe Deutsch und unübersetzt (`mietverhaeltnis`, `vorauszahlung`, `umlagefaehig`). Verbindlich ist `docs/GLOSSAR.md`.                                                                                 | Fachbegriffe haben rechtliche Bedeutung; eine Übersetzung erzeugt zwei Wahrheiten.              | 0006          |
+| 7   | **Geld als Integer-Cent**, nie als Float. Daten als ISO-Datum (`date`), Zeitpunkte als `timestamptz`. IDs als UUID v7.                                                                                                                                        | Rechenkern muss auf den Cent reproduzierbar sein.                                               | im Rechenkern |
+| 8   | **Referenzdaten mit Prüffrist.** Externe Werte stehen versioniert in `referenzdaten`, mit Gültigkeit, Quelle und Prüffrist. Ein überfälliger oder ausgelaufener Wert erzeugt eine Warnung. AfA-Sätze bleiben im Rechenkern.                                   | Kein stilles Weiterrechnen mit veralteten Werten, keine zweite Wahrheit für Gesetzesregeln.     | 0007          |
+| 9   | **Betrieb ohne Coolify:** Docker Compose und Caddy auf einem Hetzner-Server, Images aus CI über GHCR. Backup verschlüsselt ins Object Storage, Manifest der Kettenköpfe als externer Anker, Restore-Test und Integritätsprüfung im eigenen Ops-Image.         | Weniger Angriffsfläche und bewegliche Teile; alles im Repository und in CI geprüft.             | 0008          |
+| 10  | **Mail-Eingang ohne Queue:** Worker als Schleife, eigene Rolle `vermieteros_worker`, Postfach nur lesen, Mails und Anhänge inhaltsadressiert im Object Storage, Zuordnung „lieber offen als falsch“. BullMQ/Redis erst mit asynchronen Aufträgen aus der App. | Ein Dienst weniger; keine falsch zugeordneten Mails; Postfach des Vermieters bleibt unberührt.  | 0009          |
 
 ---
 
@@ -63,7 +64,7 @@ Ein Image, zwei Startbefehle (`web`, `worker`). Der Worker ist kein eigener Dien
 | `packages/pdf`        | HTML-Vorlagen (Nebenkostenabrechnung, Mieterhöhung, Standardschreiben), Gotenberg-Client, Prüfsumme pro PDF.                                                                           | `schema`, `rechenkern`                   |
 | `packages/export`     | Steuerpaket: ExcelJS, CSV, ZIP mit Prüfsummenliste und Prüfprotokoll.                                                                                                                  | `schema`, `db`, `rechenkern`             |
 | `apps/web`            | Next.js, Better Auth, UI, Server Actions. Keine Fachlogik, nur Orchestrierung.                                                                                                         | alle                                     |
-| `apps/worker`         | BullMQ-Worker, Job-Definitionen, Scheduler (cron).                                                                                                                                     | alle                                     |
+| `apps/worker`         | Hintergrundprozess: Mail-Abruf als Schleife (ADR 0009); Queue erst mit asynchronen Aufträgen aus der App.                                                                              | alle                                     |
 
 Regel: **Fachlogik lebt in Paketen, nie in `apps/`.** Ein Server Action ruft `rechenkern`, `db`, `ki`, mehr nicht.
 
@@ -205,7 +206,7 @@ Datenschutz: Nutzung unter den Anthropic Commercial Terms (kein Training mit uns
 VermieterOS/
 ├── apps/
 │   ├── web/              Next.js 15, App Router, Better Auth
-│   └── worker/           BullMQ-Worker (ab Phase 1)
+│   └── worker/           Hintergrundprozess, Mail-Abruf (ADR 0009)
 ├── packages/
 │   ├── schema/           Zod (ab WP 0.4, bis dahin Typen in db)
 │   ├── db/               Drizzle-Schema, SQL-Migrationen, Ledger-Kern, Tests
@@ -218,7 +219,7 @@ VermieterOS/
 │   ├── GLOSSAR.md        verbindliche Fachbegriffe
 │   ├── adr/              Architekturentscheidungen
 │   └── architektur/      Architekturplan (PDF)
-├── docker-compose.yml    Postgres, Redis, MinIO, Gotenberg (lokal)
+├── docker-compose.yml    Postgres, Redis, S3, GreenMail, Gotenberg (lokal)
 ├── pnpm-workspace.yaml
 └── package.json
 ```
@@ -271,6 +272,8 @@ Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 
 | 1.9 | Mieterportal Basis: Magic-Link, Vertrag und Notfallkarte sehen, Mangel melden mit Foto, Nachricht schreiben                                                                                                          |
 
 **Phasen-DoD:** Drei Vermieter nutzen Posteingang und Belegeingang im Alltag, Belege für 2026 liegen vollständig im Journal, Golden-Set mit mindestens 30 echten Beispielen besteht.
+
+**Stand Phase 1:** WP 1.1 steht. Es gibt Postfächer pro Mandant mit Verbindungsprüfung und verschlüsseltem Passwort. Der Worker ruft nur lesend ab, legt Rohmail und Anhänge mit Prüfsumme im Object Storage ab und ordnet über Verlauf, Absender und Betreff zu. Im Posteingang lassen sich offene Nachrichten von Hand zuordnen. Playwright weist den Ablauf gegen einen echten IMAP-Server nach. Mails und Anhänge sind Teil des Backups.
 
 ### Phase 2 · Nebenkosten & Steuerpaket (Wo 8–12)
 

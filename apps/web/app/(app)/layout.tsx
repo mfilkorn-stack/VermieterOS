@@ -12,6 +12,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <strong>Vermieter.OS</strong>
         </Link>
         <nav>
+          <Link href="/posteingang">Posteingang</Link>
           <Link href="/mandanten">Mandanten</Link>
           <Link href="/eigentuemer">Eigentümer</Link>
           <Link href="/mitglieder">Mitglieder</Link>

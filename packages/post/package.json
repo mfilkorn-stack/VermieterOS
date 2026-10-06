@@ -1,0 +1,32 @@
+{
+  "name": "@vermieteros/post",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Mail-Eingang: IMAP-Abruf, Ablage im Object Storage, Zuordnung zu Mietverhältnissen.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@vermieteros/db": "workspace:*",
+    "@vermieteros/schema": "workspace:*",
+    "imapflow": "^2.2.6",
+    "mailparser": "^3.9.36"
+  },
+  "devDependencies": {
+    "@types/mailparser": "^3.9.0",
+    "@types/node": "^22.19.0",
+    "@types/nodemailer": "^8.0.2",
+    "drizzle-orm": "^0.45.3",
+    "nodemailer": "^10.0.15",
+    "typescript": "^5.9.3",
+    "uuid": "^14.0.2",
+    "vitest": "^4.0.0"
+  }
+}

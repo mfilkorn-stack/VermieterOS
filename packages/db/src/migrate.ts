@@ -14,18 +14,3 @@ export async function migriere(ownerUrl: string): Promise<void> {
     await close()
   }
 }
-
-// CLI: pnpm --filter @vermieteros/db migrate
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const url = process.env['DATABASE_URL_OWNER']
-  if (!url) {
-    console.error('DATABASE_URL_OWNER fehlt')
-    process.exit(1)
-  }
-  migriere(url)
-    .then(() => console.log('Migrationen ausgeführt'))
-    .catch((e) => {
-      console.error(e)
-      process.exit(1)
-    })
-}

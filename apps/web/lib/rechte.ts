@@ -9,6 +9,8 @@ export const statements = {
   ...defaultStatements,
   stammdaten: ['lesen', 'schreiben'],
   export: ['steuerpaket'],
+  /** Mail-Eingang: lesen, Nachrichten zuordnen, Postfächer einrichten (Zugangsdaten). */
+  post: ['lesen', 'zuordnen', 'postfaecher'],
 } as const
 
 export const ac = createAccessControl(statements)
@@ -20,7 +22,7 @@ export const ROLLEN_TEXT: Record<Rolle, string> = {
   eigentuemer: 'Eigentümer',
   miteigentuemer: 'Miteigentümer',
   mitverwalter: 'Mitverwalter',
-  steuerberater: 'Steuerberater (nur lesen, Export)',
+  steuerberater: 'Steuerberater (nur lesen, Export, keine Mails)',
 }
 
 export const roles = {
@@ -29,13 +31,17 @@ export const roles = {
     ...ownerAc.statements,
     stammdaten: ['lesen', 'schreiben'],
     export: ['steuerpaket'],
+    post: ['lesen', 'zuordnen', 'postfaecher'],
   }),
   miteigentuemer: ac.newRole({
     stammdaten: ['lesen', 'schreiben'],
     export: ['steuerpaket'],
+    post: ['lesen', 'zuordnen', 'postfaecher'],
   }),
+  /** Arbeitet den Posteingang ab, richtet aber keine Postfächer ein. */
   mitverwalter: ac.newRole({
     stammdaten: ['lesen', 'schreiben'],
+    post: ['lesen', 'zuordnen'],
   }),
   steuerberater: ac.newRole({
     stammdaten: ['lesen'],

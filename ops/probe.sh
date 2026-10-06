@@ -36,7 +36,7 @@ docker network create "$NETZ" >/dev/null
 starte_postgres() {
   docker run -d --name "$1" --network "$NETZ" "${@:2}" \
     -e POSTGRES_PASSWORD=probe -e POSTGRES_DB=vermieteros \
-    -e VOS_OWNER_PASSWORT=owner -e VOS_APP_PASSWORT=app -e VOS_SICHERUNG_PASSWORT=sicherung \
+    -e VOS_OWNER_PASSWORT=owner -e VOS_APP_PASSWORT=app -e VOS_WORKER_PASSWORT=worker -e VOS_SICHERUNG_PASSWORT=sicherung \
     -v "$PWD/ops/postgres-init.sh:/docker-entrypoint-initdb.d/10-rollen.sh:ro" \
     postgres:16 >/dev/null
   for _ in $(seq 60); do
@@ -50,7 +50,9 @@ starte_postgres() {
 starte_postgres "$PG" -p "127.0.0.1:$PG_PORT:5432"
 # S3-kompatibler Server aus rclone selbst, damit die Probe kein weiteres Fremd-Image braucht.
 docker run -d --name "$S3" --network "$NETZ" "$OPS_IMAGE" \
-  sh -c 'mkdir -p /tmp/s3/backup && exec rclone serve s3 --auth-key probe,probe-geheim --addr :9000 /tmp/s3' >/dev/null
+  sh -c 'mkdir -p /tmp/s3/backup /tmp/s3/dokumente/mandanten/m1/roh/ab &&
+    printf mail > /tmp/s3/dokumente/mandanten/m1/roh/ab/abcd &&
+    exec rclone serve s3 --auth-key probe,probe-geheim --addr :9000 /tmp/s3' >/dev/null
 
 schritt "Migrationen und Probedaten (zwei Mandanten, Versionen, Storno)"
 owner="postgres://vermieteros_owner:owner@127.0.0.1:$PG_PORT/vermieteros"
@@ -71,6 +73,7 @@ OPS_ENV=(
   -e RCLONE_CONFIG_ZIEL_ACCESS_KEY_ID=probe -e RCLONE_CONFIG_ZIEL_SECRET_ACCESS_KEY=probe-geheim
   -e BACKUP_ZIEL=ziel:backup/probe -e BACKUP_EMPFAENGER="$empfaenger"
   -e BACKUP_SCHLUESSEL=/geheim/backup.key -v "$arbeit:/geheim:ro"
+  -e DOKUMENTE_QUELLE=ziel:dokumente
 )
 ops() { docker run --rm --network "$NETZ" "${OPS_ENV[@]}" "$OPS_IMAGE" "$@"; }
 # Gegen den frischen Produktions-Postgres, als Superuser (Ernstfall-Wiederherstellung).
@@ -83,9 +86,13 @@ for _ in $(seq 30); do ops rclone lsd ziel: >/dev/null 2>&1 && break; sleep 1; d
 schritt "Integritätsprüfung auf der Quelle"
 ops integritaet
 
-schritt "Backup"
+schritt "Backup mit Dokumenten"
 ops backup
 ops rclone lsf ziel:backup/probe
+[ "$(ops rclone cat ziel:backup/dokumente/mandanten/m1/roh/ab/abcd)" = mail ] || {
+  echo "FEHLER: Dokument nicht im Backup"
+  exit 1
+}
 
 schritt "Restore auf frischem Container, danach Kettenprüfung"
 ops restore-test
@@ -136,6 +143,12 @@ scheitert_mit 'Kettenkopf' ops restore-test "$name"
 schritt "Gegenprobe: veränderte Backup-Datei wird abgewiesen"
 ops sh -c "rclone cat ziel:backup/probe/$name.dump.age > /tmp/d && printf x >> /tmp/d && rclone copyto /tmp/d ziel:backup/probe/$name.dump.age"
 scheitert_mit 'Prüfsumme' ops restore-test "$name"
+
+schritt "Gegenprobe: nachträglich verändertes Dokument bricht das Backup ab"
+docker exec "$S3" sh -c 'printf anders > /tmp/s3/dokumente/mandanten/m1/roh/ab/abcd'
+sleep 1
+scheitert_mit 'Dokumente' ops backup
+docker exec "$S3" sh -c 'printf mail > /tmp/s3/dokumente/mandanten/m1/roh/ab/abcd'
 
 schritt "Neues Backup, danach Integritätsprüfung mit seinem Manifest als Anker"
 sleep 1 # Backup-Namen haben Sekundenauflösung

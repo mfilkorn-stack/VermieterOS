@@ -158,3 +158,16 @@ export const BUNDESLAND_NAME: Record<Bundesland, string> = {
 export const REFERENZ_ARTEN = ['grunderwerbsteuer'] as const
 export const ReferenzArt = z.enum(REFERENZ_ARTEN)
 export type ReferenzArt = z.infer<typeof ReferenzArt>
+
+/**
+ * Wie eine eingegangene Nachricht einem Mietverhältnis zugeordnet wurde (WP 1.1).
+ * `aufgehoben`: manuelle Zuordnung zurückgenommen, Nachricht ist wieder offen.
+ */
+export const ZUORDNUNG_ARTEN = [
+  'verlauf',
+  'absender',
+  'absender_betreff',
+  'manuell',
+  'aufgehoben',
+] as const
+export type ZuordnungArt = (typeof ZUORDNUNG_ARTEN)[number]

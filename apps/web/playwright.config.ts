@@ -28,6 +28,7 @@ export default defineConfig({
       BETTER_AUTH_URL: basisUrl,
       BETTER_AUTH_SECRET: 'e2e-geheimnis-nur-fuer-tests-0123456789',
       AUTH_RATE_LIMIT: 'aus',
+      POSTFACH_SCHLUESSEL: E2E.postfachSchluessel,
     },
   },
 })

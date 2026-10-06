@@ -8,21 +8,23 @@ Eine eigene Verwaltungssoftware für private Vermieter. Kommunikation, Nebenkost
 
 ## Stand
 
-Phase 0 · Fundament. WP 0.1 bis 0.5: Ledger mit Hash-Kette, alle Stammdaten-Entitäten versioniert, RLS, Datenqualitäts-Check, Login mit Pflicht-TOTP, Mandanten, Rollen und Einladungen.
+Phase 0 (Fundament) ist im Repository vollständig: Ledger mit Hash-Kette, versionierte Stammdaten, RLS, Datenqualitäts-Check, Login mit Pflicht-TOTP, Mandanten und Rollen, Onboarding pro Objekt, Referenzdaten, Betrieb mit Backup und Restore-Probe (`docs/BETRIEB.md`). Phase 1 läuft: Mail-Eingang mit Postfächern, Abruf im Worker und Zuordnung zu Mietverhältnissen (WP 1.1).
 
 ## Entwicklung
 
 ```bash
 pnpm install
-docker compose up -d            # Postgres, Redis, MinIO, Gotenberg
-cp .env.example .env
+docker compose up -d            # Postgres, Redis, S3, GreenMail (Mail), Gotenberg
+cp .env.example .env            # POSTFACH_SCHLUESSEL setzen: openssl rand -base64 32
 pnpm db:migrate                 # Migrationen als Besitzerrolle
 pnpm dev                        # http://localhost:3000
+pnpm --filter @vermieteros/worker start   # Mail-Abruf (DATABASE_URL mit Rolle vermieteros_worker)
 ```
 
-Tests brauchen eine erreichbare PostgreSQL-Instanz (`TEST_DATABASE_URL`, Standard: lokales Docker):
+Tests brauchen eine erreichbare PostgreSQL-Instanz (`TEST_DATABASE_URL`, Standard: lokales Docker) und für den Mail-Eingang GreenMail und S3:
 
 ```bash
+ops/testdienste.sh              # GreenMail (3025/3143) und S3 (9100) für Tests
 pnpm typecheck
 pnpm test
 ```
@@ -41,8 +43,11 @@ Erster Start: `/registrieren`, dann 2FA einrichten, dann Mandant anlegen. Mail-L
 
 ```
 apps/web           Next.js, Better Auth, UI
+apps/worker        Hintergrundprozess: Mail-Abruf
 packages/db        Drizzle-Schema, Migrationen, Ledger-Kern, RLS
+packages/post      Mail-Eingang: IMAP, Ablage im Object Storage, Zuordnung
 packages/schema    Zod-Schemas, einzige Typquelle
 packages/rechenkern reine Rechenlogik (Geld, Verteilung, Datenqualität)
-docs/              Plan, ADRs, Glossar, Architekturplan
+ops/               Betrieb: Images, Compose, Backup, Restore, Probe
+docs/              Plan, ADRs, Glossar, Architekturplan, Betrieb
 ```
