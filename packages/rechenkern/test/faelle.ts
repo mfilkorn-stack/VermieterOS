@@ -38,7 +38,7 @@ export function etwMitStellplatz(): ObjektStand {
       bezeichnung: 'ETW mit Stellplatz',
       strasse: 'Musterweg',
       hausnummer: '18',
-      plz: '96047',
+      plz: '99999',
       ort: 'Musterstadt',
       art: 'etw',
       weg: true,

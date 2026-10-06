@@ -1,7 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import postgres from 'postgres'
 import { totp } from './totp'
-import { E2E } from './umgebung'
+import { emailBestaetigt } from './hilfen'
 
 /**
  * WP 0.5 Definition of Done: zwei Mandanten, zwei Nutzer, Isolation über die Oberfläche
@@ -23,16 +22,6 @@ const B = {
 }
 
 test.describe.configure({ mode: 'serial' })
-
-/** Der Mailversand kommt in Phase 1; die Bestätigung des Links wird hier direkt gesetzt. */
-async function emailBestaetigt(email: string) {
-  const sql = postgres(E2E.ownerUrl, { max: 1 })
-  try {
-    await sql`update auth."user" set email_verified = true where email = ${email}`
-  } finally {
-    await sql.end()
-  }
-}
 
 async function registrieren(page: Page, p: typeof A) {
   await page.goto('/registrieren')
@@ -69,9 +58,13 @@ async function mandantMitObjekt(page: Page, mandant: string, objekt: string, ort
   await page.getByTestId('objekt-neu').click()
   const f = page.getByTestId('objekt-anlegen')
   await f.getByLabel('Bezeichnung').fill(objekt)
+  await f.getByLabel('Im Bestand seit').fill('2021-07-01')
   await f.getByLabel('PLZ').fill('50667')
   await f.getByLabel('Ort').fill(ort)
   await f.getByRole('button', { name: 'Anlegen' }).click()
+  // Nach dem Anlegen geht es in die Objektakte.
+  await expect(page.getByTestId('objekt-titel')).toHaveText(objekt)
+  await page.goto('/')
   await expect(page.getByTestId('objektliste')).toContainText(objekt)
 }
 
@@ -151,8 +144,8 @@ test('Anmeldung verlangt den zweiten Faktor', async ({ page }) => {
   await expect(page.getByTestId('zwei-faktor').getByRole('alert')).toHaveText(
     'Der Code stimmt nicht.',
   )
-  // React setzt das Formular nach der Aktion zurück; erst danach neu tippen.
-  await expect(code).toHaveValue('')
+  // Formulare setzen sich bei Fehlern nicht zurück: die Eingabe bleibt stehen.
+  await expect(code).toHaveValue('000000')
 
   await code.fill(totp(A.geheimnis))
   await page.getByRole('button', { name: 'Bestätigen' }).click()

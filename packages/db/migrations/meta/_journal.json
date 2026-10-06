@@ -71,6 +71,13 @@
       "when": 1791325827340,
       "tag": "0009_objekt_nebenkostensumme_entfernen",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791326289282,
+      "tag": "0010_bezug_mandant",
+      "breakpoints": true
     }
   ]
 }

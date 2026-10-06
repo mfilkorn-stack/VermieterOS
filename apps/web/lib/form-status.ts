@@ -1,6 +1,6 @@
 import { APIError } from 'better-auth/api'
 
-export type FormStatus = { fehler?: string }
+export type FormStatus = { fehler?: string; hinweis?: string }
 
 const MELDUNGEN: Record<string, string> = {
   INVALID_EMAIL_OR_PASSWORD: 'E-Mail oder Passwort ist falsch.',
@@ -27,7 +27,12 @@ export function fehlertext(e: unknown): string {
     if (code && MELDUNGEN[code]) return MELDUNGEN[code]
     return (e.body as { message?: string } | undefined)?.message ?? e.message
   }
-  if (e instanceof Error) return e.message
+  if (e instanceof Error) {
+    // Drizzle verpackt Datenbankfehler; die verständliche Meldung steht in `cause`.
+    const ursache = (e as { cause?: { message?: string } }).cause?.message
+    if (e.message.startsWith('Failed query') && ursache) return ursache
+    return e.message
+  }
   return 'Unbekannter Fehler'
 }
 

@@ -14,7 +14,7 @@ import type {
   ObjektDaten,
 } from '@vermieteros/schema'
 import type { Tx } from './client'
-import { aktuell } from './ledger'
+import { aktuell, fachdaten } from './ledger'
 
 /**
  * Lädt den aktuellen Stand eines Objekts aus den `*_aktuell`-Sichten und lässt den
@@ -44,13 +44,20 @@ export async function datenqualitaet(tx: Tx, objektId: string): Promise<Datenqua
       const kondition = mk ? await aktuell(tx, 'mietkondition', mk.id) : null
       mietverhaeltnisse.push({
         id: mvId,
-        daten: ohneSystemspalten<MietverhaeltnisDaten>(mv),
+        daten: fachdaten('mietverhaeltnis', mv) as MietverhaeltnisDaten,
         kondition: kondition
-          ? { ...ohneSystemspalten<MietkonditionDaten>(kondition), gueltigAb: kondition.gueltigAb }
+          ? {
+              ...(fachdaten('mietkondition', kondition) as MietkonditionDaten),
+              gueltigAb: kondition.gueltigAb,
+            }
           : null,
       })
     }
-    einheiten.push({ id: einheitId, daten: ohneSystemspalten<EinheitDaten>(e), mietverhaeltnisse })
+    einheiten.push({
+      id: einheitId,
+      daten: fachdaten('einheit', e) as EinheitDaten,
+      mietverhaeltnisse,
+    })
   }
 
   const darlehenRows = await tx.execute<{ id: string }>(
@@ -59,7 +66,7 @@ export async function datenqualitaet(tx: Tx, objektId: string): Promise<Datenqua
   const darlehen: ObjektStand['darlehen'] = []
   for (const { id } of darlehenRows) {
     const d = await aktuell(tx, 'darlehen', id)
-    if (d) darlehen.push({ id, daten: ohneSystemspalten<DarlehenDaten>(d) })
+    if (d) darlehen.push({ id, daten: fachdaten('darlehen', d) as DarlehenDaten })
   }
 
   const [mandant] = await tx.execute<{ id: string; art: EigentuemerschaftArt }>(
@@ -71,7 +78,7 @@ export async function datenqualitaet(tx: Tx, objektId: string): Promise<Datenqua
 
   return pruefeDatenqualitaet({
     id: objektId,
-    objekt: ohneSystemspalten<ObjektDaten>(objekt),
+    objekt: fachdaten('objekt', objekt) as ObjektDaten,
     einheiten,
     darlehen,
     ...(mandant
@@ -84,32 +91,4 @@ export async function datenqualitaet(tx: Tx, objektId: string): Promise<Datenqua
         }
       : {}),
   })
-}
-
-const SYSTEMSPALTEN = new Set([
-  'id',
-  'mandantId',
-  'versionNr',
-  'gueltigAb',
-  'erfasstAm',
-  'erfasstVon',
-  'ereignisId',
-  'begruendung',
-  'herkunft',
-  'objektId',
-  'einheitId',
-  'personId',
-  'mietverhaeltnisId',
-  'mietkonditionId',
-  'zaehlerId',
-  'darlehenId',
-  'dokumentId',
-  'eigentumsanteilId',
-])
-
-// Die Sichten liefern Versionszeilen; der Rechenkern will nur Fachdaten.
-function ohneSystemspalten<T>(v: Record<string, unknown>): T {
-  const out: Record<string, unknown> = {}
-  for (const [k, val] of Object.entries(v)) if (!SYSTEMSPALTEN.has(k)) out[k] = val
-  return out as T
 }
