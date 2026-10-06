@@ -112,3 +112,49 @@ export type NebenkostenArt = z.infer<typeof NebenkostenArt>
 export const GRUNDBUCH_ARTEN = ['grundbuch', 'wohnungsgrundbuch', 'teileigentumsgrundbuch'] as const
 export const GrundbuchArt = z.enum(GRUNDBUCH_ARTEN)
 export type GrundbuchArt = z.infer<typeof GrundbuchArt>
+
+/** Länderkürzel nach ISO 3166-2:DE ohne Präfix. */
+export const BUNDESLAENDER = [
+  'BW',
+  'BY',
+  'BE',
+  'BB',
+  'HB',
+  'HH',
+  'HE',
+  'MV',
+  'NI',
+  'NW',
+  'RP',
+  'SL',
+  'SN',
+  'ST',
+  'SH',
+  'TH',
+] as const
+export const Bundesland = z.enum(BUNDESLAENDER)
+export type Bundesland = z.infer<typeof Bundesland>
+
+export const BUNDESLAND_NAME: Record<Bundesland, string> = {
+  BW: 'Baden-Württemberg',
+  BY: 'Bayern',
+  BE: 'Berlin',
+  BB: 'Brandenburg',
+  HB: 'Bremen',
+  HH: 'Hamburg',
+  HE: 'Hessen',
+  MV: 'Mecklenburg-Vorpommern',
+  NI: 'Niedersachsen',
+  NW: 'Nordrhein-Westfalen',
+  RP: 'Rheinland-Pfalz',
+  SL: 'Saarland',
+  SN: 'Sachsen',
+  ST: 'Sachsen-Anhalt',
+  SH: 'Schleswig-Holstein',
+  TH: 'Thüringen',
+}
+
+/** Arten von Referenzdaten. Weitere (Mietspiegel, VPI, Bodenrichtwerte) kommen mit ihren Modulen. */
+export const REFERENZ_ARTEN = ['grunderwerbsteuer'] as const
+export const ReferenzArt = z.enum(REFERENZ_ARTEN)
+export type ReferenzArt = z.infer<typeof ReferenzArt>

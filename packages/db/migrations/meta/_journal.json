@@ -78,6 +78,20 @@
       "when": 1791326289282,
       "tag": "0010_bezug_mandant",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791327182343,
+      "tag": "0011_referenzdaten_bundesland",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791327183250,
+      "tag": "0012_referenzdaten_regeln_seed",
+      "breakpoints": true
     }
   ]
 }

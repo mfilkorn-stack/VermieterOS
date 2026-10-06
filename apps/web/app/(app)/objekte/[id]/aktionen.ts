@@ -74,6 +74,7 @@ export async function stammdatenSpeichern(_: FormStatus, d: FormData): Promise<F
       hausnummer: text(d, 'hausnummer'),
       plz: text(d, 'plz'),
       ort: text(d, 'ort'),
+      bundesland: text(d, 'bundesland'),
       baujahr: dezimal(d, 'baujahr', 'Baujahr', 0),
       weg: haken(d, 'weg'),
       grundbuch: grundbuchAusRoh(json<GrundbuchRoh[]>(d, 'grundbuch')),

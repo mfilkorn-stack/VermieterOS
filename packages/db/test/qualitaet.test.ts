@@ -74,6 +74,7 @@ describe('datenqualitaet (DB-Loader)', () => {
               flurstuecke: [{ nummer: 'Flst. 1', flaecheQm: 500 }],
             },
           ],
+          bundesland: 'NW',
           kaufvertragDatum: '2019-11-15',
           anschaffungsdatum: '2020-01-01',
           kaufpreisCent: 30_000_000,

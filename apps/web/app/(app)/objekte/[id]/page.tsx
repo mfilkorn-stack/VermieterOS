@@ -37,6 +37,7 @@ const STAMMDATEN_CODES = new Set([
   'ETW_OHNE_WOHNUNGSGRUNDBUCH',
   'ETW_MEHRERE_WOHNUNGEN',
   'OBJ_BAUJAHR',
+  'OBJ_BUNDESLAND',
 ])
 
 /** Wohin ein Befund führt: das Formular, in dem er behoben wird. */
@@ -57,6 +58,7 @@ function ziel(a: Akte, b: Befund): string {
     default:
       if (b.code === 'OBJ_KEINE_EINHEITEN') return `${basis}/einheiten/neu`
       if (b.code.startsWith('MEA_')) return `${basis}#einheiten`
+      if (b.code.startsWith('REF_')) return '/referenzdaten'
       return STAMMDATEN_CODES.has(b.code) ? `${basis}/stammdaten` : `${basis}/kauf`
   }
 }

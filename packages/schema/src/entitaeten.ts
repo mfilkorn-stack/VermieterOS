@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  Bundesland,
   DokumentStatus,
   DokumentTyp,
   EinheitTyp,
@@ -73,6 +74,7 @@ export const ObjektDaten = z.object({
   hausnummer: z.string().trim().max(20).nullish(),
   plz: Plz.nullish(),
   ort: Text.nullish(),
+  bundesland: Bundesland.nullish(),
   art: ObjektArt,
   baujahr: z.number().int().min(1500).max(2100).nullish(),
   weg: z.boolean().default(false),
@@ -238,3 +240,7 @@ export { Cent }
 export const EigentumsanteilDaten = Bruch
 export type EigentumsanteilDaten = z.infer<typeof EigentumsanteilDaten>
 export const EigentumsanteilIdentitaet = z.object({ personId: Uuid })
+
+/** Wert eines Grunderwerbsteuer-Eintrags: Satz in Promille (3,5 % = 35). */
+export const GrunderwerbsteuerWert = z.object({ satzPromille: z.number().int().min(0).max(100) })
+export type GrunderwerbsteuerWert = z.infer<typeof GrunderwerbsteuerWert>

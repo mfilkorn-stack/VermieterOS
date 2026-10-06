@@ -1,6 +1,9 @@
 import { sql } from 'drizzle-orm'
 import {
+  referenzwert,
   pruefeDatenqualitaet,
+  type ReferenzEintrag,
+  type ReferenzStand,
   type Datenqualitaet,
   type EinheitStand,
   type ObjektStand,
@@ -76,7 +79,10 @@ export async function datenqualitaet(tx: Tx, objektId: string): Promise<Datenqua
     sql`select zaehler, nenner from eigentumsanteile_aktuell`,
   )
 
+  const referenz = await grunderwerbsteuerFuer(tx, fachdaten('objekt', objekt) as ObjektDaten)
+
   return pruefeDatenqualitaet({
+    referenz,
     id: objektId,
     objekt: fachdaten('objekt', objekt) as ObjektDaten,
     einheiten,
@@ -91,4 +97,61 @@ export async function datenqualitaet(tx: Tx, objektId: string): Promise<Datenqua
         }
       : {}),
   })
+}
+
+/** Grunderwerbsteuersatz für Bundesland und Datum des Kaufvertrags (§ 23 GrEStG: Entstehung mit Vertrag). */
+async function grunderwerbsteuerFuer(tx: Tx, o: ObjektDaten): Promise<ReferenzStand> {
+  const datum = o.kaufvertragDatum ?? o.anschaffungsdatum
+  if (!o.bundesland || !datum) return {}
+  const eintraege = await ladeReferenzdaten<{ satzPromille: number }>(
+    tx,
+    'grunderwerbsteuer',
+    o.bundesland,
+  )
+  const r = referenzwert(eintraege, datum, heute())
+  return {
+    grunderwerbsteuer: {
+      status: r.status,
+      satzPromille: r.eintrag?.wert.satzPromille ?? null,
+      quelle: r.eintrag?.quelle ?? null,
+    },
+  }
+}
+
+/** Alle sichtbaren Einträge (global und eigener Mandant) zu Art und Schlüssel. */
+export async function ladeReferenzdaten<W>(
+  tx: Tx,
+  art: string,
+  schluessel: string,
+): Promise<ReferenzEintrag<W>[]> {
+  const rows = await tx.execute<{
+    id: string
+    mandant_id: string | null
+    wert: W
+    gueltig_von: string
+    gueltig_bis: string | null
+    quelle: string
+    hinweis: string | null
+    geprueft_am: string
+    pruefen_bis: string
+    erfasst_am: string
+  }>(sql`select id, mandant_id, wert, gueltig_von, gueltig_bis, quelle, hinweis, geprueft_am, pruefen_bis,
+              to_char(erfasst_am at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as erfasst_am
+         from referenzdaten where art = ${art} and schluessel = ${schluessel}`)
+  return rows.map((r) => ({
+    id: r.id,
+    mandantId: r.mandant_id,
+    wert: r.wert,
+    gueltigVon: r.gueltig_von,
+    gueltigBis: r.gueltig_bis,
+    quelle: r.quelle,
+    hinweis: r.hinweis,
+    geprueftAm: r.geprueft_am,
+    pruefenBis: r.pruefen_bis,
+    erfasstAm: r.erfasst_am,
+  }))
+}
+
+function heute(): string {
+  return new Date().toISOString().slice(0, 10)
 }

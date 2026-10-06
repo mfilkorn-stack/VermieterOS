@@ -1,10 +1,13 @@
-import { afaSatzVorschlag } from '@vermieteros/rechenkern'
+import { ladeReferenzdaten } from '@vermieteros/db'
+import { afaSatzVorschlag, cent, grunderwerbsteuer, referenzwert } from '@vermieteros/rechenkern'
+import { BUNDESLAND_NAME } from '@vermieteros/schema'
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Aenderung, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { NebenkostenEditor } from '@/components/nebenkosten-editor'
 import { ladeAkte } from '@/lib/akte'
-import { euroText, prozentText } from '@/lib/format'
+import { datumAnzeige, euroAnzeige, euroText, prozentText } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { nebenkostenZuRoh } from '@/lib/umwandeln'
 import { kaufSpeichern } from '../aktionen'
@@ -12,9 +15,20 @@ import { kaufSpeichern } from '../aktionen'
 export default async function KaufSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect(`/objekte/${id}`)
-  const akte = await mitMandant((tx) => ladeAkte(tx, id))
+  const daten = await mitMandant(async (tx) => {
+    const akte = await ladeAkte(tx, id)
+    const bl = akte?.objekt.bundesland
+    const grest = bl
+      ? await ladeReferenzdaten<{ satzPromille: number }>(tx, 'grunderwerbsteuer', bl)
+      : []
+    return { akte, grest }
+  })
+  const akte = daten.akte
   if (!akte) notFound()
   const o = akte.objekt
+  const stichtag = o.kaufvertragDatum ?? o.anschaffungsdatum
+  const heute = new Date().toISOString().slice(0, 10)
+  const grest = o.bundesland && stichtag ? referenzwert(daten.grest, stichtag, heute) : null
   const vorschlag = o.baujahr ? afaSatzVorschlag(o.baujahr) : null
 
   return (
@@ -51,6 +65,28 @@ export default async function KaufSeite({ params }: { params: Promise<{ id: stri
         <p className="leise">
           Grunderwerbsteuer, Notar und Grundbuch für den Kauf zählen zu den Anschaffungskosten.
           Notar und Grundbuch für die Grundschuld sind Finanzierungskosten und sofort abziehbar.
+        </p>
+        <p className="leise" data-testid="grest-hinweis">
+          {!o.bundesland ? (
+            <>
+              Für einen Vorschlag zur Grunderwerbsteuer das Bundesland unter{' '}
+              <Link href={`/objekte/${id}/stammdaten`}>Stammdaten</Link> wählen.
+            </>
+          ) : !stichtag ? (
+            'Für einen Vorschlag zur Grunderwerbsteuer das Datum des Kaufvertrags angeben.'
+          ) : !grest?.eintrag || grest.status === 'abgelaufen' ? (
+            `Für ${BUNDESLAND_NAME[o.bundesland]} am ${datumAnzeige(stichtag)} ist kein Grunderwerbsteuersatz hinterlegt.`
+          ) : (
+            <>
+              Grunderwerbsteuer {BUNDESLAND_NAME[o.bundesland]} bei Vertrag am{' '}
+              {datumAnzeige(stichtag)}: {prozentText(grest.eintrag.wert.satzPromille)} %
+              {o.kaufpreisCent != null
+                ? `, also ${euroAnzeige(grunderwerbsteuer(cent(o.kaufpreisCent), grest.eintrag.wert.satzPromille))}`
+                : ''}{' '}
+              (Quelle: {grest.eintrag.quelle}
+              {grest.status === 'ungeprueft' ? ', Prüfung überfällig' : ''}).
+            </>
+          )}
         </p>
         <NebenkostenEditor
           name="nebenkosten"

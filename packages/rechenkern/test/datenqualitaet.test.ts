@@ -13,6 +13,7 @@ function haus(): ObjektStand {
       hausnummer: '1',
       plz: '50667',
       ort: 'Köln',
+      bundesland: 'NW',
       art: 'haus',
       baujahr: 1965,
       weg: false,
@@ -78,6 +79,7 @@ function haus(): ObjektStand {
       },
     ],
     eigentum: { mandantId: 'm', art: 'allein', anteile: [] },
+    referenz: { grunderwerbsteuer: { status: 'gueltig', satzPromille: 65, quelle: 'Seed' } },
   }
 }
 
@@ -231,6 +233,33 @@ describe('pruefeDatenqualitaet: ETW mit separatem Stellplatz (Struktur aus echte
     const o = etwMitStellplatz()
     o.eigentum!.art = 'allein'
     expect(codes(o)).toEqual(['EIGENTUM_ALLEIN_MEHRERE'])
+  })
+})
+
+describe('pruefeDatenqualitaet: Referenzdaten', () => {
+  it('fehlendes Bundesland ist eine Warnung in den Stammdaten', () => {
+    const o = haus()
+    o.objekt.bundesland = null
+    expect(codes(o)).toEqual(['OBJ_BUNDESLAND'])
+  })
+
+  it('Status des Grunderwerbsteuersatzes wird gemeldet, nicht still verwendet', () => {
+    const o = haus()
+    o.referenz = { grunderwerbsteuer: { status: 'fehlt', satzPromille: null, quelle: null } }
+    expect(codes(o)).toEqual(['REF_GREST_FEHLT'])
+    o.referenz = { grunderwerbsteuer: { status: 'abgelaufen', satzPromille: 50, quelle: 'x' } }
+    expect(codes(o)).toEqual(['REF_GREST_ABGELAUFEN'])
+    o.referenz = { grunderwerbsteuer: { status: 'ungeprueft', satzPromille: 65, quelle: 'x' } }
+    expect(codes(o)).toEqual(['REF_GREST_UNGEPRUEFT'])
+  })
+
+  it('erfasste Grunderwerbsteuer wird gegen den Satz geprüft', () => {
+    const o = haus()
+    // 450.000 € × 6,5 % = 29.250 € → passt
+    expect(codes(o)).toEqual([])
+    o.objekt.anschaffungsnebenkosten = [{ art: 'grunderwerbsteuer', betragCent: 2_800_000 }]
+    expect(codes(o)).toEqual(['OBJ_GREST_ABWEICHUNG'])
+    expect(pruefeDatenqualitaet(o, HEUTE).befunde[0]!.text).toContain('29.250,00 €')
   })
 })
 

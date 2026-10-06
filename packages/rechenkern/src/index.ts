@@ -27,6 +27,7 @@ export {
   type EinheitStand,
   type MietverhaeltnisStand,
   type EigentumStand,
+  type ReferenzStand,
 } from './datenqualitaet'
 
 export {
@@ -42,3 +43,11 @@ export {
   type AfaVorschlag,
   type Fristen,
 } from './anschaffung'
+
+export {
+  referenzwert,
+  grunderwerbsteuer,
+  type ReferenzEintrag,
+  type ReferenzStatus,
+  type ReferenzErgebnis,
+} from './referenz'

@@ -40,6 +40,7 @@ export function etwMitStellplatz(): ObjektStand {
       hausnummer: '18',
       plz: '99999',
       ort: 'Musterstadt',
+      bundesland: 'BY',
       art: 'etw',
       weg: true,
       baujahr: ANNAHMEN.baujahr,
@@ -103,6 +104,7 @@ export function etwMitStellplatz(): ObjektStand {
       },
     ],
     darlehen: [],
+    referenz: { grunderwerbsteuer: { status: 'gueltig', satzPromille: 35, quelle: 'Seed' } },
     eigentum: {
       mandantId: 'mandant-1',
       art: 'bruchteil',
