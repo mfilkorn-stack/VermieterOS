@@ -4,3 +4,4 @@ dist
 pnpm-lock.yaml
 packages/db/migrations/meta
 docs/architektur
+apps/web/next-env.d.ts
