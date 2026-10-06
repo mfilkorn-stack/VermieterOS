@@ -1,0 +1,725 @@
+{
+  "id": "a747b92c-0943-4a40-b0c4-97f77a8233da",
+  "prevId": "3b1a6999-107d-4dc6-b5c0-49db2506758f",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.ereignisse": {
+      "name": "ereignisse",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seq": {
+          "name": "seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "typ": {
+          "name": "typ",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entitaet": {
+          "name": "entitaet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entitaet_id": {
+          "name": "entitaet_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version_id": {
+          "name": "version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "akteur_art": {
+          "name": "akteur_art",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "akteur_id": {
+          "name": "akteur_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erfasst_am": {
+          "name": "erfasst_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "prev_hash": {
+          "name": "prev_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "hash": {
+          "name": "hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        }
+      },
+      "indexes": {
+        "ereignisse_mandant_seq_uq": {
+          "name": "ereignisse_mandant_seq_uq",
+          "columns": [
+            {
+              "expression": "mandant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.stornos": {
+      "name": "stornos",
+      "schema": "",
+      "columns": {
+        "version_id": {
+          "name": "version_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entitaet": {
+          "name": "entitaet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ereignis_id": {
+          "name": "ereignis_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grund": {
+          "name": "grund",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erfasst_am": {
+          "name": "erfasst_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "erfasst_von": {
+          "name": "erfasst_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "stornos_ereignis_id_ereignisse_id_fk": {
+          "name": "stornos_ereignis_id_ereignisse_id_fk",
+          "tableFrom": "stornos",
+          "columnsFrom": [
+            "ereignis_id"
+          ],
+          "tableTo": "ereignisse",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.mandanten": {
+      "name": "mandanten",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organisation_id": {
+          "name": "organisation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "art": {
+          "name": "art",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "steuernummer": {
+          "name": "steuernummer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "erstellt_am": {
+          "name": "erstellt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "mandanten_organisation_id_unique": {
+          "name": "mandanten_organisation_id_unique",
+          "columns": [
+            "organisation_id"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.objekt_versionen": {
+      "name": "objekt_versionen",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version_nr": {
+          "name": "version_nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gueltig_ab": {
+          "name": "gueltig_ab",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erfasst_am": {
+          "name": "erfasst_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "erfasst_von": {
+          "name": "erfasst_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ereignis_id": {
+          "name": "ereignis_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "begruendung": {
+          "name": "begruendung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "herkunft": {
+          "name": "herkunft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "objekt_id": {
+          "name": "objekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bezeichnung": {
+          "name": "bezeichnung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "strasse": {
+          "name": "strasse",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hausnummer": {
+          "name": "hausnummer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "plz": {
+          "name": "plz",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ort": {
+          "name": "ort",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "art": {
+          "name": "art",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "baujahr": {
+          "name": "baujahr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weg": {
+          "name": "weg",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "anschaffungsdatum": {
+          "name": "anschaffungsdatum",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kaufpreis_cent": {
+          "name": "kaufpreis_cent",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "anschaffungsnebenkosten_cent": {
+          "name": "anschaffungsnebenkosten_cent",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gebaeudeanteil_promille": {
+          "name": "gebaeudeanteil_promille",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "afa_satz_promille": {
+          "name": "afa_satz_promille",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "afa_beginn": {
+          "name": "afa_beginn",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "objekt_versionen_objekt_nr_uq": {
+          "name": "objekt_versionen_objekt_nr_uq",
+          "columns": [
+            {
+              "expression": "objekt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version_nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "objekt_versionen_ereignis_id_ereignisse_id_fk": {
+          "name": "objekt_versionen_ereignis_id_ereignisse_id_fk",
+          "tableFrom": "objekt_versionen",
+          "columnsFrom": [
+            "ereignis_id"
+          ],
+          "tableTo": "ereignisse",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "objekt_versionen_objekt_id_objekte_id_fk": {
+          "name": "objekt_versionen_objekt_id_objekte_id_fk",
+          "tableFrom": "objekt_versionen",
+          "columnsFrom": [
+            "objekt_id"
+          ],
+          "tableTo": "objekte",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.objekte": {
+      "name": "objekte",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erstellt_am": {
+          "name": "erstellt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.einheit_versionen": {
+      "name": "einheit_versionen",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version_nr": {
+          "name": "version_nr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gueltig_ab": {
+          "name": "gueltig_ab",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erfasst_am": {
+          "name": "erfasst_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "erfasst_von": {
+          "name": "erfasst_von",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ereignis_id": {
+          "name": "ereignis_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "begruendung": {
+          "name": "begruendung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "herkunft": {
+          "name": "herkunft",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "einheit_id": {
+          "name": "einheit_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bezeichnung": {
+          "name": "bezeichnung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lage": {
+          "name": "lage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "typ": {
+          "name": "typ",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'wohnung'"
+        },
+        "wohnflaeche_qm100": {
+          "name": "wohnflaeche_qm100",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zimmer_x10": {
+          "name": "zimmer_x10",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "miteigentumsanteil_zaehler": {
+          "name": "miteigentumsanteil_zaehler",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "miteigentumsanteil_nenner": {
+          "name": "miteigentumsanteil_nenner",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "einheit_versionen_einheit_nr_uq": {
+          "name": "einheit_versionen_einheit_nr_uq",
+          "columns": [
+            {
+              "expression": "einheit_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version_nr",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "einheit_versionen_ereignis_id_ereignisse_id_fk": {
+          "name": "einheit_versionen_ereignis_id_ereignisse_id_fk",
+          "tableFrom": "einheit_versionen",
+          "columnsFrom": [
+            "ereignis_id"
+          ],
+          "tableTo": "ereignisse",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "einheit_versionen_einheit_id_einheiten_id_fk": {
+          "name": "einheit_versionen_einheit_id_einheiten_id_fk",
+          "tableFrom": "einheit_versionen",
+          "columnsFrom": [
+            "einheit_id"
+          ],
+          "tableTo": "einheiten",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.einheiten": {
+      "name": "einheiten",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "mandant_id": {
+          "name": "mandant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "erstellt_am": {
+          "name": "erstellt_am",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "objekt_id": {
+          "name": "objekt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "einheiten_objekt_id_objekte_id_fk": {
+          "name": "einheiten_objekt_id_objekte_id_fk",
+          "tableFrom": "einheiten",
+          "columnsFrom": [
+            "objekt_id"
+          ],
+          "tableTo": "objekte",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
