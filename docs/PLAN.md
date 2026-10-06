@@ -18,6 +18,7 @@ Der Architekturplan sagt, _was_ gebaut wird und _warum_. Dieses Dokument sagt, _
 | 6   | **Code-Sprache:** technische Begriffe Englisch, Fachbegriffe Deutsch und unübersetzt (`mietverhaeltnis`, `vorauszahlung`, `umlagefaehig`). Verbindlich ist `docs/GLOSSAR.md`.                                                                             | Fachbegriffe haben rechtliche Bedeutung; eine Übersetzung erzeugt zwei Wahrheiten.              | 0006          |
 | 7   | **Geld als Integer-Cent**, nie als Float. Daten als ISO-Datum (`date`), Zeitpunkte als `timestamptz`. IDs als UUID v7.                                                                                                                                    | Rechenkern muss auf den Cent reproduzierbar sein.                                               | im Rechenkern |
 | 8   | **Referenzdaten mit Prüffrist.** Externe Werte stehen versioniert in `referenzdaten`, mit Gültigkeit, Quelle und Prüffrist. Ein überfälliger oder ausgelaufener Wert erzeugt eine Warnung. AfA-Sätze bleiben im Rechenkern.                               | Kein stilles Weiterrechnen mit veralteten Werten, keine zweite Wahrheit für Gesetzesregeln.     | 0007          |
+| 9   | **Betrieb ohne Coolify:** Docker Compose und Caddy auf einem Hetzner-Server, Images aus CI über GHCR. Backup verschlüsselt ins Object Storage, Manifest der Kettenköpfe als externer Anker, Restore-Test und Integritätsprüfung im eigenen Ops-Image.     | Weniger Angriffsfläche und bewegliche Teile; alles im Repository und in CI geprüft.             | 0008          |
 
 ---
 
@@ -46,10 +47,10 @@ Der Architekturplan sagt, _was_ gebaut wird und _warum_. Dieses Dokument sagt, _
    └──────────────┘   └────────────────────────────┘   └────────────────────┘
 
    Externe Dienste: Claude API (Anthropic SDK) · Gotenberg (Container) · Whisper (Container, später)
-   Betrieb: Hetzner CX/CPX · Docker · Coolify · Caddy (TLS) · tägliches Backup auf Storage Box
+   Betrieb: Hetzner Cloud · Docker Compose · Caddy (TLS) · Backup verschlüsselt ins Object Storage
 ```
 
-Ein Image, zwei Startbefehle (`web`, `worker`). Der Worker ist kein eigener Dienst mit eigener Logik, er führt dieselben Paket-Funktionen aus, nur asynchron.
+Ein Image, zwei Startbefehle (`web`, `worker`). Der Worker ist kein eigener Dienst mit eigener Logik, er führt dieselben Paket-Funktionen aus, nur asynchron. Backup, Restore-Test und Integritätsprüfung laufen nicht im Worker, sondern im eigenen Ops-Image mit Postgres-Werkzeugen (ADR 0008).
 
 ### 2.2 Pakete
 
@@ -238,22 +239,22 @@ Wochenangaben sind Aufwand bei kontinuierlicher Arbeit. Jedes Arbeitspaket (WP) 
 
 ### Phase 0 · Fundament (Wo 1–3)
 
-| WP  | Inhalt                                                                                                                     | Done, wenn                                                                   |
-| --- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 0.1 | Monorepo, Tooling, docker-compose, CI                                                                                      | `pnpm install && pnpm typecheck && pnpm test` grün, lokal und in CI          |
-| 0.2 | Ledger-Kern: `ereignisse`, Hash-Trigger, Schreibschutz, App-Rolle, Kettenprüfung                                           | Tests: Kette verifiziert, UPDATE/DELETE scheitern, Manipulation wird erkannt |
-| 0.3 | Versionsmuster an Objekt und Einheit, Sichten `*_aktuell`, Funktion `*_stand`, `schreibeVersion`, `storniere`              | Tests: zwei Zeitachsen korrekt, Storno fällt aus Sicht, Herkunft gespeichert |
-| 0.4 | Restliche Entitäten aus 3.5, `packages/schema` mit Zod, Datenqualitäts-Check                                               | Jede Entität hat Schema, Migration, Sicht, mindestens einen Test             |
-| 0.5 | Better Auth: Login, TOTP, Organizations = Mandanten, Rollen, Einladungen, Mandantenwechsel, `withMandant()`                | Zwei Mandanten, zwei Nutzer, RLS-Isolation per Playwright nachgewiesen       |
-| 0.6 | Onboarding-Assistent pro Objekt (Formulare, noch ohne KI): Objekt, Einheiten, Mietverhältnisse, Konditionen, Darlehen, AfA | Ein echtes Objekt vollständig erfasst, Ampel grün                            |
-| 0.7 | Referenzdaten-Tabelle, Grunderwerbsteuer je Bundesland eingepflegt, Warnung bei Ablauf (AfA-Sätze im Rechenkern, ADR 0007) | Abgelaufener Wert erzeugt sichtbare Warnung                                  |
-| 0.8 | Betrieb: Hetzner-Server, Coolify, Caddy, Object Storage, tägliches Backup, Restore-Test-Skript, nächtlicher Integritätsjob | Restore auf frischem Container, Hash-Kette danach grün                       |
+| WP  | Inhalt                                                                                                                                       | Done, wenn                                                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 0.1 | Monorepo, Tooling, docker-compose, CI                                                                                                        | `pnpm install && pnpm typecheck && pnpm test` grün, lokal und in CI          |
+| 0.2 | Ledger-Kern: `ereignisse`, Hash-Trigger, Schreibschutz, App-Rolle, Kettenprüfung                                                             | Tests: Kette verifiziert, UPDATE/DELETE scheitern, Manipulation wird erkannt |
+| 0.3 | Versionsmuster an Objekt und Einheit, Sichten `*_aktuell`, Funktion `*_stand`, `schreibeVersion`, `storniere`                                | Tests: zwei Zeitachsen korrekt, Storno fällt aus Sicht, Herkunft gespeichert |
+| 0.4 | Restliche Entitäten aus 3.5, `packages/schema` mit Zod, Datenqualitäts-Check                                                                 | Jede Entität hat Schema, Migration, Sicht, mindestens einen Test             |
+| 0.5 | Better Auth: Login, TOTP, Organizations = Mandanten, Rollen, Einladungen, Mandantenwechsel, `withMandant()`                                  | Zwei Mandanten, zwei Nutzer, RLS-Isolation per Playwright nachgewiesen       |
+| 0.6 | Onboarding-Assistent pro Objekt (Formulare, noch ohne KI): Objekt, Einheiten, Mietverhältnisse, Konditionen, Darlehen, AfA                   | Ein echtes Objekt vollständig erfasst, Ampel grün                            |
+| 0.7 | Referenzdaten-Tabelle, Grunderwerbsteuer je Bundesland eingepflegt, Warnung bei Ablauf (AfA-Sätze im Rechenkern, ADR 0007)                   | Abgelaufener Wert erzeugt sichtbare Warnung                                  |
+| 0.8 | Betrieb: Hetzner-Server, Docker Compose, Caddy, Object Storage, tägliches Backup, Restore-Test-Skript, nächtlicher Integritätsjob (ADR 0008) | Restore auf frischem Container, Hash-Kette danach grün                       |
 
 **Aus dem ersten echten Kaufvertrag gelernt (WP 0.6):** Ein Objekt kann mehrere Grundbuchblätter haben (ETW mit Miteigentumsanteil plus separater Stellplatz im Alleineigentum). Für die Spekulationsfrist zählt das Datum des Kaufvertrags, für AfA und 15-%-Grenze der Übergang von Nutzen und Lasten. Kauf-Nebenkosten werden als Positionen erfasst, weil Grundschuldkosten keine Anschaffungskosten sind. Kaufverträge enthalten meist keine Aufteilung in Grund und Gebäude; der Gebäudeanteil wird deshalb mit Quelle erfasst. Ein Rechner nach der Arbeitshilfe des BMF folgt in Phase 2, sobald Bodenrichtwerte als Referenzdaten vorliegen (WP 0.7).
 
 **Phasen-DoD:** Zwei Vermieter des Freundeskreises haben je ein Objekt vollständig versioniert angelegt, Backup und Restore sind einmal durchgespielt, der Integritätsjob läuft nachts.
 
-Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 außer `referenzdaten` (WP 0.7) sind als Schema, Migration, Sicht, Zod-Schema und Test vorhanden, der Datenqualitäts-Check liefert die Ampel pro Modul. WP 0.5 steht: Registrierung, Login mit Pflicht-TOTP, E-Mail-Bestätigung, Mandanten anlegen und wechseln, Rollen mit Access Control, Einladungen, Eigentumsanteile; die Isolation zweier Mandanten ist per Playwright nachgewiesen. WP 0.6 steht: Objektakte mit Checkliste aus dem Datenqualitäts-Check, Schritte für Stammdaten und Grundbuch, Kauf und AfA, Einheiten, Vermietung, Darlehen und Eigentümer; ein Fall in der Struktur eines echten Kaufvertrags (ETW mit separatem Stellplatz, Bruchteil je 1/2) läuft per Playwright bis alle Ampeln grün sind. WP 0.7 steht: Tabelle `referenzdaten` mit RLS (global lesbar, eigene Werte je Mandant), Grunderwerbsteuer aller 16 Länder mit Satzwechseln seit 2009, Bundesland am Objekt, Vorschlag und Abweichungsprüfung der Grunderwerbsteuer im Kauf-Schritt, Seite „Referenzdaten“ mit Status und Quellen. Ein überfälliger Wert erzeugt per Playwright nachgewiesen eine Warnung in Objektakte und Referenzdaten.
+Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 außer `referenzdaten` (WP 0.7) sind als Schema, Migration, Sicht, Zod-Schema und Test vorhanden, der Datenqualitäts-Check liefert die Ampel pro Modul. WP 0.5 steht: Registrierung, Login mit Pflicht-TOTP, E-Mail-Bestätigung, Mandanten anlegen und wechseln, Rollen mit Access Control, Einladungen, Eigentumsanteile; die Isolation zweier Mandanten ist per Playwright nachgewiesen. WP 0.6 steht: Objektakte mit Checkliste aus dem Datenqualitäts-Check, Schritte für Stammdaten und Grundbuch, Kauf und AfA, Einheiten, Vermietung, Darlehen und Eigentümer; ein Fall in der Struktur eines echten Kaufvertrags (ETW mit separatem Stellplatz, Bruchteil je 1/2) läuft per Playwright bis alle Ampeln grün sind. WP 0.7 steht: Tabelle `referenzdaten` mit RLS (global lesbar, eigene Werte je Mandant), Grunderwerbsteuer aller 16 Länder mit Satzwechseln seit 2009, Bundesland am Objekt, Vorschlag und Abweichungsprüfung der Grunderwerbsteuer im Kauf-Schritt, Seite „Referenzdaten“ mit Status und Quellen. Ein überfälliger Wert erzeugt per Playwright nachgewiesen eine Warnung in Objektakte und Referenzdaten. WP 0.8 steht im Repository: App- und Ops-Image, Compose-Datei mit Caddy, cloud-init, Deploy-Skript, Backup, Restore-Test, Ernstfall-Wiederherstellung und nächtliche Integritätsprüfung. Die Betriebsprobe in CI weist nach: Restore auf frischem Container, Hash-Kette danach grün; manipulierte Backups, unvollständige Backups und neu berechnete Ketten werden erkannt. Offen ist das Aufsetzen des echten Servers nach `docs/BETRIEB.md`.
 
 ### Phase 1 · Kommunikation & Belegeingang (Wo 4–7)
 
@@ -313,11 +314,11 @@ Mieterportal komplett (Zählerstand per Foto), WhatsApp Business API, Ankaufspr�
 
 ### 7.1 Sicherheit
 
-TOTP-Pflicht für alle Mandanten-Mitglieder (abschaltbar nur lokal über `ZWEI_FAKTOR_PFLICHT=aus`). Einladungen lassen sich nur mit bestätigter E-Mail-Adresse sehen und annehmen, sonst könnte jemand mit einer fremden, unbestätigten Adresse eine Einladung übernehmen. Weiterleitungsziele nach dem Login sind auf Pfade der App beschränkt. Magic-Links für Portal-Identitäten mit kurzer Gültigkeit und Bindung an genau ein Mietverhältnis. Rate-Limits auf Login, Portal und Upload (Redis). Uploads werden auf MIME-Typ geprüft, PDF werden über Gotenberg „gewaschen“ (neu gerendert) bevor sie an die KI gehen. Secrets ausschließlich über Umgebungsvariablen in Coolify. Keine Rohdaten in Logs.
+TOTP-Pflicht für alle Mandanten-Mitglieder (abschaltbar nur lokal über `ZWEI_FAKTOR_PFLICHT=aus`). Einladungen lassen sich nur mit bestätigter E-Mail-Adresse sehen und annehmen, sonst könnte jemand mit einer fremden, unbestätigten Adresse eine Einladung übernehmen. Weiterleitungsziele nach dem Login sind auf Pfade der App beschränkt. Magic-Links für Portal-Identitäten mit kurzer Gültigkeit und Bindung an genau ein Mietverhältnis. Rate-Limits auf Login, Portal und Upload (Redis). Uploads werden auf MIME-Typ geprüft, PDF werden über Gotenberg „gewaschen“ (neu gerendert) bevor sie an die KI gehen. Secrets ausschließlich in der `.env` auf dem Server (chmod 600), jeder Dienst bekommt nur seine Variablen. Keine Rohdaten in Logs.
 
 ### 7.2 Betrieb und Datensicherung
 
-Tägliches `pg_dump` plus Object-Storage-Sync auf eine Hetzner Storage Box, 30 Tage Vorhaltung, monatlicher Restore-Test auf einem frischen Container mit anschließender Kettenprüfung. Uptime-Monitoring extern, Fehler-Tracking selbst gehostet (GlitchTip) oder Logs mit Alarm. Updates der Basis-Images monatlich.
+Tägliches `pg_dump`, mit age verschlüsselt, ins Hetzner Object Storage, mit Manifest der Kettenköpfe. 30 Tage Vorhaltung, Monatserste 13 Monate. Monatlicher Restore-Test auf einem frischen Cluster mit anschließender Kettenprüfung, nächtliche Integritätsprüfung mit Abgleich gegen das letzte Manifest. Jeder Job meldet an einen Totmannschalter, Uptime-Monitoring extern auf `/api/gesund`. Updates der Basis-Images monatlich. Details und Ernstfall-Ablauf: `docs/BETRIEB.md`, Entscheidung: ADR 0008.
 
 ### 7.3 Datenschutz
 
@@ -359,6 +360,6 @@ Keine automatische Aktion ohne Klick, keine Steuererklärung, keine Zustellungsb
 
 **pgvector wird nicht in Phase 1 gebaut.** PostgreSQL-Volltext reicht für „alle Nachrichten zu Heizung in Wohnung 3“. Sinngemäße Suche kommt, wenn der Volltext nachweislich nicht reicht.
 
-**Die Hash-Kette schützt vor stiller Manipulation, nicht vor einem Angreifer mit Datenbank-Zugang und Zeit.** Wer die Kette komplett neu schreibt, fällt nur auf, wenn ein externer Anker existiert. Deshalb schreibt der nächtliche Job den letzten Hash jedes Mandanten zusätzlich in das Backup-Protokoll auf der Storage Box.
+**Die Hash-Kette schützt vor stiller Manipulation, nicht vor einem Angreifer mit Datenbank-Zugang und Zeit.** Wer die Kette komplett neu schreibt, fällt nur auf, wenn ein externer Anker existiert. Deshalb hält jedes Backup den letzten Hash jedes Mandanten im Manifest fest, und die nächtliche Prüfung gleicht dagegen ab. Das wirkt nur, solange der Angreifer die Manifeste nicht ebenfalls ersetzt; eine zweite Kopie außerhalb der Reichweite des Servers ist offen (`docs/BETRIEB.md`).
 
 **Steuerlogik bleibt beim Berater.** Die Software markiert strittige Einordnungen (Erhaltung oder Herstellung), entscheidet sie aber nicht. Das muss in der Oberfläche jederzeit sichtbar bleiben, sonst entsteht ein Vertrauen, das die Software nicht einlösen kann.

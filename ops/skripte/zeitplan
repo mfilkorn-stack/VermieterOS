@@ -1,0 +1,29 @@
+#!/bin/sh
+# Zeitplan ohne Cron-Daemon: prüft jede Minute die Ortszeit (TZ, Standard Europe/Berlin).
+# Zeiten außerhalb von 02:00 bis 03:00, weil diese Stunde bei der Zeitumstellung fehlt oder doppelt ist.
+. /ops/gemeinsam.sh
+backup_um=${BACKUP_UM:-01:30}
+integritaet_um=${INTEGRITAET_UM:-04:00}
+restore_tag=${RESTORE_TEST_TAG:-01}
+restore_um=${RESTORE_TEST_UM:-05:00}
+log "Zeitplan: Backup $backup_um, Integrität $integritaet_um, Restore-Test am $restore_tag. um $restore_um"
+
+# Als Hauptprozess des Containers: SIGTERM sofort beenden statt nach zehn Sekunden getötet zu werden.
+trap 'log "Zeitplan beendet"; exit 0' TERM INT
+
+starte() { ("$@" || log "$1 fehlgeschlagen") & }
+
+zuletzt=""
+while :; do
+  jetzt=$(date +%H:%M)
+  if [ "$jetzt" != "$zuletzt" ]; then
+    zuletzt=$jetzt
+    [ "$jetzt" = "$backup_um" ] && starte backup
+    [ "$jetzt" = "$integritaet_um" ] && starte integritaet
+    if [ "$jetzt" = "$restore_um" ] && [ "$(date +%d)" = "$restore_tag" ]; then
+      if [ -r "${BACKUP_SCHLUESSEL:-/nicht/da}" ]; then starte restore-test; else log "Restore-Test übersprungen: kein Schlüssel"; fi
+    fi
+  fi
+  sleep 20 &
+  wait $!
+done

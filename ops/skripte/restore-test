@@ -1,0 +1,53 @@
+#!/bin/sh
+# Restore-Test auf einem frischen Postgres-Cluster in diesem Container (wird danach verworfen). Prüft:
+#   1. Prüfsummen der heruntergeladenen Dateien
+#   2. Migrationsstand wie beim Backup
+#   3. jeder Kettenkopf aus dem Manifest ist vorhanden (Vollständigkeit)
+#   4. jede Hash-Kette ist intakt (ledger_pruefe_kette)
+# Aufruf: restore-test [backup-name]   ohne Name: das jüngste vollständige Backup.
+# Umgebung: BACKUP_ZIEL, BACKUP_SCHLUESSEL (Pfad zur age-Identität), optional HEALTHCHECK_RESTORE.
+. /ops/gemeinsam.sh
+. /ops/wiederherstellung.sh
+: "${BACKUP_ZIEL:?BACKUP_ZIEL fehlt}" "${BACKUP_SCHLUESSEL:?BACKUP_SCHLUESSEL fehlt}"
+[ -r "$BACKUP_SCHLUESSEL" ] || fehler "Schlüssel $BACKUP_SCHLUESSEL nicht lesbar"
+monitor=${HEALTHCHECK_RESTORE:-}
+melde "$monitor" start
+
+name=${1:-$(juengstes_backup)}
+[ -n "$name" ] || fehler "kein vollständiges Backup unter $BACKUP_ZIEL"
+log "Restore-Test für $name"
+
+arbeit=$(mktemp -d)
+pgdaten="$arbeit/pg"
+aufraeumen() {
+  pg_ctl -D "$pgdaten" -m immediate stop >/dev/null 2>&1 || true
+  rm -rf "$arbeit"
+}
+trap aufraeumen EXIT
+scheitern() {
+  melde "$monitor" fail "$name: $*"
+  fehler "$*"
+}
+
+backup_holen "$name"
+
+# Frischer Cluster, nur über Unix-Socket erreichbar, ohne Durability.
+initdb -D "$pgdaten" -U postgres -A trust -E UTF8 --no-locale --no-sync >"$arbeit/initdb.log" 2>&1 || {
+  cat "$arbeit/initdb.log" >&2
+  scheitern "initdb"
+}
+pg_ctl -D "$pgdaten" -w -l "$arbeit/pg.log" \
+  -o "-c listen_addresses='' -k $arbeit -c fsync=off -c full_page_writes=off" start >/dev/null
+export PGHOST="$arbeit" PGPORT=5432 PGUSER=postgres PGDATABASE=postgres
+unset PGPASSWORD
+
+psql -X -q -v ON_ERROR_STOP=1 <<'SQL' || scheitern "Rollen anlegen"
+CREATE ROLE vermieteros_owner NOLOGIN;
+CREATE ROLE vermieteros_app NOLOGIN;
+CREATE DATABASE vermieteros_restore OWNER vermieteros_owner;
+SQL
+pg_restore -d vermieteros_restore --exit-on-error "$arbeit/dump" || scheitern "pg_restore"
+
+text=$(PGDATABASE=vermieteros_restore wiederherstellung_pruefen "$arbeit/$name.manifest.json")
+log "Restore-Test $name: $text"
+melde "$monitor" ok "$name: $text"

@@ -1,0 +1,150 @@
+# Betrieb
+
+Runbook für Produktion auf einem Hetzner-Cloud-Server. Entscheidungen dazu in ADR 0008. Alle Dateien für den Server liegen in `ops/`.
+
+## Aufbau
+
+Ein Server, Docker Compose, fünf Dienste:
+
+| Dienst     | Image                                      | Aufgabe                                                                                  |
+| ---------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `caddy`    | `caddy:2-alpine`                           | TLS (Let's Encrypt), Reverse Proxy, Sicherheits-Header. Einzige offene Ports 80 und 443. |
+| `web`      | `ghcr.io/mfilkorn-stack/vermieteros`       | Next.js, App-Rolle `vermieteros_app`                                                     |
+| `migrate`  | dasselbe Image, `node db/dist/migrate.mjs` | Migrationen mit `vermieteros_owner`, nur beim Deployment                                 |
+| `postgres` | `postgres:16`                              | Datenbank, Volume `pgdata`, Rollen beim ersten Start aus `postgres-init.sh`              |
+| `ops`      | `ghcr.io/mfilkorn-stack/vermieteros-ops`   | Zeitplan für Backup, Integritätsprüfung und Restore-Test                                 |
+
+Drei Datenbankrollen: `vermieteros_owner` besitzt das Schema und migriert. `vermieteros_app` ist die Laufzeitrolle der App ohne BYPASSRLS. `vermieteros_sicherung` liest nur, dafür an RLS vorbei, und dient ausschließlich Backup und Integritätsprüfung.
+
+Zeitplan im `ops`-Container (Europe/Berlin, außerhalb der Umstellungsstunde 02:00–03:00):
+
+| Zeit           | Job            | Was                                                                                          |
+| -------------- | -------------- | -------------------------------------------------------------------------------------------- |
+| täglich 01:30  | `backup`       | Manifest der Kettenköpfe, `pg_dump`, mit age verschlüsselt, ins Object Storage               |
+| täglich 04:00  | `integritaet`  | jede Hash-Kette prüfen, Kettenköpfe gegen das letzte Backup-Manifest abgleichen              |
+| am 1. um 05:00 | `restore-test` | jüngstes Backup in frischen Cluster einspielen und prüfen (nur mit Schlüssel auf dem Server) |
+
+Jeder Job meldet Start, Erfolg oder Fehler an einen Totmannschalter. Bleibt die Meldung aus, alarmiert der Monitor.
+
+## Einrichtung
+
+Einmalig, in dieser Reihenfolge.
+
+### Schlüssel für die Backups
+
+Auf dem eigenen Rechner, nicht auf dem Server:
+
+```sh
+age-keygen -o vermieteros-backup.key
+```
+
+Die Zeile `# public key: age1…` ist der Empfänger für `BACKUP_EMPFAENGER`. Die Datei selbst ist der private Schlüssel. Ohne ihn ist kein Backup lesbar. Er gehört in den Passwortmanager und zusätzlich ausgedruckt an einen zweiten Ort.
+
+Für den monatlichen Restore-Test auf dem Server liegt eine Kopie unter `/srv/vermieteros/geheim/backup.key`. Das ist eine bewusste Abwägung: Wer den Server übernimmt, hat ohnehin die Datenbank. Die Verschlüsselung schützt die Backups vor einem Leck im Object Storage. Wer den Schlüssel nicht auf dem Server haben will, lässt die Datei weg und führt den Restore-Test monatlich vom eigenen Rechner aus (siehe unten).
+
+### Hetzner
+
+1. **Object Storage:** einen Bucket nur für Backups anlegen, z. B. `vermieteros-backup`, und dafür einen eigenen Zugangsschlüssel erzeugen. Endpoint und Region notieren (z. B. `https://fsn1.your-objectstorage.com`, `fsn1`).
+2. **Firewall** im Cloud-Projekt: eingehend nur 22 (am besten nur von der eigenen IP), 80 und 443 (TCP, 443 auch UDP). Docker veröffentlicht Ports an `ufw` vorbei, die Cloud-Firewall greift davor.
+3. **Server:** Ubuntu 24.04, x86 (die Images sind amd64), 4 GB RAM reichen für Phase 0 und 1. Standort Falkenstein oder Nürnberg. Unter „Cloud config“ den Inhalt von `ops/cloud-init.yml` einfügen, vorher den eigenen SSH-Public-Key darin eintragen. Backups des Servers bei Hetzner zusätzlich einschalten.
+4. **DNS:** A- und AAAA-Eintrag der Domain auf den Server.
+
+### Server
+
+```sh
+ssh betrieb@<server>
+cd /srv/vermieteros
+# aus dem Repository: ops/compose.yml, Caddyfile, postgres-init.sh, deploy.sh, env.beispiel
+cp env.beispiel .env && chmod 600 .env    # ausfüllen, Passwörter mit: openssl rand -hex 24
+# Der ops-Container läuft als uid 70 (postgres) und muss das Verzeichnis lesen können.
+sudo install -d -o 70 -g 70 -m 700 geheim
+# optional, für den Restore-Test auf dem Server (siehe oben):
+sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
+docker login ghcr.io -u <github-nutzer>   # Token (classic) nur mit read:packages
+```
+
+### Monitoring
+
+Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `.env` eintragen:
+
+| Variable                  | Erwartet  | Karenz |
+| ------------------------- | --------- | ------ |
+| `HEALTHCHECK_BACKUP`      | täglich   | 2 h    |
+| `HEALTHCHECK_INTEGRITAET` | täglich   | 2 h    |
+| `HEALTHCHECK_RESTORE`     | monatlich | 1 Tag  |
+
+Dazu ein externer Uptime-Check auf `https://<domain>/api/gesund`. Er antwortet mit 200, wenn die App läuft und die Datenbank erreicht.
+
+### Erstes Deployment
+
+Den Tag eines Images auf `main` nehmen (`sha-<kurz>`, siehe GitHub Packages):
+
+```sh
+./deploy.sh sha-1a2b3c4 --ohne-backup
+```
+
+Beim ersten Mal gibt es noch nichts zu sichern. Danach `docker compose logs ops` prüfen und einmal von Hand sichern und testen, siehe unten.
+
+## Routine
+
+### Deployment
+
+```sh
+./deploy.sh sha-<kurz>
+```
+
+Das Skript zieht die Images, sichert die Datenbank, migriert und startet neu. Es wartet, bis alle Dienste gesund sind. Schlägt das Backup fehl, wird nicht migriert.
+
+### Von Hand sichern und prüfen
+
+```sh
+docker compose run --rm ops backup
+docker compose run --rm ops integritaet
+docker compose run --rm ops restore-test            # jüngstes Backup
+docker compose run --rm ops rclone lsf ziel:<bucket>/vermieteros
+```
+
+Ohne Schlüssel auf dem Server läuft der Restore-Test auf dem eigenen Rechner. Dort wird der Container mit denselben S3-Variablen gestartet und der Schlüssel eingehängt:
+
+```sh
+docker run --rm --env-file s3.env -e BACKUP_SCHLUESSEL=/geheim/backup.key \
+  -v ~/geheim:/geheim:ro ghcr.io/mfilkorn-stack/vermieteros-ops:<tag> restore-test
+```
+
+### Vorhaltung
+
+Tägliche Backups bleiben 30 Tage. Das Backup vom Monatsersten bleibt 13 Monate. Gesteuert über `BACKUP_TAGE` und `BACKUP_MONATE`. Gelöscht wird nur nach einem erfolgreichen neuen Backup.
+
+### Monatlich
+
+Image-Updates: `docker compose pull` für `caddy` und `postgres` (Minor-Versionen), dann `./deploy.sh` mit dem aktuellen Tag. Ein Blick in die Monitoring-Historie. Restore-Test-Ergebnis prüfen.
+
+## Wiederherstellung im Ernstfall
+
+Die Datenbank ist verloren oder beschädigt. Ziel ist eine leere Datenbank mit den drei Rollen, in die das Backup eingespielt und danach geprüft wird. Das Skript `wiederherstellen` bricht ab, wenn die Zieldatenbank nicht leer ist.
+
+1. Server neu aufsetzen wie oben oder auf dem bestehenden Server das Volume ersetzen:
+   ```sh
+   docker compose down
+   docker volume rm vermieteros_pgdata
+   ```
+2. Den privaten Schlüssel aus dem Passwortmanager nach `geheim/backup.key` legen, Rechte wie bei der Einrichtung.
+3. Nur Postgres starten. Die Rollen entstehen aus `postgres-init.sh`:
+   ```sh
+   docker compose up -d --wait postgres
+   ```
+4. Einspielen und prüfen. Ohne Namen nimmt das Skript das jüngste vollständige Backup:
+   ```sh
+   docker compose run --rm -e PGUSER=postgres -e PGPASSWORD="$(grep ^POSTGRES_PASSWORT= .env | cut -d= -f2)" \
+     ops wiederherstellen [vermieteros-2026-…Z]
+   ```
+   Am Ende steht `OK: n Ketten intakt, n Köpfe aus dem Manifest vorhanden`.
+5. Starten: `./deploy.sh <tag> --ohne-backup`. Eine neuere App-Version migriert dabei nach.
+
+Verloren sind die Änderungen seit dem letzten Backup, höchstens ein Tag.
+
+## Grenzen
+
+- **Datenverlust bis zu einem Tag.** `pg_dump` läuft nachts. Kontinuierliche WAL-Archivierung (z. B. WAL-G) kommt, sobald Mieter und Mails im System sind (Phase 1).
+- **Die Backup-Zugangsdaten liegen auf dem Server.** Wer den Server übernimmt, kann Backups löschen und Manifeste ersetzen. Abhilfe: eine zweite Kopie, die der Server nicht erreicht, z. B. ein nächtlicher Abzug vom eigenen Rechner auf eine Storage Box, oder Object Lock, sobald der Bucket es unterstützt.
+- **Ein Server.** Fällt er aus, bedeutet das Wiederherstellung auf einem neuen Server, rund eine Stunde mit diesem Runbook.

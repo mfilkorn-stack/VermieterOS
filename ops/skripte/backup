@@ -1,0 +1,53 @@
+#!/bin/sh
+# Nächtliches Backup: Manifest der Ledger-Köpfe, pg_dump (custom), age-verschlüsselt, ins Object Storage.
+# Umgebung: PG* (Rolle vermieteros_sicherung), BACKUP_ZIEL (rclone-Pfad), BACKUP_EMPFAENGER
+# (age-Public-Keys, durch Leerzeichen getrennt), optional BACKUP_TAGE, BACKUP_MONATE, HEALTHCHECK_BACKUP.
+. /ops/gemeinsam.sh
+: "${BACKUP_ZIEL:?BACKUP_ZIEL fehlt}" "${BACKUP_EMPFAENGER:?BACKUP_EMPFAENGER fehlt}"
+monitor=${HEALTHCHECK_BACKUP:-}
+name="vermieteros-$(date -u +%Y-%m-%dT%H%M%SZ)"
+arbeit=$(mktemp -d)
+trap 'rm -rf "$arbeit"' EXIT
+trap 'melde "$monitor" fail "Backup $name abgebrochen"' INT TERM
+melde "$monitor" start
+
+set --
+for r in $BACKUP_EMPFAENGER; do set -- "$@" -r "$r"; done
+
+# 1. Manifest vor dem Dump. Das Ledger ist append-only: Jeder Kettenkopf von jetzt muss im Dump stehen.
+psql -X -q -v ON_ERROR_STOP=1 -At >"$arbeit/$name.manifest.json" <<'SQL' || fehler "Manifest"
+SELECT json_build_object(
+  'format', 1,
+  'erstellt', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+  'datenbank', current_database(),
+  'server', current_setting('server_version'),
+  'migrationen', (SELECT count(*) FROM drizzle.__drizzle_migrations),
+  'ketten', coalesce((
+    SELECT json_agg(json_build_object('mandant', mandant_id, 'seq', seq, 'hash', hash) ORDER BY mandant_id)
+    FROM (SELECT DISTINCT ON (mandant_id) mandant_id, seq, hash FROM ereignisse ORDER BY mandant_id, seq DESC) k
+  ), '[]'::json)
+);
+SQL
+
+# 2. Dump, direkt verschlüsselt. Unverschlüsselt liegt nichts auf der Platte.
+pg_dump -Fc --no-password | age "$@" >"$arbeit/$name.dump.age" || {
+  melde "$monitor" fail "pg_dump oder age fehlgeschlagen"
+  fehler "Dump"
+}
+
+# 3. Prüfsummen. Die .sha256-Datei wird zuletzt hochgeladen und markiert das Backup als vollständig.
+(cd "$arbeit" && sha256sum "$name.dump.age" "$name.manifest.json" >"$name.sha256")
+for teil in dump.age manifest.json sha256; do
+  rclone copyto --s3-no-check-bucket "$arbeit/$name.$teil" "$BACKUP_ZIEL/$name.$teil" || {
+    melde "$monitor" fail "Upload $name.$teil fehlgeschlagen"
+    fehler "Upload"
+  }
+done
+groesse=$(du -h "$arbeit/$name.dump.age" | cut -f1)
+
+# 4. Vorhaltung: tägliche Backups BACKUP_TAGE, Monatserste BACKUP_MONATE Monate. Nur nach Erfolg.
+rclone delete --s3-no-check-bucket "$BACKUP_ZIEL" --min-age "${BACKUP_TAGE:-30}d" --exclude 'vermieteros-????-??-01T*'
+rclone delete --s3-no-check-bucket "$BACKUP_ZIEL" --min-age "$((${BACKUP_MONATE:-13} * 31))d"
+
+log "Backup $name fertig ($groesse)"
+melde "$monitor" ok "$name $groesse"

@@ -1,0 +1,50 @@
+#cloud-config
+# Hetzner Cloud, Ubuntu 24.04 (docs/BETRIEB.md). Beim Anlegen des Servers unter „Cloud config“ einfügen.
+# Vorher den eigenen SSH-Public-Key unten eintragen.
+
+users:
+  - name: betrieb
+    shell: /bin/bash
+    sudo: 'ALL=(ALL) NOPASSWD:ALL'
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAA_EIGENEN_SCHLUESSEL_EINTRAGEN betrieb
+
+package_update: true
+package_upgrade: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - unattended-upgrades
+  - ufw
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/10-haertung.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      AllowUsers betrieb
+  - path: /etc/docker/daemon.json
+    content: |
+      { "log-driver": "local", "log-opts": { "max-size": "20m", "max-file": "5" } }
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+  - path: /etc/apt/apt.conf.d/51vermieteros-neustart
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "true";
+      Unattended-Upgrade::Automatic-Reboot-Time "03:15";
+
+runcmd:
+  - usermod -aG docker betrieb
+  - systemctl restart docker
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw allow 443/udp
+  - ufw --force enable
+  - systemctl restart ssh
+  - install -d -o betrieb -g betrieb -m 750 /srv/vermieteros

@@ -8,7 +8,7 @@ Der Architekturplan fordert Datenhoheit (Leitprinzip 1) und Zurückhaltung (Leit
 
 ## Entscheidung
 
-Next.js-Anwendung und BullMQ-Worker aus einem Repository und einem Docker-Image, betrieben mit Coolify auf einem Hetzner-Server in Deutschland. PostgreSQL 16, Redis, Hetzner Object Storage (S3-kompatibel), Gotenberg als Container. Keine verwalteten Backend-Dienste außerhalb Deutschlands, ausgenommen die Claude API als KI-Dienst unter Auftragsverarbeitung.
+Next.js-Anwendung und BullMQ-Worker aus einem Repository und einem Docker-Image, betrieben auf einem Hetzner-Server in Deutschland (ursprünglich mit Coolify, ersetzt durch Docker Compose und Caddy, ADR 0008). PostgreSQL 16, Redis, Hetzner Object Storage (S3-kompatibel), Gotenberg als Container. Keine verwalteten Backend-Dienste außerhalb Deutschlands, ausgenommen die Claude API als KI-Dienst unter Auftragsverarbeitung.
 
 ## Konsequenzen
 
