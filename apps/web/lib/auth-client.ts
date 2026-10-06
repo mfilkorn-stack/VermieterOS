@@ -2,7 +2,8 @@
 
 import { createAuthClient } from 'better-auth/react'
 import { magicLinkClient, organizationClient, twoFactorClient } from 'better-auth/client/plugins'
+import { ac, roles } from './rechte'
 
 export const authClient = createAuthClient({
-  plugins: [organizationClient(), twoFactorClient(), magicLinkClient()],
+  plugins: [organizationClient({ ac, roles }), twoFactorClient(), magicLinkClient()],
 })

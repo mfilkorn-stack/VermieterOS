@@ -87,6 +87,7 @@ const SYSTEMSPALTEN = new Set([
   'zaehlerId',
   'darlehenId',
   'dokumentId',
+  'eigentumsanteilId',
 ])
 
 // Die Sichten liefern Versionszeilen; der Rechenkern will nur Fachdaten.

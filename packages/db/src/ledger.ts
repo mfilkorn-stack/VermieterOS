@@ -7,6 +7,8 @@ import {
   darlehenVersionen,
   dokumente,
   dokumentVersionen,
+  eigentumsanteile,
+  eigentumsanteilVersionen,
   einheiten,
   einheitVersionen,
   ereignisse,
@@ -50,6 +52,11 @@ export const ENTITAETEN = {
   zaehler: { identitaet: zaehler, versionen: zaehlerVersionen, fk: 'zaehlerId' },
   darlehen: { identitaet: darlehen, versionen: darlehenVersionen, fk: 'darlehenId' },
   dokument: { identitaet: dokumente, versionen: dokumentVersionen, fk: 'dokumentId' },
+  eigentumsanteil: {
+    identitaet: eigentumsanteile,
+    versionen: eigentumsanteilVersionen,
+    fk: 'eigentumsanteilId',
+  },
 } as const
 
 export type EntitaetName = keyof typeof ENTITAETEN
