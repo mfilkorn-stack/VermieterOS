@@ -29,6 +29,20 @@
       "when": 1791297848162,
       "tag": "0003_auth_rechte",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791323731942,
+      "tag": "0004_stammdaten_phase0",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791323732799,
+      "tag": "0005_stammdaten_versionierung",
+      "breakpoints": true
     }
   ]
 }

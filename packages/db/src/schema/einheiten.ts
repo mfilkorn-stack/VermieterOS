@@ -2,8 +2,7 @@ import { integer, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { objekte } from './objekte'
 import { identitaetsSpalten, versionsSpalten } from './versionierung'
 
-export const EINHEIT_TYPEN = ['wohnung', 'gewerbe', 'stellplatz', 'sonstiges'] as const
-export type EinheitTyp = (typeof EINHEIT_TYPEN)[number]
+import type { EinheitTyp } from '@vermieteros/schema'
 
 /** Identität einer Einheit. Die Zugehörigkeit zum Objekt ist Teil der Identität. */
 export const einheiten = pgTable('einheiten', {

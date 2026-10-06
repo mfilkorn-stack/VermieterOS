@@ -13,6 +13,7 @@
   "dependencies": {
     "@vermieteros/db": "workspace:*",
     "@vermieteros/rechenkern": "workspace:*",
+    "@vermieteros/schema": "workspace:*",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
     "next": "^16.3.8",

@@ -143,18 +143,18 @@ Folgen-Hinweis: Nach jeder neuen Version prüft ein Job, ob eine Festschreibung 
 
 ### 3.5 Entitäten-Katalog Phase 0
 
-| Entität                     | Versioniert                   | Kernfelder                                                                                                                       | Hinweise                                                         |
-| --------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `mandanten`                 | nein (Stammsatz)              | art, steuernummer, anteile[]                                                                                                     | 1:1 zu Better-Auth-Organization                                  |
-| `personen`                  | ja                            | name, anschrift, kontakt, rolle (mieter, miteigentuemer, kontakt)                                                                | Personen hängen am Mandanten, nicht am Mietverhältnis            |
-| `objekte`                   | ja                            | siehe 3.3, plus WEG-Flag und Hausgeld-Bezug                                                                                      | ETW werden gesondert behandelt                                   |
-| `einheiten`                 | ja                            | objekt_id, bezeichnung, lage, wohnflaeche_qm (×100), miteigentumsanteil, zimmer, einheitentyp                                    | Flächen als Integer in Hundertstel-m²                            |
-| `mietverhaeltnisse`         | ja                            | einheit_id, mieter_ids[], beginn, ende, kaution_cent, kuendigungsfrist                                                           | Personenzahl als eigene Zeitreihe (`belegung`)                   |
-| `mietkonditionen`           | ja                            | mietverhaeltnis_id, kaltmiete_cent, vorauszahlung_bk_cent, vorauszahlung_hk_cent, mietart (vergleich, index, staffel), staffel[] | Eigene Entität, weil Mieterhöhungen hier neue Versionen erzeugen |
-| `zaehler`, `zaehlerstaende` | Zähler ja, Stände append-only | art, nummer, einheit_id oder objekt_id; stand, datum, quelle                                                                     | Stände sind Ereignisse, keine Versionen                          |
-| `darlehen`                  | ja                            | objekt_id, bank, nominal_cent, zins_promille, tilgung, rate_cent, zinsbindung_bis, sondertilgung                                 | Restschuldverlauf wird gerechnet, nicht gespeichert              |
-| `dokumente`                 | ja (Status)                   | typ, status (gueltig, ersetzt, abgelaufen), datei_hash, objekt_id, mietverhaeltnis_id, ersetzt_durch                             | Datei selbst unveränderlich im Object Storage                    |
-| `referenzdaten`             | append-only                   | art (mietspiegel, vpi, grest, afa_satz, kappungsgebiet), schluessel, wert, gueltig_von, gueltig_bis, quelle, geprueft_am         | Abgelaufene Werte lösen Warnung aus                              |
+| Entität                     | Versioniert                   | Kernfelder                                                                                                                       | Hinweise                                                                          |
+| --------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `mandanten`                 | nein (Stammsatz)              | art, steuernummer, anteile[]                                                                                                     | 1:1 zu Better-Auth-Organization                                                   |
+| `personen`                  | ja                            | name, anschrift, kontakt, rolle (mieter, miteigentuemer, kontakt)                                                                | Personen hängen am Mandanten, nicht am Mietverhältnis                             |
+| `objekte`                   | ja                            | siehe 3.3, plus WEG-Flag und Hausgeld-Bezug                                                                                      | ETW werden gesondert behandelt                                                    |
+| `einheiten`                 | ja                            | objekt_id, bezeichnung, lage, wohnflaeche_qm (×100), miteigentumsanteil, zimmer, einheitentyp                                    | Flächen als Integer in Hundertstel-m²                                             |
+| `mietverhaeltnisse`         | ja                            | einheit_id, mieter_ids[], beginn, ende, kaution_cent, kuendigungsfrist                                                           | Personenzahl liegt auf der Mietkondition (eigene Zeitreihe)                       |
+| `mietkonditionen`           | ja                            | mietverhaeltnis_id, kaltmiete_cent, vorauszahlung_bk_cent, vorauszahlung_hk_cent, mietart (vergleich, index, staffel), staffel[] | Eigene Entität, weil Mieterhöhungen hier neue Versionen erzeugen                  |
+| `zaehler`, `zaehlerstaende` | Zähler ja, Stände append-only | art, nummer, einheit_id oder objekt_id; stand, datum, quelle                                                                     | Stände sind Ereignisse (append-only, Storno), Sicht `zaehlerstaende_gueltig`      |
+| `darlehen`                  | ja                            | objekt_id, bank, nominal_cent, zins_promille, tilgung, rate_cent, zinsbindung_bis, sondertilgung                                 | Restschuldverlauf wird gerechnet, nicht gespeichert                               |
+| `dokumente`                 | ja (Status)                   | typ, status (gueltig, ersetzt, abgelaufen), datei_hash, objekt_id, mietverhaeltnis_id, ersetzt_durch                             | Datei (Hash, Schlüssel, Name) ist Teil der Identität; versioniert wird der Status |
+| `referenzdaten`             | append-only                   | art (mietspiegel, vpi, grest, afa_satz, kappungsgebiet), schluessel, wert, gueltig_von, gueltig_bis, quelle, geprueft_am         | Abgelaufene Werte lösen Warnung aus                                               |
 
 Datenqualitäts-Check: pro Modul eine Liste von Pflichtfeldern und Invarianten (Summe Miteigentumsanteile = 1000 ‰, Wohnfläche vorhanden, AfA-Beginn gesetzt, Miethistorie lückenlos). Das Ergebnis ist eine Ampel pro Objekt, und Module, deren Pflichtfelder fehlen, sind für dieses Objekt gesperrt.
 
@@ -250,7 +250,7 @@ Wochenangaben sind Aufwand bei kontinuierlicher Arbeit. Jedes Arbeitspaket (WP) 
 
 **Phasen-DoD:** Zwei Vermieter des Freundeskreises haben je ein Objekt vollständig versioniert angelegt, Backup und Restore sind einmal durchgespielt, der Integritätsjob läuft nachts.
 
-Der Stand in diesem Repository deckt WP 0.1 vollständig und WP 0.2 und 0.3 im Kern ab (siehe `packages/db`). WP 0.5 ist als Skelett angelegt.
+Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 außer `referenzdaten` (WP 0.7) sind als Schema, Migration, Sicht, Zod-Schema und Test vorhanden, der Datenqualitäts-Check liefert die Ampel pro Modul. WP 0.5 ist als Skelett angelegt.
 
 ### Phase 1 · Kommunikation & Belegeingang (Wo 4–7)
 
