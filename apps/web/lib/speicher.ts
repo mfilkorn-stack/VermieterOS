@@ -1,9 +1,27 @@
 import { s3Speicher, speicherKonfigAusUmgebung, type Speicher } from '@vermieteros/post'
 
-/** Object Storage für Downloads (Mails, Anhänge). Erst beim ersten Gebrauch konfiguriert. */
+/**
+ * Object Storage für Downloads und Uploads. Erst beim ersten Gebrauch konfiguriert. Den Bucket
+ * legt sonst der Worker beim Start an; legt die App zuerst ab (frische Umgebung), stellt sie ihn
+ * einmalig selbst sicher.
+ */
 let speicher: Speicher | undefined
+let bereit: Promise<void> | undefined
 export function objektSpeicher(): Speicher {
-  speicher ??= s3Speicher(speicherKonfigAusUmgebung())
+  if (!speicher) {
+    const s3 = s3Speicher(speicherKonfigAusUmgebung())
+    speicher = {
+      holen: (schluessel) => s3.holen(schluessel),
+      async ablegen(...args) {
+        bereit ??= s3.bucketSicherstellen().catch((e: unknown) => {
+          bereit = undefined
+          throw e
+        })
+        await bereit
+        return s3.ablegen(...args)
+      },
+    }
+  }
   return speicher
 }
 
