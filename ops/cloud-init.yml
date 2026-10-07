@@ -7,7 +7,7 @@ users:
     shell: /bin/bash
     sudo: 'ALL=(ALL) NOPASSWD:ALL'
     ssh_authorized_keys:
-      - ssh-ed25519 AAAA_EIGENEN_SCHLUESSEL_EINTRAGEN betrieb
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIACun7Ruo1+URcUexnnFJU5st/6s5xSBLa0dFkf1nKVI matthias@madformed.de
 
 package_update: true
 package_upgrade: true
