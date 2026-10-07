@@ -95,6 +95,10 @@ Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten un
 
 Für jeden Anbieter SPF und DKIM für die Absender-Domain setzen, sonst landen Anmeldelinks im Spam. Ohne `SMTP_HOST` wird nichts verschickt: Einladungslinks fürs Portal erscheinen dann in der App zum persönlichen Weitergeben, Bestätigungsmails fehlen. Fehler beim Versand stehen im Log von `web`, ohne Inhalt.
 
+### Registrierung
+
+In Produktion legt nicht jeder ein Konto an, der die Domain kennt. Erlaubt sind die Adressen in `REGISTRIERUNG_ERLAUBT` (kommagetrennt, typischerweise nur die eigene) und Adressen mit offener Einladung in einen Mandanten. Alle anderen bekommen „Registrierung nur mit Einladung“. Mieter brauchen kein Konto, sie nutzen das Portal. `REGISTRIERUNG=offen` hebt die Sperre auf (Tests, lokale Entwicklung; dort ist sie ohnehin aus).
+
 ### Mieterportal
 
 Erreichbar unter `https://<domain>/portal`. Mieter werden am Mietverhältnis (Verlauf, Karte „Mieterportal“) eingeladen und dort auch gesperrt. Anmeldelinks gelten 15 Minuten, Einladungen 7 Tage, jeweils einmal; die Sitzung hält 30 Tage. In der Datenbank stehen nur Prüfsummen der Links und Sitzungen (ADR 0010). Mängelmeldungen erscheinen als Ticket „gemeldet“, Nachrichten im Verlauf; Eigentümer, Miteigentümer und Mitverwalter bekommen dazu eine Mail.
@@ -112,6 +116,8 @@ Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `
 Dazu ein externer Uptime-Check auf `https://<domain>/api/gesund`. Er antwortet mit 200, wenn die App läuft und die Datenbank erreicht.
 
 ### Erstes Deployment
+
+Reihenfolge und Abnahme stehen als Checkliste in [LIVEGANG.md](LIVEGANG.md).
 
 Den Tag eines Images auf `main` nehmen (`sha-<kurz>`, siehe GitHub Packages):
 
