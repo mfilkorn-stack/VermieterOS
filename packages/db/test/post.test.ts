@@ -4,8 +4,12 @@ import { pruefeKette, neueVersion } from '../src/ledger'
 import { withMandant } from '../src/mandant'
 import {
   aktivePostfaecherAllerMandanten,
+  ladeAnhangZumHerunterladen,
+  ladeNachricht,
   ladePosteingang,
+  ladeVerlauf,
   ladeZuordnungsKandidaten,
+  legeTelefonnotizAn,
   legeNachrichtAn,
   legePostfachAn,
   listePostfaecher,
@@ -280,5 +284,146 @@ describe('Zuordnung', () => {
         ),
       /gehört nicht zum Mandanten/,
     )
+  })
+})
+
+describe('Nachricht im Detail, Suche', () => {
+  it('Detail mit Anhängen und vollständigem Zuordnungsverlauf; Anhang nur im eigenen Mandanten', async () => {
+    const id = (await withMandant(v.worker, a, (tx) =>
+      legeNachrichtAn(
+        tx,
+        nachricht(a, postfachA, {
+          betreff: 'Rauchmelder piept',
+          anhaenge: [
+            {
+              dateiname: 'video.mp4',
+              mimeTyp: 'video/mp4',
+              groesse: 9,
+              sha256: 'e'.repeat(64),
+              schluessel: 'k2',
+            },
+          ],
+        }),
+        SYSTEM,
+      ),
+    ))!
+    await withMandant(v.worker, a, (tx) =>
+      ordneNachrichtZu(tx, {
+        mandantId: a,
+        nachrichtId: id,
+        mietverhaeltnisId: mvA,
+        art: 'absender',
+        akteur: SYSTEM,
+      }),
+    )
+    await withMandant(v.app, a, (tx) =>
+      ordneNachrichtZu(tx, {
+        mandantId: a,
+        nachrichtId: id,
+        mietverhaeltnisId: mvA,
+        art: 'manuell',
+        begruendung: 'bestätigt',
+        akteur: NUTZER,
+      }),
+    )
+    const d = await withMandant(v.app, a, (tx) => ladeNachricht(tx, id))
+    expect(d?.betreff).toBe('Rauchmelder piept')
+    expect(d?.zuordnungen.map((z) => z.art)).toEqual(['absender', 'manuell'])
+    const anhangId = d!.anhaenge[0]!.id
+    expect(
+      await withMandant(v.app, a, (tx) => ladeAnhangZumHerunterladen(tx, anhangId)),
+    ).toMatchObject({
+      schluessel: 'k2',
+      dateiname: 'video.mp4',
+    })
+    expect(await withMandant(v.app, b, (tx) => ladeAnhangZumHerunterladen(tx, anhangId))).toBeNull()
+    expect(await withMandant(v.app, b, (tx) => ladeNachricht(tx, id))).toBeNull()
+  })
+
+  it('Suche über Betreff, Absender und Text; Platzhalter werden nicht ausgewertet', async () => {
+    const treffer = await withMandant(v.app, a, (tx) =>
+      ladePosteingang(tx, { suche: 'rauchmelder' }),
+    )
+    expect(treffer.map((t) => t.betreff)).toEqual(['Rauchmelder piept'])
+    expect(await withMandant(v.app, a, (tx) => ladePosteingang(tx, { suche: '%' }))).toEqual([])
+    expect(
+      await withMandant(v.app, b, (tx) => ladePosteingang(tx, { suche: 'rauchmelder' })),
+    ).toEqual([])
+  })
+})
+
+describe('Telefonnotizen und Verlauf', () => {
+  it('Verlauf mischt Mails und Notizen chronologisch; Korrektur ersetzt die alte Notiz', async () => {
+    const alt = await withMandant(v.app, a, (tx) =>
+      legeTelefonnotizAn(tx, {
+        mandantId: a,
+        mietverhaeltnisId: mvA,
+        zeitpunkt: '2026-10-02T09:00:00Z',
+        richtung: 'eingehend',
+        gespraechspartner: 'Mieterin',
+        betreff: 'Heizung',
+        inhalt: 'Ruft wegen der Heizung an, Termin Mittwoch.',
+        akteur: NUTZER,
+      }),
+    )
+    await withMandant(v.app, a, (tx) =>
+      legeTelefonnotizAn(tx, {
+        mandantId: a,
+        mietverhaeltnisId: mvA,
+        zeitpunkt: '2026-10-02T09:00:00Z',
+        richtung: 'eingehend',
+        gespraechspartner: 'Mieterin',
+        betreff: 'Heizung',
+        inhalt: 'Ruft wegen der Heizung an, Termin Donnerstag.',
+        ersetztId: alt,
+        akteur: NUTZER,
+      }),
+    )
+    const verlauf = await withMandant(v.app, a, (tx) => ladeVerlauf(tx, mvA))
+    const notizen = verlauf.filter((e) => e.art === 'telefonnotiz')
+    expect(notizen).toHaveLength(1)
+    expect(notizen[0]).toMatchObject({
+      inhalt: 'Ruft wegen der Heizung an, Termin Donnerstag.',
+      korrigiert: true,
+    })
+    expect(verlauf.some((e) => e.art === 'nachricht' && e.betreff === 'Rauchmelder piept')).toBe(
+      true,
+    )
+    const zeiten = verlauf.map((e) => e.zeitpunkt)
+    expect([...zeiten].sort().reverse()).toEqual(zeiten)
+    expect((await withMandant(v.app, a, (tx) => pruefeKette(tx, a))).ok).toBe(true)
+  })
+
+  it('eine Notiz wird nur einmal ersetzt; append-only; nur Nutzer; nie fremdes Mietverhältnis', async () => {
+    const basis = {
+      mandantId: a,
+      mietverhaeltnisId: mvA,
+      zeitpunkt: '2026-10-03T10:00:00Z',
+      richtung: 'ausgehend' as const,
+      gespraechspartner: 'Mieterin',
+      betreff: 'Rückruf',
+      inhalt: 'Zurückgerufen.',
+      akteur: NUTZER,
+    }
+    const id = await withMandant(v.app, a, (tx) => legeTelefonnotizAn(tx, basis))
+    await withMandant(v.app, a, (tx) => legeTelefonnotizAn(tx, { ...basis, ersetztId: id }))
+    await erwarteFehler(
+      () => withMandant(v.app, a, (tx) => legeTelefonnotizAn(tx, { ...basis, ersetztId: id })),
+      /telefonnotizen_ersetzt_uq/,
+    )
+    await erwarteFehler(
+      () => v.owner.execute(sql`update telefonnotizen set inhalt = 'x' where id = ${id}`),
+      /append-only|erlaubt kein/,
+    )
+    await erwarteFehler(
+      () => withMandant(v.app, a, (tx) => legeTelefonnotizAn(tx, { ...basis, akteur: SYSTEM })),
+      /telefonnotizen_akteur_chk/,
+    )
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, a, (tx) => legeTelefonnotizAn(tx, { ...basis, mietverhaeltnisId: mvB })),
+      /gehört nicht zum Mandanten/,
+    )
+    expect(await withMandant(v.app, b, (tx) => ladeVerlauf(tx, mvA))).toEqual([])
   })
 })

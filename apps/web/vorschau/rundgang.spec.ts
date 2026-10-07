@@ -264,6 +264,29 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Posteingang: alle',
     'Die Mail des Mieters ist automatisch über den Absender zugeordnet, mit Anhang.',
   )
+  await page.getByRole('link', { name: 'Heizung im Bad bleibt kalt' }).click()
+  await bild(
+    page,
+    'Nachricht im Detail',
+    'Kopfdaten, Zuordnung mit Verlauf, Text, Anhänge und vollständige Mail zum Herunterladen, je mit Prüfsumme.',
+  )
+  await page
+    .getByTestId('zuordnung')
+    .getByRole('link', { name: /Wohnung Nr. 1/ })
+    .click()
+  await page.getByText('Telefonnotiz erfassen').click()
+  const notiz = page.getByTestId('telefonnotiz')
+  await notiz.getByLabel('Betreff').fill('Heizung Bad, Termin Monteur')
+  await notiz
+    .getByLabel('Inhalt und Absprachen')
+    .fill('Monteur kommt Mittwoch zwischen 8 und 10 Uhr. Mieter ist zu Hause.')
+  await notiz.getByRole('button', { name: 'Notiz speichern' }).click()
+  await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(2)
+  await bild(
+    page,
+    'Verlauf des Mietverhältnisses',
+    'Mails und Telefonnotizen in einer Zeitleiste; Notizen lassen sich nachvollziehbar korrigieren.',
+  )
 
   bereich = 'Auf dem Handy'
   const handy = await browser.newContext({

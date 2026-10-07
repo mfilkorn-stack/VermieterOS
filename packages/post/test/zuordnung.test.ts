@@ -5,6 +5,8 @@ import { bestimmeZuordnung } from '../src/zuordnung'
 function k(id: string, p: Partial<ZuordnungsKandidat> = {}): ZuordnungsKandidat {
   return {
     mietverhaeltnisId: id,
+    objektId: 'objekt',
+    einheitId: `einheit-${id}`,
     beginn: '2024-01-01',
     ende: null,
     mieterEmails: ['mieter@example.org'],

@@ -275,6 +275,10 @@ Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 
 
 **Stand Phase 1:** WP 1.1 steht. Es gibt Postfächer pro Mandant mit Verbindungsprüfung und verschlüsseltem Passwort. Der Worker ruft nur lesend ab, legt Rohmail und Anhänge mit Prüfsumme im Object Storage ab und ordnet über Verlauf, Absender und Betreff zu. Im Posteingang lassen sich offene Nachrichten von Hand zuordnen. Playwright weist den Ablauf gegen einen echten IMAP-Server nach. Mails und Anhänge sind Teil des Backups.
 
+WP 1.2 steht. Der Posteingang hat Suche, eine Detailansicht mit Zuordnungsverlauf und Downloads von Anhängen und Rohmail. Downloads gehen immer als Datei, nie eingebettet, und die Prüfsumme wird geprüft. Jedes Mietverhältnis hat einen Verlauf aus Mails und Telefonnotizen. Telefonnotizen sind append-only, eine Korrektur ersetzt die alte Fassung nachvollziehbar.
+
+**Bewusst nicht gebaut (WP 1.2): Transkription per Whisper.** Gespräche ohne Einwilligung aller Beteiligten aufzunehmen ist nach § 201 StGB strafbar. Eine Transkription käme also nur für eigene Sprachnotizen nach dem Gespräch infrage. Dafür bräuchte es einen zusätzlichen Container mit mehreren GB Modell und spürbarer CPU-Last auf dem einzigen Server, für wenig Nutzen gegenüber dem Tippen von zwei Sätzen. Wiedervorlage, sobald Sprachnotizen im Alltag fehlen; dann ein eigenes WP mit Einwilligungstext.
+
 ### Phase 2 · Nebenkosten & Steuerpaket (Wo 8–12)
 
 | WP  | Inhalt                                                                                                                                                                                                                                                                         |

@@ -1,4 +1,4 @@
-import type { ZuordnungArt } from '@vermieteros/schema'
+import type { GespraechRichtung, ZuordnungArt } from '@vermieteros/schema'
 import { eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from './client'
@@ -8,6 +8,7 @@ import {
   nachrichten,
   nachrichtZuordnungen,
   postfaecher,
+  telefonnotizen,
 } from './schema/index'
 import type { Akteur, EreignisTyp } from './schema/index'
 
@@ -299,6 +300,8 @@ export async function zuordnungImVerlauf(tx: Tx, messageIds: string[]): Promise<
 
 export type ZuordnungsKandidat = {
   mietverhaeltnisId: string
+  objektId: string
+  einheitId: string
   beginn: string
   ende: string | null
   mieterEmails: string[]
@@ -313,6 +316,8 @@ export type ZuordnungsKandidat = {
 export async function ladeZuordnungsKandidaten(tx: Tx): Promise<ZuordnungsKandidat[]> {
   const rows = await tx.execute<{
     mietverhaeltnis_id: string
+    objekt_id: string
+    einheit_id: string
     beginn: string
     ende: string | null
     mieter_emails: string[] | null
@@ -322,7 +327,7 @@ export async function ladeZuordnungsKandidaten(tx: Tx): Promise<ZuordnungsKandid
     strasse: string | null
     hausnummer: string | null
   }>(sql`
-    SELECT mv.mietverhaeltnis_id, mv.beginn, mv.ende,
+    SELECT mv.mietverhaeltnis_id, ei.objekt_id, m.einheit_id, mv.beginn, mv.ende,
            array_remove(array_agg(DISTINCT lower(p.email)), NULL) AS mieter_emails,
            array_remove(array_agg(DISTINCT concat_ws(' ', p.vorname, p.nachname)), NULL) AS mieter_namen,
            e.bezeichnung AS einheit, o.bezeichnung AS objekt, o.strasse, o.hausnummer
@@ -332,10 +337,13 @@ export async function ladeZuordnungsKandidaten(tx: Tx): Promise<ZuordnungsKandid
     JOIN einheiten ei ON ei.id = m.einheit_id
     JOIN objekte_aktuell o ON o.objekt_id = ei.objekt_id
     LEFT JOIN personen_aktuell p ON p.person_id = ANY (mv.mieter_ids)
-    GROUP BY mv.mietverhaeltnis_id, mv.beginn, mv.ende, e.bezeichnung, o.bezeichnung, o.strasse, o.hausnummer
+    GROUP BY mv.mietverhaeltnis_id, ei.objekt_id, m.einheit_id, mv.beginn, mv.ende, e.bezeichnung,
+             o.bezeichnung, o.strasse, o.hausnummer
     ORDER BY mv.beginn`)
   return rows.map((r) => ({
     mietverhaeltnisId: r.mietverhaeltnis_id,
+    objektId: r.objekt_id,
+    einheitId: r.einheit_id,
     beginn: r.beginn,
     ende: r.ende,
     mieterEmails: r.mieter_emails ?? [],
@@ -367,8 +375,17 @@ export type PosteingangEintrag = {
 /** Posteingang des Mandanten, jüngste zuerst. `nurOffen`: ohne aktuelle Zuordnung. */
 export async function ladePosteingang(
   tx: Tx,
-  optionen: { nurOffen?: boolean; limit?: number } = {},
+  optionen: { nurOffen?: boolean; suche?: string | null; limit?: number } = {},
 ): Promise<PosteingangEintrag[]> {
+  const bedingungen = []
+  if (optionen.nurOffen) bedingungen.push(sql`za.mietverhaeltnis_id IS NULL`)
+  const suche = optionen.suche?.trim()
+  if (suche) {
+    const muster = `%${suche.replace(/[\\%_]/g, (z) => `\\${z}`)}%`
+    bedingungen.push(
+      sql`(n.betreff ILIKE ${muster} OR n.von_adresse ILIKE ${muster} OR n.von_name ILIKE ${muster} OR n.text ILIKE ${muster})`,
+    )
+  }
   const z = sql`nachrichten_zuordnung_aktuell`
   const rows = await tx.execute<{
     id: string
@@ -393,7 +410,7 @@ export async function ladePosteingang(
     FROM nachrichten n
     JOIN postfaecher pf ON pf.id = n.postfach_id
     LEFT JOIN ${z} za ON za.nachricht_id = n.id
-    ${optionen.nurOffen ? sql`WHERE za.mietverhaeltnis_id IS NULL` : sql``}
+    ${bedingungen.length ? sql`WHERE ${sql.join(bedingungen, sql` AND `)}` : sql``}
     ORDER BY coalesce(n.gesendet_am, n.empfangen_am) DESC, n.id DESC
     LIMIT ${optionen.limit ?? 100}`)
   return rows.map((r) => ({
@@ -419,4 +436,238 @@ export async function offeneNachrichten(tx: Tx): Promise<number> {
     LEFT JOIN nachrichten_zuordnung_aktuell za ON za.nachricht_id = n.id
     WHERE za.mietverhaeltnis_id IS NULL`)
   return rows[0]?.n ?? 0
+}
+
+// ---------------------------------------------------------------------------
+// Nachricht im Detail, Anhänge, Rohmail (WP 1.2)
+// ---------------------------------------------------------------------------
+
+export type NachrichtDetail = {
+  id: string
+  postfach: string
+  messageId: string | null
+  vonAdresse: string
+  vonName: string | null
+  an: string[]
+  betreff: string
+  gesendetAm: string | null
+  empfangenAm: string
+  text: string
+  rohGroesse: number
+  rohSha256: string
+  anhaenge: { id: string; dateiname: string; mimeTyp: string; groesse: number; sha256: string }[]
+  /** Alle Zuordnungen, älteste zuerst; die letzte gilt. */
+  zuordnungen: {
+    mietverhaeltnisId: string | null
+    art: ZuordnungArt
+    begruendung: string | null
+    akteurArt: string
+    akteurId: string
+    erfasstAm: string
+  }[]
+}
+
+export async function ladeNachricht(tx: Tx, id: string): Promise<NachrichtDetail | null> {
+  const [n] = await tx.execute<{
+    id: string
+    postfach: string
+    message_id: string | null
+    von_adresse: string
+    von_name: string | null
+    an: string[]
+    betreff: string
+    gesendet_am: string | null
+    empfangen_am: string
+    text: string
+    roh_groesse: number
+    roh_sha256: string
+  }>(sql`
+    SELECT n.id, pf.bezeichnung AS postfach, n.message_id, n.von_adresse, n.von_name, n.an, n.betreff,
+           n.gesendet_am, n.empfangen_am, n.text, n.roh_groesse, n.roh_sha256
+    FROM nachrichten n JOIN postfaecher pf ON pf.id = n.postfach_id
+    WHERE n.id = ${id}`)
+  if (!n) return null
+  const anhaengeZeilen = await tx
+    .select({
+      id: anhaenge.id,
+      dateiname: anhaenge.dateiname,
+      mimeTyp: anhaenge.mimeTyp,
+      groesse: anhaenge.groesse,
+      sha256: anhaenge.sha256,
+    })
+    .from(anhaenge)
+    .where(eq(anhaenge.nachrichtId, id))
+    .orderBy(anhaenge.dateiname)
+  const zuordnungen = await tx
+    .select({
+      mietverhaeltnisId: nachrichtZuordnungen.mietverhaeltnisId,
+      art: nachrichtZuordnungen.art,
+      begruendung: nachrichtZuordnungen.begruendung,
+      akteurArt: nachrichtZuordnungen.akteurArt,
+      akteurId: nachrichtZuordnungen.akteurId,
+      erfasstAm: nachrichtZuordnungen.erfasstAm,
+    })
+    .from(nachrichtZuordnungen)
+    .where(eq(nachrichtZuordnungen.nachrichtId, id))
+    .orderBy(nachrichtZuordnungen.erfasstAm, nachrichtZuordnungen.id)
+  return {
+    id: n.id,
+    postfach: n.postfach,
+    messageId: n.message_id,
+    vonAdresse: n.von_adresse,
+    vonName: n.von_name,
+    an: n.an,
+    betreff: n.betreff,
+    gesendetAm: n.gesendet_am,
+    empfangenAm: n.empfangen_am,
+    text: n.text,
+    rohGroesse: n.roh_groesse,
+    rohSha256: n.roh_sha256,
+    anhaenge: anhaengeZeilen,
+    zuordnungen,
+  }
+}
+
+/** Für den Download: Schlüssel im Object Storage und Metadaten. RLS stellt den Mandanten sicher. */
+export async function ladeAnhangZumHerunterladen(tx: Tx, id: string) {
+  const [a] = await tx
+    .select({
+      schluessel: anhaenge.schluessel,
+      dateiname: anhaenge.dateiname,
+      mimeTyp: anhaenge.mimeTyp,
+      sha256: anhaenge.sha256,
+    })
+    .from(anhaenge)
+    .where(eq(anhaenge.id, id))
+  return a ?? null
+}
+
+export async function ladeRohmailZumHerunterladen(tx: Tx, nachrichtId: string) {
+  const [n] = await tx
+    .select({
+      schluessel: nachrichten.rohSchluessel,
+      sha256: nachrichten.rohSha256,
+      betreff: nachrichten.betreff,
+    })
+    .from(nachrichten)
+    .where(eq(nachrichten.id, nachrichtId))
+  return n ?? null
+}
+
+// ---------------------------------------------------------------------------
+// Telefonnotizen und Verlauf pro Mietverhältnis (WP 1.2)
+// ---------------------------------------------------------------------------
+
+export type NeueTelefonnotiz = {
+  mandantId: string
+  mietverhaeltnisId: string
+  zeitpunkt: string
+  richtung: GespraechRichtung
+  gespraechspartner: string
+  betreff: string
+  inhalt: string
+  /** Korrektur einer früheren Notiz */
+  ersetztId?: string | null
+  akteur: Akteur
+}
+
+export async function legeTelefonnotizAn(tx: Tx, n: NeueTelefonnotiz): Promise<string> {
+  const id = uuidv7()
+  await tx.insert(telefonnotizen).values({
+    id,
+    mandantId: n.mandantId,
+    mietverhaeltnisId: n.mietverhaeltnisId,
+    zeitpunkt: n.zeitpunkt,
+    richtung: n.richtung,
+    gespraechspartner: n.gespraechspartner.trim(),
+    betreff: n.betreff.trim(),
+    inhalt: n.inhalt.trim(),
+    ersetztId: n.ersetztId ?? null,
+    akteurArt: n.akteur.art,
+    akteurId: n.akteur.id,
+  })
+  // Im Ledger nur Metadaten; der Inhalt steht in der append-only Tabelle.
+  await ereignis(tx, {
+    mandantId: n.mandantId,
+    typ: 'telefonnotiz_erfasst',
+    entitaet: 'telefonnotiz',
+    entitaetId: id,
+    akteur: n.akteur,
+    payload: { mietverhaeltnisId: n.mietverhaeltnisId, ersetztId: n.ersetztId ?? null },
+  })
+  return id
+}
+
+export type VerlaufEintrag =
+  | {
+      art: 'nachricht'
+      id: string
+      zeitpunkt: string
+      betreff: string
+      von: string
+      auszug: string
+      anhaenge: number
+      zuordnung: ZuordnungArt
+    }
+  | {
+      art: 'telefonnotiz'
+      id: string
+      zeitpunkt: string
+      betreff: string
+      gespraechspartner: string
+      richtung: GespraechRichtung
+      inhalt: string
+      korrigiert: boolean
+    }
+
+/** Mails (aktuell zugeordnet) und Telefonnotizen (aktuelle Fassung) eines Mietverhältnisses, jüngste zuerst. */
+export async function ladeVerlauf(tx: Tx, mietverhaeltnisId: string): Promise<VerlaufEintrag[]> {
+  const rows = await tx.execute<{
+    art: 'nachricht' | 'telefonnotiz'
+    id: string
+    zeitpunkt: string
+    betreff: string
+    wer: string
+    text: string
+    anhaenge: number
+    zuordnung: ZuordnungArt | null
+    richtung: GespraechRichtung | null
+    korrigiert: boolean
+  }>(sql`
+    SELECT 'nachricht' AS art, n.id, coalesce(n.gesendet_am, n.empfangen_am) AS zeitpunkt, n.betreff,
+           coalesce(n.von_name, n.von_adresse) AS wer, left(n.text, 400) AS text,
+           (SELECT count(*)::int FROM anhaenge a WHERE a.nachricht_id = n.id) AS anhaenge,
+           za.art AS zuordnung, NULL AS richtung, false AS korrigiert
+    FROM nachrichten n
+    JOIN nachrichten_zuordnung_aktuell za ON za.nachricht_id = n.id
+    WHERE za.mietverhaeltnis_id = ${mietverhaeltnisId}
+    UNION ALL
+    SELECT 'telefonnotiz', t.id, t.zeitpunkt, t.betreff, t.gespraechspartner, t.inhalt, 0, NULL, t.richtung,
+           t.ersetzt_id IS NOT NULL
+    FROM telefonnotizen_aktuell t
+    WHERE t.mietverhaeltnis_id = ${mietverhaeltnisId}
+    ORDER BY zeitpunkt DESC, id DESC`)
+  return rows.map((r) =>
+    r.art === 'nachricht'
+      ? {
+          art: 'nachricht' as const,
+          id: r.id,
+          zeitpunkt: r.zeitpunkt,
+          betreff: r.betreff,
+          von: r.wer,
+          auszug: r.text,
+          anhaenge: r.anhaenge,
+          zuordnung: r.zuordnung!,
+        }
+      : {
+          art: 'telefonnotiz' as const,
+          id: r.id,
+          zeitpunkt: r.zeitpunkt,
+          betreff: r.betreff,
+          gespraechspartner: r.wer,
+          richtung: r.richtung!,
+          inhalt: r.text,
+          korrigiert: r.korrigiert,
+        },
+  )
 }

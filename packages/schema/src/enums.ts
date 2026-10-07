@@ -171,3 +171,7 @@ export const ZUORDNUNG_ARTEN = [
   'aufgehoben',
 ] as const
 export type ZuordnungArt = (typeof ZUORDNUNG_ARTEN)[number]
+
+/** Telefonnotiz (WP 1.2): Wer hat angerufen? */
+export const GESPRAECH_RICHTUNGEN = ['eingehend', 'ausgehend'] as const
+export type GespraechRichtung = (typeof GESPRAECH_RICHTUNGEN)[number]

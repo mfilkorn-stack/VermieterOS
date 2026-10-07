@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { readFile } from 'node:fs/promises'
 import nodemailer from 'nodemailer'
 import { konto, registrieren, workerEinmal } from './hilfen'
 import { E2E } from './umgebung'
@@ -93,8 +94,7 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   const heizung = page.locator('[data-testid="nachricht"][data-betreff="Heizung kalt"]')
   await expect(heizung.getByTestId('zuordnung')).toContainText('EG links · Haus am Park · Mieterin')
   await expect(heizung.getByTestId('zuordnung')).toContainText('automatisch über den Absender')
-  await heizung.getByText(/Text und 1 Anhang/).click()
-  await expect(heizung.getByTestId('anhaenge')).toContainText('thermostat.jpg')
+  await expect(heizung).toContainText('1 Anhang')
 
   // Von Hand zuordnen
   await page.goto('/posteingang')
@@ -119,4 +119,63 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(page.getByTestId('nachricht')).toHaveCount(2)
   await page.goto('/postfaecher')
   await expect(page.getByTestId('letzter-abruf')).not.toHaveText('noch nie')
+
+  // WP 1.2: Suche, Detail, Downloads mit Prüfsumme, Verlauf, Telefonnotiz mit Korrektur
+  await page.goto('/posteingang?q=thermostat')
+  await expect(page.getByTestId('posteingang-leer')).toBeVisible()
+  await page.goto('/posteingang?q=heizung')
+  await expect(page.getByTestId('nachricht')).toHaveCount(1)
+  await page.getByRole('link', { name: 'Heizung kalt' }).click()
+  await expect(page.getByTestId('nachricht-betreff')).toHaveText('Heizung kalt')
+  await expect(page.getByTestId('nachricht-text')).toContainText(
+    'Seit gestern ist die Heizung kalt.',
+  )
+  const [anhang] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByRole('link', { name: 'thermostat.jpg' }).click(),
+  ])
+  expect(anhang.suggestedFilename()).toBe('thermostat.jpg')
+  expect((await readFile((await anhang.path())!)).toString()).toBe('bild')
+  const [roh] = await Promise.all([
+    page.waitForEvent('download'),
+    page.getByTestId('rohmail').click(),
+  ])
+  expect(roh.suggestedFilename()).toBe('Heizung kalt.eml')
+  expect((await readFile((await roh.path())!)).toString()).toContain('Subject: Heizung kalt')
+
+  // Download einer fremden oder erfundenen ID: 404, nicht 500
+  const fremd = await page.request.get('/api/anhang/00000000-0000-7000-8000-000000000000')
+  expect(fremd.status()).toBe(404)
+
+  await page
+    .getByTestId('zuordnung')
+    .getByRole('link', { name: /EG links/ })
+    .click()
+  await expect(page.getByTestId('verlauf-kopf')).toContainText(mieterin)
+  await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(2)
+
+  await page.getByText('Telefonnotiz erfassen').click()
+  const notiz = page.getByTestId('telefonnotiz')
+  await notiz.getByLabel('Zeitpunkt').fill('2026-10-06T09:15')
+  await notiz.getByLabel('Betreff').fill('Heizung, Rückfrage Termin')
+  await notiz
+    .getByLabel('Inhalt und Absprachen')
+    .fill('Monteur kommt Mittwoch zwischen 8 und 10 Uhr.')
+  await notiz.getByRole('button', { name: 'Notiz speichern' }).click()
+  const eintraege = page.getByTestId('verlauf-eintrag')
+  await expect(eintraege).toHaveCount(3)
+  const telefon = page.locator('[data-testid="verlauf-eintrag"][data-art="telefonnotiz"]')
+  await expect(telefon).toContainText('Anruf von Mieterin')
+  await expect(telefon).toContainText('06.10.2026, 09:15')
+
+  await telefon.getByText('Korrigieren').click()
+  const k = telefon.getByTestId('notiz-korrigieren')
+  await k
+    .getByLabel('Inhalt und Absprachen')
+    .fill('Monteur kommt Donnerstag zwischen 8 und 10 Uhr.')
+  await k.getByRole('button', { name: 'Korrektur speichern' }).click()
+  await expect(telefon).toHaveCount(1)
+  await expect(telefon).toContainText('Donnerstag')
+  await expect(telefon).toContainText('korrigiert')
+  await expect(telefon).not.toContainText('Mittwoch')
 })
