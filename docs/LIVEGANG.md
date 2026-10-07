@@ -4,7 +4,7 @@ Checkliste für das erste Produktiv-Deployment. Die Einzelheiten stehen in [BETR
 
 ## 1 · Vorbedingungen im Repository
 
-- [ ] Offene PRs in dieser Reihenfolge nach `main`: WP 2.5 → WP 2.6 → WP 2.7 → Livegang-Vorbereitung
+- [x] WP 2.5 bis 2.7, Livegang-Vorbereitung und Domain sind in `main`
 - [ ] CI auf `main` grün, Job „images“ hat beide Images veröffentlicht
 - [ ] Tag notieren: GitHub → Packages → `vermieteros` → `sha-<kurz>` des letzten Merge-Commits
 
@@ -48,12 +48,15 @@ done
 - [ ] Keine Weiterleitung beim Registrar einrichten: `.app` erzwingt HTTPS (HSTS-Preload), das Zertifikat für beide Namen holt Caddy
 - [ ] Prüfpunkt: `dig +short www.vermieteros.app` und `dig +short vermieteros.app` liefern die Server-IP. Erst dann deployen, sonst scheitert das Zertifikat
 
-## 6 · Mailversand (Brevo)
+## 6 · Mailversand (IONOS)
 
-- [ ] Konto anlegen, Auftragsverarbeitungsvertrag im Konto bestätigen
-- [ ] Absender-Domain `vermieteros.app` hinzufügen, die angezeigten DNS-Einträge setzen: DKIM, Brevo-Code, SPF (`include:spf.brevo.com` in den bestehenden SPF-Eintrag, nicht als zweiten), DMARC mindestens `v=DMARC1; p=none; rua=mailto:…`
-- [ ] SMTP-Schlüssel erzeugen → `SMTP_BENUTZER` (Login laut Konto), `SMTP_PASSWORT`; `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`
-- [ ] Prüfpunkt: Domain in Brevo als authentifiziert markiert
+Absender ist das IONOS-Postfach `noreply@vermieteros.app`. Ohne Mailversand lassen sich Einladungen in den Mandanten nicht annehmen, weil dafür eine bestätigte Adresse nötig ist.
+
+- [x] Postfach `noreply@vermieteros.app` im IONOS-Kundenbereich angelegt
+- [ ] Weiterleitung vom Postfach an die eigene Adresse, damit Antworten von Mietern ankommen
+- [ ] DNS bei IONOS: MX (setzt IONOS selbst), genau ein SPF-Eintrag mit IONOS-Include, DKIM in den E-Mail-Einstellungen aktivieren, DMARC `v=DMARC1; p=none; rua=mailto:noreply@vermieteros.app` auf `_dmarc`
+- [ ] Werte für die `.env` (Schritt 8): `SMTP_HOST=smtp.ionos.de`, `SMTP_PORT=587`, `SMTP_BENUTZER=noreply@vermieteros.app`, `SMTP_PASSWORT=<Postfach-Passwort>`
+- [ ] Prüfpunkt: Testmail aus dem IONOS-Webmail an eine Gmail-Adresse, „Original anzeigen“ zeigt `SPF: PASS` und `DKIM: PASS`
 
 ## 7 · Monitoring
 
@@ -74,7 +77,7 @@ sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
 docker login ghcr.io -u <github-nutzer>       # Token (classic) nur mit read:packages
 ```
 
-`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` bleibt leer.
+`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP aus Schritt 6, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` bleibt leer.
 
 - [ ] Prüfpunkt: `docker compose config -q` ohne Fehler (meldet fehlende Pflichtwerte)
 
@@ -96,7 +99,7 @@ Mit Musterdaten, noch ohne echte Mieter:
 - [ ] Registrieren mit einer anderen Adresse wird abgewiesen
 - [ ] Zwei-Faktor einrichten, ab- und wieder anmelden
 - [ ] Mandant und Musterobjekt anlegen, Dokument hochladen und wieder herunterladen (Object Storage)
-- [ ] Mieterportal-Einladung an eine eigene Zweitadresse, Anmeldung per Link
+- [ ] Mieterportal-Einladung an eine eigene Zweitadresse, Mail kommt an, Anmeldung per Link klappt
 - [ ] Backup von Hand: `docker compose run --rm ops backup`, dann `docker compose run --rm ops integritaet`; im Backup-Bucket liegt eine `.age`-Datei
 - [ ] Restore-Test einmal von Hand (BETRIEB „Von Hand sichern und prüfen“)
 - [ ] Alle Healthchecks grün; einen absichtlich ausbleiben lassen und den Alarm prüfen
