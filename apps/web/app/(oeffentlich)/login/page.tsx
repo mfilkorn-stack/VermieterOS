@@ -6,12 +6,18 @@ import { anmelden } from '../aktionen'
 export default async function LoginSeite({
   searchParams,
 }: {
-  searchParams: Promise<{ weiter?: string }>
+  searchParams: Promise<{ weiter?: string; zurueckgesetzt?: string }>
 }) {
-  const weiter = sicheresZiel((await searchParams).weiter)
+  const parameter = await searchParams
+  const weiter = sicheresZiel(parameter.weiter)
   return (
     <div className="karte">
       <h1>Anmelden</h1>
+      {parameter.zurueckgesetzt ? (
+        <p className="leise" data-testid="passwort-geaendert">
+          Das Passwort ist geändert. Bitte mit dem neuen Passwort anmelden.
+        </p>
+      ) : null}
       <Formular aktion={anmelden} knopf="Anmelden" testId="login">
         <input type="hidden" name="weiter" value={weiter} />
         <label>
@@ -23,6 +29,9 @@ export default async function LoginSeite({
           <input name="passwort" type="password" autoComplete="current-password" required />
         </label>
       </Formular>
+      <p className="leise">
+        <Link href="/passwort-vergessen">Passwort vergessen?</Link>
+      </p>
       <p className="leise">
         Noch kein Konto?{' '}
         <Link href={`/registrieren?weiter=${encodeURIComponent(weiter)}`}>Registrieren</Link>
