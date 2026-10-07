@@ -83,6 +83,7 @@ export const DOKUMENT_TYPEN = [
   'beleg',
   'mietspiegel',
   'bescheinigung',
+  'mangelfoto',
   'sonstiges',
 ] as const
 export const DokumentTyp = z.enum(DOKUMENT_TYPEN)

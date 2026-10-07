@@ -25,6 +25,7 @@
     "drizzle-orm": "^0.45.3",
     "lucide-react": "^1.52.0",
     "next": "^16.3.8",
+    "nodemailer": "^10.0.15",
     "postgres": "^3.4.9",
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
@@ -35,12 +36,14 @@
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
+    "@types/mailparser": "^3.9.0",
     "@types/node": "^22.19.0",
     "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "nodemailer": "^10.0.15",
+    "imapflow": "^2.2.6",
+    "mailparser": "^3.9.36",
     "typescript": "^5.9.3",
     "unpdf": "^1.8.1",
     "vitest": "^4.0.0"

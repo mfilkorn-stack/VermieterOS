@@ -44,14 +44,16 @@ export async function ladeDokument(tx: Tx, id: string): Promise<DokumentZeile | 
   return r ?? null
 }
 
-/** Dokumente am Objekt (auch die seiner Mietverhältnisse) oder an einem Mietverhältnis. */
+/** Dokumente am Objekt (auch die seiner Mietverhältnisse), an einem Mietverhältnis oder Ticket. */
 export async function listeDokumente(
   tx: Tx,
-  o: { objektId?: string; mietverhaeltnisId?: string },
+  o: { objektId?: string; mietverhaeltnisId?: string; ticketId?: string },
 ): Promise<DokumentZeile[]> {
-  const bed = o.mietverhaeltnisId
-    ? sql`d.mietverhaeltnis_id = ${o.mietverhaeltnisId}`
-    : sql`(d.objekt_id = ${o.objektId ?? null} OR d.mietverhaeltnis_id IN (
+  const bed = o.ticketId
+    ? sql`d.ticket_id = ${o.ticketId}`
+    : o.mietverhaeltnisId
+      ? sql`d.mietverhaeltnis_id = ${o.mietverhaeltnisId}`
+      : sql`(d.objekt_id = ${o.objektId ?? null} OR d.mietverhaeltnis_id IN (
            SELECT m.id FROM mietverhaeltnisse m JOIN einheiten e ON e.id = m.einheit_id
            WHERE e.objekt_id = ${o.objektId ?? null}))`
   return tx.execute<DokumentZeile>(sql`${SELECT} WHERE ${bed}

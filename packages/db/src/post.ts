@@ -607,11 +607,22 @@ export type VerlaufEintrag =
       inhalt: string
       korrigiert: boolean
     }
+  | {
+      art: 'portal'
+      id: string
+      zeitpunkt: string
+      betreff: string
+      von: string
+      text: string
+    }
 
-/** Mails (aktuell zugeordnet) und Telefonnotizen (aktuelle Fassung) eines Mietverhältnisses, jüngste zuerst. */
+/**
+ * Mails (aktuell zugeordnet), Telefonnotizen (aktuelle Fassung) und Nachrichten aus dem
+ * Mieterportal eines Mietverhältnisses, jüngste zuerst.
+ */
 export async function ladeVerlauf(tx: Tx, mietverhaeltnisId: string): Promise<VerlaufEintrag[]> {
   const rows = await tx.execute<{
-    art: 'nachricht' | 'telefonnotiz'
+    art: 'nachricht' | 'telefonnotiz' | 'portal'
     id: string
     zeitpunkt: string
     betreff: string
@@ -634,28 +645,41 @@ export async function ladeVerlauf(tx: Tx, mietverhaeltnisId: string): Promise<Ve
            t.ersetzt_id IS NOT NULL
     FROM telefonnotizen_aktuell t
     WHERE t.mietverhaeltnis_id = ${mietverhaeltnisId}
+    UNION ALL
+    SELECT 'portal', p.id, p.erstellt_am, p.betreff, z.email, p.text, 0, NULL, NULL, false
+    FROM portal_nachrichten p JOIN portal_zugaenge z ON z.id = p.zugang_id
+    WHERE p.mietverhaeltnis_id = ${mietverhaeltnisId}
     ORDER BY zeitpunkt DESC, id DESC`)
-  return rows.map((r) =>
-    r.art === 'nachricht'
+  return rows.map((r): VerlaufEintrag =>
+    r.art === 'portal'
       ? {
-          art: 'nachricht' as const,
+          art: 'portal' as const,
           id: r.id,
           zeitpunkt: r.zeitpunkt,
           betreff: r.betreff,
           von: r.wer,
-          auszug: r.text,
-          anhaenge: r.anhaenge,
-          zuordnung: r.zuordnung!,
+          text: r.text,
         }
-      : {
-          art: 'telefonnotiz' as const,
-          id: r.id,
-          zeitpunkt: r.zeitpunkt,
-          betreff: r.betreff,
-          gespraechspartner: r.wer,
-          richtung: r.richtung!,
-          inhalt: r.text,
-          korrigiert: r.korrigiert,
-        },
+      : r.art === 'nachricht'
+        ? {
+            art: 'nachricht' as const,
+            id: r.id,
+            zeitpunkt: r.zeitpunkt,
+            betreff: r.betreff,
+            von: r.wer,
+            auszug: r.text,
+            anhaenge: r.anhaenge,
+            zuordnung: r.zuordnung!,
+          }
+        : {
+            art: 'telefonnotiz' as const,
+            id: r.id,
+            zeitpunkt: r.zeitpunkt,
+            betreff: r.betreff,
+            gespraechspartner: r.wer,
+            richtung: r.richtung!,
+            inhalt: r.text,
+            korrigiert: r.korrigiert,
+          },
   )
 }

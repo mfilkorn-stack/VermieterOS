@@ -17,6 +17,9 @@ export const EREIGNIS_TYPEN = [
   'nachricht_zugeordnet',
   'telefonnotiz_erfasst',
   'journal_gebucht',
+  'portal_zugang_angelegt',
+  'portal_zugang_widerrufen',
+  'portal_nachricht',
 ] as const
 export type EreignisTyp = (typeof EREIGNIS_TYPEN)[number]
 

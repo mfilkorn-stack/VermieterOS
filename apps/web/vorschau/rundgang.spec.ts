@@ -3,6 +3,7 @@ import { mkdirSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import nodemailer from 'nodemailer'
 import { konto, registrieren, workerEinmal } from '../e2e/hilfen'
+import { portalLinkAus, warteAufMail } from '../e2e/postfach'
 import { E2E } from '../e2e/umgebung'
 import {
   musterMietvertrag,
@@ -439,6 +440,45 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Objektakte mit Notfallkarte',
     'Offene Tickets, Notfallkarte und Wissensbasis am Objekt. Die KI nutzt beides für Antwortentwürfe, Telefonnummern setzt die Software ein.',
   )
+
+  bereich = 'Mieterportal'
+  await page.goto(verlaufUrl)
+  await page
+    .getByTestId('portal-einladen')
+    .getByRole('button', { name: 'Einladung senden' })
+    .click()
+  await expect(page.getByTestId('portal-zugang')).toBeVisible()
+  await page.getByTestId('mv-portal').scrollIntoViewIfNeeded()
+  await bild(
+    page,
+    'Mieter einladen',
+    'Am Mietverhältnis: Einladung an die hinterlegte Adresse, Zugang jederzeit sperrbar. Der Mieter bekommt einen Einmal-Link, kein Passwort.',
+  )
+  const mieterHandy = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    locale: 'de-DE',
+  })
+  const mp = await mieterHandy.newPage()
+  await mp.goto(portalLinkAus(await warteAufMail(mieterin, /Einladung zum Mieterportal/)))
+  await mp.getByRole('button', { name: 'Jetzt anmelden' }).click()
+  await expect(mp.getByTestId('portal-wohnung')).toBeVisible()
+  await bild(
+    mp,
+    'Mieterportal',
+    'Was der Mieter sieht: Wohnung und Miete, Notfallnummern zum Antippen, Vertrag und eigene Meldungen.',
+    true,
+  )
+  await mp.getByTestId('portal-mangel').click()
+  await bild(
+    mp,
+    'Mangel melden',
+    'Mangel mit bis zu fünf Fotos; daraus wird ein Ticket „gemeldet“, der Vermieter bekommt eine Mail.',
+    true,
+  )
+  await mieterHandy.close()
 
   bereich = 'Auf dem Handy'
   const handy = await browser.newContext({
