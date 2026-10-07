@@ -39,6 +39,7 @@ export async function sendeMail(m: {
   an: string
   betreff: string
   text: string
+  anhaenge?: Array<{ dateiname: string; inhalt: Buffer; mime: string }>
 }): Promise<boolean> {
   if (!mailEingerichtet()) {
     if (process.env.NODE_ENV !== 'production') console.log(`[mail:${m.art}] ${m.an}: ${m.text}`)
@@ -51,6 +52,15 @@ export async function sendeMail(m: {
       to: m.an,
       subject: m.betreff,
       text: m.text,
+      ...(m.anhaenge
+        ? {
+            attachments: m.anhaenge.map((a) => ({
+              filename: a.dateiname,
+              content: a.inhalt,
+              contentType: a.mime,
+            })),
+          }
+        : {}),
     })
     return true
   } catch (e) {

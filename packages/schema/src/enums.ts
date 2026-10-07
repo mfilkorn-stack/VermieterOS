@@ -102,6 +102,8 @@ export const DOKUMENT_TYPEN = [
   'hausgeldabrechnung',
   'weg_protokoll',
   'hausordnung',
+  'heizkostenabrechnung',
+  'betriebskostenabrechnung',
   // Laufend
   'grundsteuer',
   'versicherung',

@@ -480,6 +480,54 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   )
   await mieterHandy.close()
 
+  bereich = 'Betriebskosten'
+  await page.goto(akte)
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Betriebskosten' })
+    .first()
+    .click()
+  await page.getByTestId('bk-anlegen').getByRole('button', { name: 'Anlegen' }).click()
+  await expect(page.getByTestId('bk-titel')).toBeVisible()
+  const bkPos = async (
+    i: number,
+    bezeichnung: string,
+    kostenart: string,
+    gesamt: string,
+    schluessel: string,
+    groesse: string,
+  ) => {
+    await page.getByTestId('bk-position-neu').click()
+    const z = page.getByTestId('bk-position').nth(i)
+    await z.getByLabel('Bezeichnung').fill(bezeichnung)
+    await z.getByLabel('Kostenart (§ 2 BetrKV)').selectOption(kostenart)
+    await z.getByLabel('Gesamtkosten €').fill(gesamt)
+    await z.getByLabel('Schlüssel').selectOption(schluessel)
+    await z.locator('input').nth(2).fill(groesse)
+  }
+  await bkPos(0, 'Grundsteuer', 'grundsteuer', '180,00', 'direkt', '180,00')
+  await bkPos(1, 'Gebäudeversicherung', 'versicherung', '1.800,00', 'wohnflaeche', '650,00')
+  await bkPos(2, 'Hausreinigung', 'gebaeudereinigung', '2.400,00', 'wohnflaeche', '650,00')
+  await page.getByLabel('Abrechnung des Messdienstes liegt vor').check()
+  const bkMd = page.getByTestId('bk-messdienst')
+  await bkMd.getByLabel('Gesamtkosten aller Nutzer €').fill('9.000,00')
+  await bkMd.getByLabel('Betrag der Einheit €').fill('1.100,00')
+  await bkMd.getByLabel('CO2-Kosten Gebäude €').fill('600,00')
+  await bkMd.getByLabel('CO2 in kg').fill('14000')
+  await bkMd.getByLabel('Wohnfläche Gebäude m²').fill('600,00')
+  await bkMd.getByLabel('Heizung + Warmwasser Einheit €').fill('900,00')
+  await bkMd.getByLabel('Heizung + Warmwasser gesamt €').fill('6.500,00')
+  await page
+    .getByTestId('bk-formular')
+    .getByRole('button', { name: 'Speichern und rechnen' })
+    .click()
+  await expect(page.getByTestId('bk-ergebnis')).toBeVisible()
+  await bild(
+    page,
+    'Betriebskostenabrechnung',
+    'Kosten aus der WEG-Abrechnung, Heizung vom Messdienst mit Abzug des CO2-Anteils des Vermieters, Grundsteuer direkt. Ergebnis je Mieter, Prüfung auf Frist und Auffälligkeiten; Festschreiben erzeugt das PDF mit Anschreiben.',
+  )
+
   bereich = 'Auf dem Handy'
   const handy = await browser.newContext({
     viewport: { width: 390, height: 844 },

@@ -1223,3 +1223,12 @@ img.vorschau {
   border-radius: var(--radius-klein);
   border: 1px solid var(--linie);
 }
+
+/* Betriebskostenabrechnung (WP 2.4) */
+.bk-position,
+.bk-messdienst {
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-klein);
+  padding: 10px 12px;
+  margin: 0 0 10px;
+}

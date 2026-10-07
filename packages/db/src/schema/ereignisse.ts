@@ -20,6 +20,7 @@ export const EREIGNIS_TYPEN = [
   'portal_zugang_angelegt',
   'portal_zugang_widerrufen',
   'portal_nachricht',
+  'bk_versand',
 ] as const
 export type EreignisTyp = (typeof EREIGNIS_TYPEN)[number]
 

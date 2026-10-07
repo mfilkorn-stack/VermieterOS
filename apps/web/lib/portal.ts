@@ -27,6 +27,7 @@ export const PORTAL_DOKUMENTTYPEN = new Set([
   'wohnungsgeberbestaetigung',
   'hausordnung',
   'energieausweis',
+  'betriebskostenabrechnung',
 ])
 
 export async function portalKontext(): Promise<PortalSitzung | null> {

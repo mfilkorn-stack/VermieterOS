@@ -75,3 +75,12 @@ export {
   type Messdienstabrechnung,
   type Messdienstuebernahme,
 } from './heizkosten'
+
+export {
+  abrechnungsfrist,
+  pruefeBkAbrechnung,
+  rechneBkAbrechnung,
+  type BkBefund,
+  type BkErgebnis,
+  type BkMietzeit,
+} from './bk-abrechnung'
