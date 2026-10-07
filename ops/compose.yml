@@ -52,10 +52,16 @@ services:
     command: ['node', 'worker/dist/worker.mjs']
     restart: unless-stopped
     init: true
-    # Das Image prüft Port 3000 (Web). Der Worker öffnet keinen Port; ob er läuft, meldet
-    # HEALTHCHECK_ABRUF als Totmannschalter.
+    # Das Image prüft Port 3000 (Web), der Worker öffnet keinen Port. Eigener Test: läuft der
+    # Worker-Prozess? (`worker[.]mjs` trifft den Test selbst nicht.) Ob er auch arbeitet,
+    # meldet HEALTHCHECK_ABRUF. Nicht `disable: true`: Compose 2.40 bricht damit bei
+    # `up --wait` mit „has no healthcheck configured“ ab.
     healthcheck:
-      disable: true
+      test: ['CMD-SHELL', 'pgrep -f "worker[.]mjs" >/dev/null']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     environment:
       DATABASE_URL: postgres://vermieteros_worker:${VOS_WORKER_PASSWORT}@postgres:5432/vermieteros
       POSTFACH_SCHLUESSEL: ${POSTFACH_SCHLUESSEL}
