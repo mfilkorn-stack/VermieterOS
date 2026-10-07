@@ -1,7 +1,8 @@
 #!/bin/sh
 # Nächtliches Backup: Manifest der Ledger-Köpfe, pg_dump (custom), age-verschlüsselt, ins Object Storage.
 # Umgebung: PG* (Rolle vermieteros_sicherung), BACKUP_ZIEL (rclone-Pfad), BACKUP_EMPFAENGER
-# (age-Public-Keys, durch Leerzeichen getrennt), optional BACKUP_TAGE, BACKUP_MONATE, HEALTHCHECK_BACKUP.
+# (age-Public-Keys, durch Leerzeichen getrennt), optional BACKUP_TAGE, BACKUP_MONATE, HEALTHCHECK_BACKUP,
+# DOKUMENTE_QUELLE (rclone-Pfad der Mails und Anhänge; werden nach BACKUP_ZIEL/../dokumente kopiert).
 . /ops/gemeinsam.sh
 : "${BACKUP_ZIEL:?BACKUP_ZIEL fehlt}" "${BACKUP_EMPFAENGER:?BACKUP_EMPFAENGER fehlt}"
 monitor=${HEALTHCHECK_BACKUP:-}
@@ -44,6 +45,18 @@ for teil in dump.age manifest.json sha256; do
   }
 done
 groesse=$(du -h "$arbeit/$name.dump.age" | cut -f1)
+
+# Dokumente (Mails, Anhänge): inhaltsadressiert und unveränderlich. Nur kopieren, nie löschen;
+# --immutable bricht ab, falls sich der Inhalt eines vorhandenen Objekts geändert hätte
+# (--checksum: verglichen wird der Inhalt, nicht der Zeitstempel).
+if [ -n "${DOKUMENTE_QUELLE:-}" ]; then
+  rclone copy --s3-no-check-bucket --immutable --checksum "$DOKUMENTE_QUELLE" "${BACKUP_ZIEL%/*}/dokumente" || {
+    melde "$monitor" fail "Kopie der Dokumente fehlgeschlagen"
+    fehler "Dokumente"
+  }
+  dokumente=$(rclone size --s3-no-check-bucket --json "${BACKUP_ZIEL%/*}/dokumente" | sed -n 's/.*"count":\([0-9]*\).*/\1/p')
+  log "Dokumente gesichert: ${dokumente:-?} Objekte"
+fi
 
 # 4. Vorhaltung: tägliche Backups BACKUP_TAGE, Monatserste BACKUP_MONATE Monate. Nur nach Erfolg.
 rclone delete --s3-no-check-bucket "$BACKUP_ZIEL" --min-age "${BACKUP_TAGE:-30}d" --exclude 'vermieteros-????-??-01T*'

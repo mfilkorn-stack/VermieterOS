@@ -20,15 +20,20 @@ services:
     image: redis:7-alpine
     ports: ['6379:6379']
 
-  minio:
-    image: minio/minio
-    command: server /data --console-address ':9001'
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio-secret
-    ports: ['9000:9000', '9001:9001']
+  # S3-kompatibel (MinIO veröffentlicht keine freien Images mehr). Zugang: dev / dev-geheim
+  s3:
+    image: rclone/rclone:1.71
+    command: serve s3 --auth-key dev,dev-geheim --addr :9000 /data
+    ports: ['9000:9000']
     volumes:
-      - miniodata:/data
+      - s3data:/data
+
+  # Lokaler Mailserver für den Mail-Eingang: SMTP 3025, IMAP 3143, jede Anmeldung gilt
+  mail:
+    image: greenmail/standalone:2.1.5
+    environment:
+      GREENMAIL_OPTS: -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled
+    ports: ['3025:3025', '3143:3143']
 
   gotenberg:
     image: gotenberg/gotenberg:8
@@ -36,4 +41,4 @@ services:
 
 volumes:
   pgdata:
-  miniodata:
+  s3data:

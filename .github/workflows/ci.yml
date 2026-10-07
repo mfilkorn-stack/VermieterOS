@@ -31,6 +31,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: ops/testdienste.sh
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
@@ -62,6 +63,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @vermieteros/web exec playwright install --with-deps chromium
+      - run: ops/testdienste.sh
       - run: pnpm --filter @vermieteros/web e2e
       - uses: actions/upload-artifact@v4
         if: failure()

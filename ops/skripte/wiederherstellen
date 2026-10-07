@@ -18,8 +18,8 @@ tabellen=$(psql -X -At -v ON_ERROR_STOP=1 -c \
   "SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')") ||
   fehler "Zieldatenbank nicht erreichbar"
 [ "$tabellen" = 0 ] || fehler "Zieldatenbank $PGDATABASE ist nicht leer ($tabellen Tabellen). Abbruch."
-rollen=$(psql -X -At -c "SELECT count(*) FROM pg_roles WHERE rolname IN ('vermieteros_owner', 'vermieteros_app')")
-[ "$rollen" = 2 ] || fehler "Rollen vermieteros_owner und vermieteros_app fehlen (postgres-init.sh)"
+rollen=$(psql -X -At -c "SELECT count(*) FROM pg_roles WHERE rolname IN ('vermieteros_owner', 'vermieteros_app', 'vermieteros_worker')")
+[ "$rollen" = 3 ] || fehler "Rollen vermieteros_owner, vermieteros_app und vermieteros_worker fehlen (postgres-init.sh)"
 
 arbeit=$(mktemp -d)
 trap 'rm -rf "$arbeit"' EXIT

@@ -1,0 +1,143 @@
+import { expect, test } from '@playwright/test'
+import { execFileSync } from 'node:child_process'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import nodemailer from 'nodemailer'
+import { konto, registrieren } from './hilfen'
+import { E2E } from './umgebung'
+
+/**
+ * WP 1.1: Mail-Eingang über die Oberfläche. Postfach einrichten (Verbindung wird geprüft),
+ * Mails kommen per SMTP in GreenMail an, der Worker ruft einmal ab, der Posteingang zeigt die
+ * automatische Zuordnung über den Absender, eine unbekannte Mail wird von Hand zugeordnet.
+ * Dienste: ops/testdienste.sh (GreenMail, S3).
+ */
+const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+
+function workerEinmal() {
+  execFileSync('pnpm', ['--silent', '--filter', '@vermieteros/worker', 'abruf'], {
+    cwd: wurzel,
+    env: {
+      ...process.env,
+      DATABASE_URL: E2E.workerUrl,
+      POSTFACH_SCHLUESSEL: E2E.postfachSchluessel,
+      S3_ENDPOINT: E2E.s3.endpoint,
+      S3_BUCKET: E2E.s3.bucket,
+      S3_ACCESS_KEY: E2E.s3.accessKey,
+      S3_SECRET_KEY: E2E.s3.secretKey,
+    },
+    stdio: 'inherit',
+  })
+}
+
+test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async ({ page }) => {
+  test.setTimeout(120_000)
+  const stempel = Date.now()
+  const postfach = `vermietung-${stempel}@example.org`
+  const mieterin = `mieterin-${stempel}@example.org`
+  await registrieren(page, konto('Post Test', 'post'))
+
+  await expect(page).toHaveURL(/\/mandanten$/)
+  await page.getByTestId('mandant-neu').click()
+  const m = page.getByTestId('mandant-anlegen')
+  await m.getByLabel('Name').fill('Post Mandant')
+  await m.getByRole('button', { name: 'Anlegen' }).click()
+
+  await page.getByTestId('objekt-neu').click()
+  const o = page.getByTestId('objekt-anlegen')
+  await o.getByLabel('Bezeichnung').fill('Haus am Park')
+  await o.getByLabel('Im Bestand seit').fill('2024-01-01')
+  await o.getByLabel('Straße').fill('Parkweg')
+  await o.getByLabel('Hausnummer').fill('3')
+  await o.getByLabel('PLZ').fill('99999')
+  await o.getByLabel('Ort').fill('Musterstadt')
+  await o.getByRole('button', { name: 'Anlegen' }).click()
+  await expect(page.getByTestId('objekt-titel')).toHaveText('Haus am Park')
+
+  await page.getByTestId('einheit-neu').click()
+  const e = page.getByTestId('einheit')
+  await e.getByLabel('Bezeichnung').fill('EG links')
+  await e.getByLabel('Wohnfläche m²').fill('70,00')
+  await e.getByRole('button', { name: 'Speichern' }).click()
+  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  const v = page.getByTestId('vermietung')
+  await v.getByLabel('Nachname').fill('Mieterin')
+  await v.getByLabel('E-Mail').fill(mieterin)
+  await v.getByLabel('Mietbeginn').fill('2024-02-01')
+  await v.getByLabel('Kaltmiete €').fill('700,00')
+  await v.getByRole('button', { name: 'Mietverhältnis anlegen' }).click()
+  await expect(page.getByTestId('mietverhaeltnis')).toContainText('Mieterin')
+
+  // Postfach: zuerst falscher Port, die Verbindungsprüfung muss greifen
+  await page.goto('/postfaecher')
+  const f = page.getByTestId('postfach')
+  await f.getByLabel('IMAP-Server').fill(E2E.imap.host)
+  await f.getByLabel('Port').fill('1')
+  await f.getByLabel(/Verschlüsselt \(TLS\)/).uncheck()
+  await f.getByLabel('Benutzer').fill(postfach)
+  await f.getByLabel('Passwort').fill('app-passwort')
+  await f.getByRole('button', { name: 'Verbindung prüfen und speichern' }).click()
+  await expect(f.getByRole('alert')).toContainText('Verbindung fehlgeschlagen')
+  await f.getByLabel('Port').fill(String(E2E.imap.port))
+  await f.getByRole('button', { name: 'Verbindung prüfen und speichern' }).click()
+  await expect(page.getByTestId('postfachliste')).toContainText(postfach)
+  await expect(page.getByTestId('letzter-abruf')).toHaveText('noch nie')
+
+  const smtp = nodemailer.createTransport({ ...E2E.smtp, secure: false, ignoreTLS: true })
+  await smtp.sendMail({
+    from: `Mieterin <${mieterin}>`,
+    to: postfach,
+    subject: 'Heizung kalt',
+    text: 'Seit gestern ist die Heizung kalt.',
+    attachments: [
+      { filename: 'thermostat.jpg', content: Buffer.from('bild'), contentType: 'image/jpeg' },
+    ],
+  })
+  await smtp.sendMail({
+    from: 'Hausverwaltung Nachbar <info@nachbar.example>',
+    to: postfach,
+    subject: 'Baum an der Grundstücksgrenze',
+    text: 'Bitte um Rückruf.',
+  })
+  smtp.close()
+  workerEinmal()
+
+  // Offen: nur die unbekannte Mail
+  await page.goto('/posteingang')
+  const offen = page.getByTestId('nachricht')
+  await expect(offen).toHaveCount(1)
+  await expect(offen.first()).toHaveAttribute('data-betreff', 'Baum an der Grundstücksgrenze')
+  await expect(offen.first().getByTestId('zuordnung')).toContainText('Offen')
+
+  // Alle: die Mail der Mieterin ist über den Absender zugeordnet, mit Anhang
+  await page.getByRole('link', { name: 'Alle' }).click()
+  const heizung = page.locator('[data-testid="nachricht"][data-betreff="Heizung kalt"]')
+  await expect(heizung.getByTestId('zuordnung')).toContainText('EG links · Haus am Park · Mieterin')
+  await expect(heizung.getByTestId('zuordnung')).toContainText('automatisch über den Absender')
+  await heizung.getByText(/Text und 1 Anhang/).click()
+  await expect(heizung.getByTestId('anhaenge')).toContainText('thermostat.jpg')
+
+  // Von Hand zuordnen
+  await page.goto('/posteingang')
+  const baum = page.locator(
+    '[data-testid="nachricht"][data-betreff="Baum an der Grundstücksgrenze"]',
+  )
+  const z = baum.getByTestId('zuordnen')
+  await z
+    .getByLabel('Mietverhältnis')
+    .selectOption({ label: await z.locator('option', { hasText: 'EG links' }).innerText() })
+  await z.getByLabel('Notiz zur Zuordnung').fill('betrifft Garten der Mieterin')
+  await z.getByRole('button', { name: 'Speichern' }).click()
+  await expect(page.getByTestId('posteingang-leer')).toHaveText(
+    'Nichts offen. Alle Nachrichten sind zugeordnet.',
+  )
+  await page.goto('/posteingang?alle=1')
+  await expect(baum.getByTestId('zuordnung')).toContainText('(von Hand)')
+
+  // Zweiter Abruf bringt nichts doppelt; das Postfach zeigt den Abrufzeitpunkt
+  workerEinmal()
+  await page.goto('/posteingang?alle=1')
+  await expect(page.getByTestId('nachricht')).toHaveCount(2)
+  await page.goto('/postfaecher')
+  await expect(page.getByTestId('letzter-abruf')).not.toHaveText('noch nie')
+})

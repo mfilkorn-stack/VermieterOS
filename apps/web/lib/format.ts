@@ -28,6 +28,19 @@ export function datumAnzeige(iso: string | null | undefined): string {
   return `${t}.${m}.${j}`
 }
 
+/** Zeitpunkt (timestamptz) in Ortszeit Berlin: „06.10.2026, 14:05“. */
+export function zeitpunktAnzeige(iso: string | null | undefined): string {
+  if (!iso) return '–'
+  return new Date(iso).toLocaleString('de-DE', {
+    timeZone: 'Europe/Berlin',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 /**
  * Bruch zur Anzeige als Zähler und Nenner, bevorzugt auf 1000 (üblich bei MEA):
  * 8889/100000 → „88,89“ / „1000“; 1/2 → „1“ / „2“.

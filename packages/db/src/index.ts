@@ -25,3 +25,4 @@ export {
 } from './ledger'
 export * as schema from './schema/index'
 export { datenqualitaet, ladeReferenzdaten } from './qualitaet'
+export * from './post'

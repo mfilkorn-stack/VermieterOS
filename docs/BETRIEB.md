@@ -4,7 +4,7 @@ Runbook für Produktion auf einem Hetzner-Cloud-Server. Entscheidungen dazu in A
 
 ## Aufbau
 
-Ein Server, Docker Compose, fünf Dienste:
+Ein Server, Docker Compose, sechs Dienste:
 
 | Dienst     | Image                                      | Aufgabe                                                                                  |
 | ---------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
@@ -14,7 +14,7 @@ Ein Server, Docker Compose, fünf Dienste:
 | `postgres` | `postgres:16`                              | Datenbank, Volume `pgdata`, Rollen beim ersten Start aus `postgres-init.sh`              |
 | `ops`      | `ghcr.io/mfilkorn-stack/vermieteros-ops`   | Zeitplan für Backup, Integritätsprüfung und Restore-Test                                 |
 
-Drei Datenbankrollen: `vermieteros_owner` besitzt das Schema und migriert. `vermieteros_app` ist die Laufzeitrolle der App ohne BYPASSRLS. `vermieteros_sicherung` liest nur, dafür an RLS vorbei, und dient ausschließlich Backup und Integritätsprüfung.
+Vier Datenbankrollen: `vermieteros_owner` besitzt das Schema und migriert. `vermieteros_app` ist die Laufzeitrolle der App ohne BYPASSRLS. `vermieteros_worker` sieht die Postfächer aller Mandanten und schreibt Nachrichten nur im Mandantenkontext. `vermieteros_sicherung` liest nur, dafür an RLS vorbei, und dient ausschließlich Backup und Integritätsprüfung.
 
 Zeitplan im `ops`-Container (Europe/Berlin, außerhalb der Umstellungsstunde 02:00–03:00):
 
@@ -44,7 +44,7 @@ Für den monatlichen Restore-Test auf dem Server liegt eine Kopie unter `/srv/ve
 
 ### Hetzner
 
-1. **Object Storage:** einen Bucket nur für Backups anlegen, z. B. `vermieteros-backup`, und dafür einen eigenen Zugangsschlüssel erzeugen. Endpoint und Region notieren (z. B. `https://fsn1.your-objectstorage.com`, `fsn1`).
+1. **Object Storage:** zwei Buckets anlegen, je mit eigenem Zugangsschlüssel. `vermieteros-dokumente` nimmt Mails und Anhänge auf (Worker), `vermieteros-backup` nur Backups. Endpoint und Region notieren (z. B. `https://fsn1.your-objectstorage.com`, `fsn1`).
 2. **Firewall** im Cloud-Projekt: eingehend nur 22 (am besten nur von der eigenen IP), 80 und 443 (TCP, 443 auch UDP). Docker veröffentlicht Ports an `ufw` vorbei, die Cloud-Firewall greift davor.
 3. **Server:** Ubuntu 24.04, x86 (die Images sind amd64), 4 GB RAM reichen für Phase 0 und 1. Standort Falkenstein oder Nürnberg. Unter „Cloud config“ den Inhalt von `ops/cloud-init.yml` einfügen, vorher den eigenen SSH-Public-Key darin eintragen. Backups des Servers bei Hetzner zusätzlich einschalten.
 4. **DNS:** A- und AAAA-Eintrag der Domain auf den Server.
@@ -62,6 +62,14 @@ sudo install -d -o 70 -g 70 -m 700 geheim
 sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
 docker login ghcr.io -u <github-nutzer>   # Token (classic) nur mit read:packages
 ```
+
+### Schlüssel für Postfach-Passwörter
+
+```sh
+openssl rand -base64 32
+```
+
+Der Wert kommt als `POSTFACH_SCHLUESSEL` in die `.env` und zusätzlich in den Passwortmanager. Web-App und Worker müssen denselben Schlüssel haben. Ohne ihn lassen sich die gespeicherten Postfach-Passwörter nicht mehr entschlüsseln und müssen neu eingegeben werden.
 
 ### Monitoring
 
@@ -139,7 +147,11 @@ Die Datenbank ist verloren oder beschädigt. Ziel ist eine leere Datenbank mit d
      ops wiederherstellen [vermieteros-2026-…Z]
    ```
    Am Ende steht `OK: n Ketten intakt, n Köpfe aus dem Manifest vorhanden`.
-5. Starten: `./deploy.sh <tag> --ohne-backup`. Eine neuere App-Version migriert dabei nach.
+5. Mails und Anhänge zurückkopieren, falls der Dokumenten-Bucket verloren ist. Vorhandenes wird nicht überschrieben:
+   ```sh
+   docker compose run --rm ops rclone copy --immutable --checksum ziel:<backup-bucket>/dokumente dokumente:<dokumente-bucket>
+   ```
+6. Starten: `./deploy.sh <tag> --ohne-backup`. Eine neuere App-Version migriert dabei nach.
 
 Verloren sind die Änderungen seit dem letzten Backup, höchstens ein Tag.
 

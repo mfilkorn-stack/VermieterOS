@@ -24,6 +24,26 @@ services:
       DATABASE_URL: postgres://vermieteros_app:${VOS_APP_PASSWORT:?}@postgres:5432/vermieteros
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?}
       BETTER_AUTH_URL: https://${DOMAIN}
+      POSTFACH_SCHLUESSEL: ${POSTFACH_SCHLUESSEL:?}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # Mail-Abruf (WP 1.1). Liest Postfächer aller Mandanten, schreibt nur im Mandantenkontext.
+  worker:
+    image: *image-app
+    command: ['node', 'worker/dist/worker.mjs']
+    restart: unless-stopped
+    init: true
+    environment:
+      DATABASE_URL: postgres://vermieteros_worker:${VOS_WORKER_PASSWORT}@postgres:5432/vermieteros
+      POSTFACH_SCHLUESSEL: ${POSTFACH_SCHLUESSEL}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_REGION: ${S3_REGION:-fsn1}
+      S3_BUCKET: ${S3_BUCKET:?}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?}
+      ABRUF_INTERVALL_SEKUNDEN: ${ABRUF_INTERVALL_SEKUNDEN:-300}
+      HEALTHCHECK_ABRUF: ${HEALTHCHECK_ABRUF:-}
     depends_on:
       postgres: { condition: service_healthy }
 
@@ -47,6 +67,7 @@ services:
       POSTGRES_DB: vermieteros
       VOS_OWNER_PASSWORT: ${VOS_OWNER_PASSWORT}
       VOS_APP_PASSWORT: ${VOS_APP_PASSWORT}
+      VOS_WORKER_PASSWORT: ${VOS_WORKER_PASSWORT:?}
       VOS_SICHERUNG_PASSWORT: ${VOS_SICHERUNG_PASSWORT:?}
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -74,6 +95,14 @@ services:
       RCLONE_CONFIG_ZIEL_ACCESS_KEY_ID: ${S3_BACKUP_ACCESS_KEY:?}
       RCLONE_CONFIG_ZIEL_SECRET_ACCESS_KEY: ${S3_BACKUP_SECRET_KEY:?}
       BACKUP_ZIEL: ziel:${S3_BACKUP_BUCKET:?}/vermieteros
+      # Mails und Anhänge: unveränderlich, inhaltsadressiert; nur kopiert, nie gelöscht.
+      RCLONE_CONFIG_DOKUMENTE_TYPE: s3
+      RCLONE_CONFIG_DOKUMENTE_PROVIDER: Other
+      RCLONE_CONFIG_DOKUMENTE_ENDPOINT: ${S3_ENDPOINT}
+      RCLONE_CONFIG_DOKUMENTE_REGION: ${S3_REGION:-fsn1}
+      RCLONE_CONFIG_DOKUMENTE_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      RCLONE_CONFIG_DOKUMENTE_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      DOKUMENTE_QUELLE: dokumente:${S3_BUCKET}
       BACKUP_EMPFAENGER: ${BACKUP_EMPFAENGER:?}
       BACKUP_SCHLUESSEL: /geheim/backup.key
       HEALTHCHECK_BACKUP: ${HEALTHCHECK_BACKUP:-}

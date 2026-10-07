@@ -7,15 +7,23 @@ import type { Akteur } from '../src/schema/index'
 
 export const NUTZER: Akteur = { art: 'nutzer', id: 'test-nutzer' }
 
-export function verbindungen(): { app: Db; owner: Db; close: () => Promise<void> } {
+export function verbindungen(): {
+  app: Db
+  owner: Db
+  worker: Db
+  close: () => Promise<void>
+} {
   const a = createDb(inject('appUrl'), { max: 2 })
   const o = createDb(inject('ownerUrl'), { max: 2 })
+  const w = createDb(inject('workerUrl'), { max: 2 })
   return {
     app: a.db,
     owner: o.db,
+    worker: w.db,
     close: async () => {
       await a.close()
       await o.close()
+      await w.close()
     },
   }
 }

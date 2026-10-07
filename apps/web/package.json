@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@vermieteros/db": "workspace:*",
+    "@vermieteros/post": "workspace:*",
     "@vermieteros/rechenkern": "workspace:*",
     "@vermieteros/schema": "workspace:*",
     "better-auth": "^1.7.7",
@@ -29,9 +30,11 @@
   "devDependencies": {
     "@playwright/test": "1.56.1",
     "@types/node": "^22.19.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "nodemailer": "^10.0.15",
     "typescript": "^5.9.3",
     "vitest": "^4.0.0"
   }

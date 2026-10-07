@@ -33,7 +33,7 @@ export default async function globalSetup() {
   }
 
   const dbPaket = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', 'packages', 'db')
-  execFileSync('pnpm', ['exec', 'tsx', 'src/migrate.ts'], {
+  execFileSync('pnpm', ['exec', 'tsx', 'src/migrate-cli.ts'], {
     cwd: dbPaket,
     env: { ...process.env, DATABASE_URL_OWNER: E2E.ownerUrl },
     stdio: 'inherit',
@@ -42,6 +42,7 @@ export default async function globalSetup() {
   const o2 = postgres(E2E.ownerUrl, { max: 1 })
   try {
     await o2.unsafe(`alter role vermieteros_app login password 'app'`)
+    await o2.unsafe(`alter role vermieteros_worker login password 'worker'`)
   } finally {
     await o2.end()
   }
