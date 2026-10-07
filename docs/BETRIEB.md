@@ -71,6 +71,10 @@ openssl rand -base64 32
 
 Der Wert kommt als `POSTFACH_SCHLUESSEL` in die `.env` und zusätzlich in den Passwortmanager. Web-App und Worker müssen denselben Schlüssel haben. Ohne ihn lassen sich die gespeicherten Postfach-Passwörter nicht mehr entschlüsseln und müssen neu eingegeben werden.
 
+### KI-Schlüssel
+
+`ANTHROPIC_API_KEY` in der `.env` schaltet die KI ein (Web und Worker). Ohne Schlüssel läuft alles außer den KI-Vorschlägen. Bevor echte Mieterdaten an die API gehen: Auftragsverarbeitungsvertrag mit Anthropic abschließen, Commercial Terms (kein Training mit unseren Daten) bestätigen, im Account prüfen, ob EU-Inferenz und verkürzte Aufbewahrung verfügbar sind (PLAN 4.4). Was an die KI geht, steht pro Aufruf als Ereignis `ki_aufruf` im Ledger, ohne Inhalt. `KI_MODELL` nur ändern, wenn das Golden-Set mit dem neuen Modell besteht (Workflow „KI Golden-Set“, manuell starten mit Modell). Für CI liegt derselbe Schlüssel als Repository-Secret `ANTHROPIC_API_KEY`; ohne Secret überspringt der wöchentliche Lauf.
+
 ### Monitoring
 
 Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `.env` eintragen:
