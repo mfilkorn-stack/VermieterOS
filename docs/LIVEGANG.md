@@ -12,7 +12,7 @@ Checkliste für das erste Produktiv-Deployment. Die Einzelheiten stehen in [BETR
 
 | Frage            | Empfehlung                                                                                                                                                          |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Domain           | Subdomain einer eigenen Domain, z. B. `app.<domain>.de`; Mails von `noreply@<domain>.de`                                                                            |
+| Domain           | `www.vermieteros.app` für die App, `vermieteros.app` leitet dorthin um (`DOMAIN_UMLEITUNG`); Mails von `noreply@vermieteros.app`                                    |
 | Wer registriert  | Nur die eigene Adresse in `REGISTRIERUNG_ERLAUBT`; alle anderen kommen per Einladung                                                                                |
 | KI               | Zum Start aus (`ANTHROPIC_API_KEY` leer). Erst einschalten, wenn der Auftragsverarbeitungsvertrag mit Anthropic abgeschlossen ist (BETRIEB „KI-Schlüssel“)          |
 | Backup-Schlüssel | Restore-Test vom eigenen Rechner statt Schlüssel auf dem Server, wenn der Server möglichst wenig wissen soll; sonst Kopie unter `geheim/backup.key` (BETRIEB, oben) |
@@ -44,20 +44,21 @@ done
 
 ## 5 · DNS
 
-- [ ] A- und AAAA-Eintrag der App-Domain auf den Server, TTL 300
-- [ ] Prüfpunkt: `dig +short app.<domain>.de` liefert die Server-IP. Erst dann deployen, sonst scheitert das Zertifikat
+- [ ] A- und AAAA-Eintrag für `www.vermieteros.app` und für `vermieteros.app` auf den Server, TTL 300
+- [ ] Keine Weiterleitung beim Registrar einrichten: `.app` erzwingt HTTPS (HSTS-Preload), das Zertifikat für beide Namen holt Caddy
+- [ ] Prüfpunkt: `dig +short www.vermieteros.app` und `dig +short vermieteros.app` liefern die Server-IP. Erst dann deployen, sonst scheitert das Zertifikat
 
 ## 6 · Mailversand (Brevo)
 
 - [ ] Konto anlegen, Auftragsverarbeitungsvertrag im Konto bestätigen
-- [ ] Absender-Domain hinzufügen, die angezeigten DNS-Einträge setzen: DKIM, Brevo-Code, SPF (`include:spf.brevo.com` in den bestehenden SPF-Eintrag, nicht als zweiten), DMARC mindestens `v=DMARC1; p=none; rua=mailto:…`
+- [ ] Absender-Domain `vermieteros.app` hinzufügen, die angezeigten DNS-Einträge setzen: DKIM, Brevo-Code, SPF (`include:spf.brevo.com` in den bestehenden SPF-Eintrag, nicht als zweiten), DMARC mindestens `v=DMARC1; p=none; rua=mailto:…`
 - [ ] SMTP-Schlüssel erzeugen → `SMTP_BENUTZER` (Login laut Konto), `SMTP_PASSWORT`; `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`
 - [ ] Prüfpunkt: Domain in Brevo als authentifiziert markiert
 
 ## 7 · Monitoring
 
 - [ ] healthchecks.io: vier Checks `backup` (täglich, 2 h Karenz), `integritaet` (täglich, 2 h), `restore` (monatlich, 1 Tag), `abruf` (Intervall des Mail-Abrufs, 30 min)
-- [ ] Uptime-Check auf `https://app.<domain>.de/api/gesund` (z. B. im selben Dienst oder UptimeRobot)
+- [ ] Uptime-Check auf `https://www.vermieteros.app/api/gesund` (z. B. im selben Dienst oder UptimeRobot)
 - [ ] Alarm an Mail und Handy
 
 ## 8 · Server einrichten
@@ -73,7 +74,7 @@ sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
 docker login ghcr.io -u <github-nutzer>       # Token (classic) nur mit read:packages
 ```
 
-`.env` vollständig: `DOMAIN`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` bleibt leer.
+`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` bleibt leer.
 
 - [ ] Prüfpunkt: `docker compose config -q` ohne Fehler (meldet fehlende Pflichtwerte)
 
@@ -85,7 +86,7 @@ docker compose ps                              # alle Dienste "running" bzw. "he
 docker compose logs --tail 50 web worker ops caddy
 ```
 
-- [ ] Prüfpunkt: `https://app.<domain>.de/login` lädt mit gültigem Zertifikat, `/api/gesund` antwortet 200
+- [ ] Prüfpunkt: `https://www.vermieteros.app/login` lädt mit gültigem Zertifikat, `/api/gesund` antwortet 200, `https://vermieteros.app` leitet auf `https://www.vermieteros.app` um
 
 ## 10 · Abnahme
 
