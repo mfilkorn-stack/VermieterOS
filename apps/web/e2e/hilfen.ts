@@ -1,4 +1,7 @@
 import { expect, type Page } from '@playwright/test'
+import { execFileSync } from 'node:child_process'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import postgres from 'postgres'
 import { totp } from './totp'
 import { E2E } from './umgebung'
@@ -45,4 +48,23 @@ export async function emailBestaetigt(email: string) {
   } finally {
     await sql.end()
   }
+}
+
+const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+
+/** Ein Abruf-Durchlauf des Workers (apps/worker --einmal) mit denselben Schlüsseln wie die Web-App. */
+export function workerEinmal() {
+  execFileSync('pnpm', ['--silent', '--filter', '@vermieteros/worker', 'abruf'], {
+    cwd: wurzel,
+    env: {
+      ...process.env,
+      DATABASE_URL: E2E.workerUrl,
+      POSTFACH_SCHLUESSEL: E2E.postfachSchluessel,
+      S3_ENDPOINT: E2E.s3.endpoint,
+      S3_BUCKET: E2E.s3.bucket,
+      S3_ACCESS_KEY: E2E.s3.accessKey,
+      S3_SECRET_KEY: E2E.s3.secretKey,
+    },
+    stdio: 'inherit',
+  })
 }

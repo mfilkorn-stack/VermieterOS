@@ -1,0 +1,74 @@
+name: Vorschau
+
+# Bebilderter Rundgang durch die echte App mit Musterdaten (apps/web/vorschau).
+# GitHub Pages liefert nur statische Dateien aus; die App selbst (Server, Datenbank, Login)
+# läuft dort nicht. Deshalb: App in CI starten, durchklicken, Bilder als Galerie veröffentlichen.
+#   main und manueller Start: Veröffentlichung auf GitHub Pages
+#   Pull Requests: Galerie als Artefakt „vorschau“ zum Herunterladen
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vorschau-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rundgang:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      E2E_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/vermieteros_e2e
+      VORSCHAU_AUSGABE: ${{ github.workspace }}/vorschau-ausgabe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @vermieteros/web exec playwright install --with-deps chromium
+      - run: ops/testdienste.sh
+      - run: pnpm --filter @vermieteros/web vorschau
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vorschau
+          path: vorschau-ausgabe
+          retention-days: 14
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          path: vorschau-ausgabe
+
+  veroeffentlichen:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: rundgang
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - id: pages
+        uses: actions/deploy-pages@v4
