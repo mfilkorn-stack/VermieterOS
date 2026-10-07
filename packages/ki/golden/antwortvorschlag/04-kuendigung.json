@@ -1,0 +1,24 @@
+{
+  "beschreibung": "Kündigung: Eingangsbestätigung ist eine markierte Zusage",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Kündigung",
+    "text": "Hiermit kündige ich das Mietverhältnis fristgerecht zum 28.02.2027. Bitte bestätigen Sie mir den Eingang bis zum 15.11.2026.",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {
+    "absender.name": "Name, mit dem die Mail unterschrieben bzw. versendet wurde",
+    "vermieter.name": "Name der Eigentümerschaft (Vermieterseite)",
+    "mieter.name": "Name der Mieterin oder des Mieters laut Mietverhältnis",
+    "einheit.bezeichnung": "Bezeichnung der Wohnung oder Einheit",
+    "objekt.bezeichnung": "Bezeichnung des Objekts",
+    "objekt.adresse": "Straße und Hausnummer des Objekts"
+  },
+  "erwartet": {}
+}

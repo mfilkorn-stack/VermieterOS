@@ -15,6 +15,8 @@ export type Aufgabe<D, A> = {
   ausgabe: z.ZodType<A>
   /** Texte der Ausgabe, die als Entwurf gelten: keine Zahlen, nur bekannte Platzhalter */
   entwuerfe?: (a: A) => string[]
+  /** Fachliche Prüfung der Ausgabe gegen den Kontext; jeder Befund lehnt die Ausgabe ab */
+  pruefe?: (a: A, daten: D) => string[]
   maxTokens?: number
   /** Gültigkeit eines Vorschlags in Tagen (PLAN 4.2: Standard 14) */
   ablaufTage?: number

@@ -1,0 +1,23 @@
+{
+  "beschreibung": "Kündigung mit Auszugstermin",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Kündigung",
+    "text": "Hiermit kündige ich das Mietverhältnis fristgerecht zum 28.02.2027. Bitte bestätigen Sie mir den Eingang bis zum 15.11.2026.",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "vertrag_kuendigung",
+    "dringlichkeit": "hoch",
+    "frist": {
+      "datum": "2026-11-15"
+    }
+  }
+}

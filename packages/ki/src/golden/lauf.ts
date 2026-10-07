@@ -75,6 +75,7 @@ export async function laufeGoldenSet<D, A>(
             )
           }
         }
+        befunde.push(...(aufgabe.pruefe?.(a.data, fall.daten as D) ?? []))
         befunde.push(...abweichungen(fall.erwartet, a.data))
       }
     } catch (e) {

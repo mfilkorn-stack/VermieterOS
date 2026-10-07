@@ -16,6 +16,7 @@
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/ibm-plex-sans": "^5.3.0",
     "@vermieteros/db": "workspace:*",
+    "@vermieteros/ki": "workspace:*",
     "@vermieteros/post": "workspace:*",
     "@vermieteros/rechenkern": "workspace:*",
     "@vermieteros/schema": "workspace:*",

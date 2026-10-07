@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@vermieteros/db": "workspace:*",
+    "@vermieteros/ki": "workspace:*",
     "@vermieteros/post": "workspace:*"
   },
   "devDependencies": {

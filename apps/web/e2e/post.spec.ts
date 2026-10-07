@@ -100,6 +100,14 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(heizung.getByTestId('zuordnung')).toContainText('EG links · Haus am Park · Mieterin')
   await expect(heizung.getByTestId('zuordnung')).toContainText('automatisch über den Absender')
   await expect(heizung).toContainText('1 Anhang')
+  // WP 1.5: Der Worker hat beide Mails von der KI sortieren lassen (Attrappe statt API)
+  await expect(heizung.getByTestId('sortierung')).toContainText('Notfall')
+  await expect(heizung.getByTestId('sortierung')).toContainText('Heizung oder Wasser')
+  await expect(
+    page
+      .locator('[data-testid="nachricht"][data-betreff="Baum an der Grundstücksgrenze"]')
+      .getByTestId('sortierung'),
+  ).not.toContainText('Notfall')
 
   // Von Hand zuordnen
   await page.goto('/posteingang')
@@ -137,6 +145,20 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(page.getByTestId('nachricht-text')).toContainText(
     'Seit gestern ist die Heizung kalt.',
   )
+
+  // WP 1.5: Einschätzung bestätigen, Antwortentwurf mit eingesetzten Fakten übernehmen
+  const einschaetzung = page.getByTestId('einschaetzung')
+  await expect(einschaetzung).toContainText('Die Heizung ist ausgefallen.')
+  await page.getByTestId('einschaetzung-passt').getByRole('button').click()
+  await expect(einschaetzung).toContainText('bestätigt')
+  const antwort = page.getByTestId('antwort')
+  await page.getByTestId('antwort-erzeugen').getByRole('button').click()
+  await expect(page.getByTestId('antwort-text')).toContainText('Guten Tag Mieterin,')
+  await expect(page.getByTestId('antwort-text')).not.toContainText('{{')
+  await expect(antwort).toContainText('Termin mit dem Handwerker abstimmen')
+  await page.getByTestId('antwort-uebernehmen').getByRole('button').click()
+  await expect(antwort).toContainText('übernommen')
+  await expect(page.getByTestId('antwort-mailto')).toHaveAttribute('href', /^mailto:/)
   const [anhang] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('link', { name: 'thermostat.jpg' }).click(),

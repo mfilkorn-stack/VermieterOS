@@ -1,0 +1,18 @@
+{
+  "beschreibung": "Werbemail",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Ihr exklusives Angebot",
+    "text": "Jetzt Energieausweis zum Sonderpreis bestellen! Nur diese Woche.",
+    "absender": "Energie-Portal",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": null
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "sonstiges",
+    "dringlichkeit": "niedrig",
+    "frist": null
+  }
+}

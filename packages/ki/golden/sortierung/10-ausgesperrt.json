@@ -1,0 +1,20 @@
+{
+  "beschreibung": "Mieter ausgesperrt",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Ausgesperrt!",
+    "text": "Ich stehe vor der Tür, Schlüssel liegt drinnen. Haben Sie einen Ersatzschlüssel?",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "schluessel_zugang",
+    "dringlichkeit": "notfall"
+  }
+}

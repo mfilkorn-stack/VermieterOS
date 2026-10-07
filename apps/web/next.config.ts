@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   // Workspace-Pakete werden direkt aus TypeScript gebündelt.
   transpilePackages: [
     '@vermieteros/db',
+    '@vermieteros/ki',
     '@vermieteros/post',
     '@vermieteros/rechenkern',
     '@vermieteros/schema',

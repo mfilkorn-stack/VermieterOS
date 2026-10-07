@@ -1,4 +1,5 @@
-import { createDb } from '@vermieteros/db'
+import { aktivePostfaecherAllerMandanten, createDb } from '@vermieteros/db'
+import { kiClientAusUmgebung, sortiereNeueNachrichten } from '@vermieteros/ki'
 import {
   rufeAlleAb,
   s3Speicher,
@@ -10,6 +11,8 @@ import {
  * Worker (PLAN.md 2.1): ruft alle aktiven Postfächer ab, dann Pause, dann wieder.
  *   node worker.mjs           Dauerbetrieb, Intervall ABRUF_INTERVALL_SEKUNDEN (Standard 300)
  *   node worker.mjs --einmal  ein Durchlauf, Exit-Code 1 bei Absturz (Tests, Fehlersuche)
+ * Mit ANTHROPIC_API_KEY sortiert er danach neue Mails (WP 1.5), höchstens KI_SORTIERUNG_LIMIT
+ * pro Durchlauf (Standard 20); KI_SORTIERUNG=aus schaltet das ab.
  * Fehler einzelner Postfächer (falsches Passwort, Server weg) stehen am Postfach und in der App;
  * der Totmannschalter HEALTHCHECK_ABRUF meldet nur, ob der Worker selbst läuft.
  */
@@ -33,6 +36,8 @@ const monitor = process.env['HEALTHCHECK_ABRUF']
 const { db, close } = createDb(url, { max: 3 })
 const speicher = s3Speicher(speicherKonfigAusUmgebung())
 const ctx = { db, speicher, schluessel: schluesselAusUmgebung(), log }
+const ki = process.env['KI_SORTIERUNG'] === 'aus' ? null : kiClientAusUmgebung()
+const kiLimit = Number(process.env['KI_SORTIERUNG_LIMIT'] ?? 20)
 
 let laeuft = true
 let wecken: (() => void) | null = null
@@ -49,6 +54,10 @@ async function durchlauf(): Promise<void> {
   const neu = ergebnisse.reduce((s, e) => s + e.neu, 0)
   const fehler = ergebnisse.filter((e) => e.fehler).length
   log(`Durchlauf: ${ergebnisse.length} Postfächer, ${neu} neue Nachrichten, ${fehler} mit Fehler`)
+  if (!ki) return
+  const mandantIds = (await aktivePostfaecherAllerMandanten(db)).map((p) => p.mandantId)
+  const s = await sortiereNeueNachrichten({ db, client: ki, mandantIds, limit: kiLimit, log })
+  if (s.sortiert || s.fehler) log(`Sortierung: ${s.sortiert} sortiert, ${s.fehler} gescheitert`)
 }
 
 try {

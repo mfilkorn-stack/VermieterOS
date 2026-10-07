@@ -31,3 +31,14 @@ export {
   type KiUmgebung,
   type Pruefung,
 } from './vorschlag'
+export { ANTWORTVORSCHLAG, Antwortvorschlag } from './aufgaben/antwortvorschlag'
+export {
+  DRINGLICHKEITEN,
+  KATEGORIE_TEXT,
+  KATEGORIEN,
+  SORTIERUNG,
+  Sortierung,
+  type Dringlichkeit,
+  type Kategorie,
+} from './aufgaben/sortierung'
+export { sortiereNeueNachrichten } from './sortierlauf'

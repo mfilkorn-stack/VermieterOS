@@ -263,14 +263,16 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await bild(
     page,
     'Posteingang: alle',
-    'Die Mail des Mieters ist automatisch über den Absender zugeordnet, mit Anhang.',
+    'Die Mail des Mieters ist automatisch über den Absender zugeordnet, mit Anhang. Die KI hat beide Mails sortiert: Kategorie, Dringlichkeit, Frist.',
   )
   await page.getByRole('link', { name: 'Heizung im Bad bleibt kalt' }).click()
   await expect(page.getByTestId('nachricht-betreff')).toHaveText('Heizung im Bad bleibt kalt')
+  await page.getByTestId('antwort-erzeugen').getByRole('button').click()
+  await expect(page.getByTestId('antwort-text')).toContainText('Guten Tag')
   await bild(
     page,
     'Nachricht im Detail',
-    'Kopfdaten, Zuordnung mit Verlauf, Text, Anhänge und vollständige Mail zum Herunterladen, je mit Prüfsumme.',
+    'Kopfdaten, Zuordnung, Einschätzung der KI und ein Antwortentwurf: Namen und Adressen setzt die Software aus den Stammdaten ein, die KI schreibt nur Platzhalter. In der Vorschau antwortet eine Attrappe statt der echten KI.',
   )
   await page
     .getByTestId('zuordnung')

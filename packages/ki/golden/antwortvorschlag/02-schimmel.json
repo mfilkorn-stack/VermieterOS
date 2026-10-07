@@ -1,0 +1,24 @@
+{
+  "beschreibung": "Schimmel: Besichtigung ankündigen ohne Termin, keine Kostenzusage",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Schimmel",
+    "text": "Hallo, in der Ecke im Schlafzimmer bildet sich Schimmel. Fotos hänge ich an.",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": ["ecke.jpg"],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {
+    "absender.name": "Name, mit dem die Mail unterschrieben bzw. versendet wurde",
+    "vermieter.name": "Name der Eigentümerschaft (Vermieterseite)",
+    "mieter.name": "Name der Mieterin oder des Mieters laut Mietverhältnis",
+    "einheit.bezeichnung": "Bezeichnung der Wohnung oder Einheit",
+    "objekt.bezeichnung": "Bezeichnung des Objekts",
+    "objekt.adresse": "Straße und Hausnummer des Objekts"
+  },
+  "erwartet": {}
+}

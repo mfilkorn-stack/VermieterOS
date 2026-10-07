@@ -12,11 +12,14 @@ export function Formular({
   knopf,
   children,
   testId,
+  zweit,
 }: {
   aktion: (vorher: FormStatus, daten: FormData) => Promise<FormStatus>
   knopf: string
   children: ReactNode
   testId?: string
+  /** Zweitrangige Aktion (Verwerfen, Abbrechen): heller Knopf */
+  zweit?: boolean
 }) {
   const [status, formAktion, laeuft] = useActionState(aktion, {})
   function absenden(e: FormEvent<HTMLFormElement>) {
@@ -33,7 +36,7 @@ export function Formular({
         </p>
       ) : null}
       {status.hinweis ? <p className="leise">{status.hinweis}</p> : null}
-      <button type="submit" disabled={laeuft}>
+      <button type="submit" disabled={laeuft} className={zweit ? 'zweit' : undefined}>
         {knopf}
       </button>
     </form>
