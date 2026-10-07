@@ -89,6 +89,7 @@ docker compose ps                              # alle Dienste "running" bzw. "he
 docker compose logs --tail 50 web worker ops caddy
 ```
 
+- [ ] Prüfpunkt: `docker compose logs web | grep '\[mail\]'` zeigt `SMTP bereit`
 - [ ] Prüfpunkt: `https://www.vermieteros.app/login` lädt mit gültigem Zertifikat, `/api/gesund` antwortet 200, `https://vermieteros.app` leitet auf `https://www.vermieteros.app` um
 
 ## 10 · Abnahme
