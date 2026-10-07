@@ -10,10 +10,10 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { AntwortKarte, EinschaetzungKarte } from '@/components/ki-karten'
 import { TicketStatusBadge } from '@/components/ticket-badges'
-import { Auswahl, Feld } from '@/components/felder'
+import { Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
-import { DOKUMENT_TYP_TEXT, ERLAUBTE_TYPEN as ABLEGBAR } from '@/lib/dokument-text'
-import { DOKUMENT_TYPEN } from '@vermieteros/schema'
+import { DokumentArtAuswahl } from '@/components/dokument-art-auswahl'
+import { ablegbar } from '@/lib/upload'
 import { anhangAlsDokument } from '../../dokumente/aktionen'
 import { Status } from '@/components/status'
 import { ZuordnenFormular } from '@/components/zuordnen-formular'
@@ -176,7 +176,7 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
                     </span>
                   </span>
                   <Download size={16} color="var(--dezent)" aria-hidden />
-                  {schreiben && mv && ABLEGBAR.has(a.mimeTyp) ? (
+                  {schreiben && mv && ablegbar(a.mimeTyp, a.dateiname) ? (
                     <details className="ablegen">
                       <summary>Als Dokument ablegen</summary>
                       <Formular
@@ -190,10 +190,7 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
                           name="mietverhaeltnisId"
                           value={mv.mietverhaeltnisId}
                         />
-                        <Auswahl
-                          label="Art"
-                          name="typ"
-                          optionen={DOKUMENT_TYPEN.map((t) => [t, DOKUMENT_TYP_TEXT[t]] as const)}
+                        <DokumentArtAuswahl
                           defaultValue={
                             a.mimeTyp === 'application/pdf' ? 'mietvertrag' : 'sonstiges'
                           }

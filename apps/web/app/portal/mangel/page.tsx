@@ -34,8 +34,13 @@ export default async function PortalMangel() {
           />
         </label>
         <label>
-          Fotos (bis zu 5, JPG, PNG oder WebP)
-          <input name="fotos" type="file" accept="image/jpeg,image/png,image/webp" multiple />
+          Fotos (bis zu 5, JPG, PNG, WebP oder HEIC)
+          <input
+            name="fotos"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
+            multiple
+          />
         </label>
         <label className="haken">
           <input type="checkbox" name="dringend" value="1" /> Dringend (Wohnung nur eingeschränkt

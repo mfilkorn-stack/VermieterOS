@@ -37,13 +37,14 @@ import {
 } from '@vermieteros/schema'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
+import { DATEI_FEHLER, ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
 import { datum, Eingabefehler, euro, ganz, haken, pflicht, text, zodText } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
 import { kiUmgebung } from '@/lib/ki'
 import { mitMandant, verlange, type MandantKontext } from '@/lib/sitzung'
 import { speichere } from '@/lib/speichern'
 import { objektSpeicher } from '@/lib/speicher'
+import { uploadVorbereiten } from '@/lib/upload'
 import { dokumentSeiten } from '@/lib/vertrag'
 import { heuteBerlin } from '@/lib/zeit'
 
@@ -72,9 +73,7 @@ export async function belegHochladen(d: FormData): Promise<HochladenErgebnis> {
     if (!(datei instanceof File) || datei.size === 0)
       throw new Eingabefehler('Bitte eine Datei wählen.')
     if (datei.size > MAX_GROESSE) throw new Eingabefehler('Die Datei ist größer als 20 MB.')
-    if (!ERLAUBTE_TYPEN.has(datei.type))
-      throw new Eingabefehler('Erlaubt sind PDF, JPG, PNG und WebP.')
-    const inhalt = Buffer.from(await datei.arrayBuffer())
+    const upload = await uploadVorbereiten(datei, ERLAUBTE_TYPEN, DATEI_FEHLER)
     const ticketId = text(d, 'ticketId')
     let objektId = text(d, 'objektId')
     return await mitMandant(async (tx, k) => {
@@ -85,7 +84,12 @@ export async function belegHochladen(d: FormData): Promise<HochladenErgebnis> {
       }
       if (objektId && !(await letzteVersion(tx, 'objekt', objektId)))
         throw new Eingabefehler('Objekt nicht gefunden.')
-      const abgelegt = await objektSpeicher().ablegen(k.mandantId, 'dokument', inhalt, datei.type)
+      const abgelegt = await objektSpeicher().ablegen(
+        k.mandantId,
+        'dokument',
+        upload.inhalt,
+        upload.mime,
+      )
       const vorhanden = await belegMitHash(tx, abgelegt.sha256)
       if (vorhanden) return { id: vorhanden, doppelt: true }
       const r = await speichere(tx, k, {
@@ -96,14 +100,14 @@ export async function belegHochladen(d: FormData): Promise<HochladenErgebnis> {
           ticketId,
           dateiHash: abgelegt.sha256,
           speicherSchluessel: abgelegt.schluessel,
-          dateiname: datei.name,
-          mime: datei.type,
+          dateiname: upload.dateiname,
+          mime: upload.mime,
           groesseBytes: abgelegt.groesse,
         },
         daten: {
           typ: 'beleg',
           status: 'gueltig',
-          titel: (text(d, 'titel') ?? datei.name.replace(/\.[a-z0-9]+$/i, '')).slice(0, 200),
+          titel: (text(d, 'titel') ?? upload.dateiname.replace(/\.[a-z0-9]+$/i, '')).slice(0, 200),
         },
         gueltigAb: heuteBerlin(),
       })

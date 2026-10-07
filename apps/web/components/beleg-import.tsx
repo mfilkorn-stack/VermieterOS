@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { HochladenErgebnis } from '@/app/(app)/belege/aktionen'
+import { DATEI_ACCEPT } from '@/lib/dokument-text'
 
 type Zustand = {
   name: string
@@ -90,14 +91,8 @@ export function BelegImport({
       data-testid="beleg-import"
     >
       <label>
-        Dateien (PDF, JPG, PNG, WebP; je bis 20 MB)
-        <input
-          type="file"
-          name="dateien"
-          multiple
-          accept="application/pdf,image/jpeg,image/png,image/webp"
-          required
-        />
+        Dateien (PDF, JPG, PNG, WebP, HEIC; je bis 20 MB)
+        <input type="file" name="dateien" multiple accept={DATEI_ACCEPT} required />
       </label>
       {objekte && objekte.length > 0 ? (
         <label>

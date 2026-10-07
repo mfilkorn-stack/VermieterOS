@@ -27,9 +27,11 @@ import {
   SITZUNG_TAGE,
 } from '@/lib/portal'
 import { objektSpeicher } from '@/lib/speicher'
+import { uploadVorbereiten } from '@/lib/upload'
 import { heuteBerlin } from '@/lib/zeit'
 
 const FOTO_TYPEN = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const FOTO_FEHLER = 'Fotos bitte als JPG, PNG, WebP oder HEIC.'
 const MAX_FOTO = 10 * 1024 * 1024
 const MAX_FOTOS = 5
 /** Unter der Grenze für Server Actions (next.config.ts) */
@@ -108,7 +110,6 @@ export async function mangelMelden(_: FormStatus, d: FormData): Promise<FormStat
     const fotos = d.getAll('fotos').filter((f): f is File => f instanceof File && f.size > 0)
     if (fotos.length > MAX_FOTOS) throw new Eingabefehler(`Höchstens ${MAX_FOTOS} Fotos.`)
     for (const f of fotos) {
-      if (!FOTO_TYPEN.has(f.type)) throw new Eingabefehler('Fotos bitte als JPG, PNG oder WebP.')
       if (f.size > MAX_FOTO) throw new Eingabefehler('Ein Foto ist größer als 10 MB.')
     }
     if (fotos.reduce((n, f) => n + f.size, 0) > MAX_FOTOS_ZUSAMMEN)
@@ -121,7 +122,7 @@ export async function mangelMelden(_: FormStatus, d: FormData): Promise<FormStat
     })
     if (!p.success) throw new Eingabefehler(zodText(p.error, { titel: 'Was ist kaputt?' }))
     const inhalte = await Promise.all(
-      fotos.map(async (f) => ({ f, inhalt: Buffer.from(await f.arrayBuffer()) })),
+      fotos.map((f) => uploadVorbereiten(f, FOTO_TYPEN, FOTO_FEHLER)),
     )
     const s = await mitPortal(async (tx, s) => {
       const ort = await ortDesMv(tx, s.mietverhaeltnisId)
@@ -138,8 +139,8 @@ export async function mangelMelden(_: FormStatus, d: FormData): Promise<FormStat
         },
         daten: p.data,
       })
-      for (const { f, inhalt } of inhalte) {
-        const a = await objektSpeicher().ablegen(s.mandantId, 'dokument', inhalt, f.type)
+      for (const f of inhalte) {
+        const a = await objektSpeicher().ablegen(s.mandantId, 'dokument', f.inhalt, f.mime)
         await neueVersion(tx, {
           entitaet: 'dokument',
           mandantId: s.mandantId,
@@ -151,8 +152,8 @@ export async function mangelMelden(_: FormStatus, d: FormData): Promise<FormStat
             ticketId: t.identId,
             dateiHash: a.sha256,
             speicherSchluessel: a.schluessel,
-            dateiname: f.name || 'foto.jpg',
-            mime: f.type,
+            dateiname: f.dateiname || 'foto.jpg',
+            mime: f.mime,
             groesseBytes: a.groesse,
           },
           daten: {
