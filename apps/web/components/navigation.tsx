@@ -4,12 +4,14 @@ import {
   ArrowLeftRight,
   Building2,
   Ellipsis,
+  HardHat,
   Inbox,
   Library,
   Mail,
   ShieldCheck,
   UserCog,
   Users,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -19,6 +21,8 @@ import { usePathname } from 'next/navigation'
 const ICONS = {
   objekte: Building2,
   posteingang: Inbox,
+  tickets: Wrench,
+  handwerker: HardHat,
   eigentuemer: Users,
   mitglieder: UserCog,
   postfaecher: Mail,

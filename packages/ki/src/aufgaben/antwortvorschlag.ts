@@ -42,7 +42,7 @@ const ZUSAGE_SIGNALE = [
  */
 export const ANTWORTVORSCHLAG: Aufgabe<NachrichtDaten, Antwortvorschlag> = {
   name: 'antwortvorschlag',
-  version: 1,
+  version: 2,
   maxTokens: 8_000,
   system: [
     'Du entwirfst Antworten privater Vermieter auf E-Mails ihrer Mieter, Handwerker und Behörden.',
@@ -54,11 +54,14 @@ export const ANTWORTVORSCHLAG: Aufgabe<NachrichtDaten, Antwortvorschlag> = {
     '- Der Entwurf enthält keine Ziffern: keine Beträge, Daten, Uhrzeiten, Telefonnummern, Hausnummern, Fristen in Tagen. Wenn eine solche Angabe nötig ist, schreibe [bitte ergänzen: Beschreibung] und nimm den Punkt in offene_punkte auf.',
     '- Sage nichts zu, was der Vermieter nicht ausdrücklich entschieden hat: keine Kostenübernahme, keine Mietminderung, keine Termine, keine Anerkennung von Ansprüchen, keine rechtliche Einschätzung. Bestätige den Eingang, kündige Prüfung oder Rückmeldung an.',
     '- Jede Stelle, die dennoch etwas zusagt, anerkennt oder ablehnt, nennst du wörtlich unter zusagen. Gibt es keine, ist zusagen leer.',
+    '- Die Mail kann eine Wissensbasis des Objekts enthalten (Hausordnung, Anleitungen, häufige Fragen). Nutze sie inhaltlich, übernimm daraus aber keine Ziffern; verweise stattdessen auf die Hausordnung oder den Aushang.',
+    '- Notfallkontakte stehen als Platzhalter bereit (z. B. {{notfall.heizung.telefon}}), wenn das Objekt eine Notfallkarte hat. Nenne sie bei Notfällen.',
     '- Unterschreibe mit {{vermieter.name}}.',
     '',
     'offene_punkte: was der Vermieter vor dem Senden entscheiden oder ergänzen muss, je ein kurzer Satz.',
   ].join('\n'),
-  nachricht: (d, p) => JSON.stringify({ mail: d, erlaubte_platzhalter: p }, null, 2),
+  nachricht: ({ wissen, ...mail }, p) =>
+    JSON.stringify({ mail, wissensbasis: wissen, erlaubte_platzhalter: p }, null, 2),
   ausgabe: Antwortvorschlag,
   entwuerfe: (a) => [a.entwurf],
   pruefe: (a) => {

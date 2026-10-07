@@ -33,6 +33,7 @@ afterAll(() => app.close())
 
 let mandant: string
 let einheitId: string
+let objektId: string
 let mvId: string
 let nachrichtId: string
 
@@ -78,6 +79,7 @@ beforeAll(async () => {
       identitaet: {},
       daten: { bezeichnung: 'Haus am Park', art: 'haus', strasse: 'Parkweg', hausnummer: '3' },
     })
+    objektId = o.identId
     const e = await neueVersion(tx, {
       entitaet: 'einheit',
       mandantId: mandant,
@@ -169,6 +171,54 @@ describe('Kontext-Builder für Mails', () => {
       'nachricht',
       'objekt',
     ])
+  })
+})
+
+describe('Notfallkarte und Wissensbasis im Kontext', () => {
+  it('liefert Notfall-Platzhalter, Wissensbasis und setzt Telefonnummern erst beim Rendern ein', async () => {
+    await withMandant(db, mandant, async (tx) => {
+      const h = await neueVersion(tx, {
+        entitaet: 'handwerker',
+        mandantId: mandant,
+        akteur: NUTZER,
+        gueltigAb: '2026-01-01',
+        identitaet: {},
+        daten: {
+          firma: 'Heizung Schmidt',
+          gewerke: ['heizung_sanitaer'],
+          telefon: '0221 111',
+          notdienstTelefon: '0171 222',
+        },
+      })
+      await neueVersion(tx, {
+        entitaet: 'notfallkarte',
+        mandantId: mandant,
+        akteur: NUTZER,
+        gueltigAb: '2026-01-01',
+        identitaet: { objektId },
+        daten: { eintraege: [{ art: 'heizung', handwerkerId: h.identId }] },
+      })
+      await neueVersion(tx, {
+        entitaet: 'wissensartikel',
+        mandantId: mandant,
+        akteur: NUTZER,
+        gueltigAb: '2026-01-01',
+        identitaet: { objektId },
+        daten: { titel: 'Heizung entlüften', kategorie: 'anleitung', inhalt: 'Ventil oben links.' },
+      })
+    })
+    const k = await withMandant(db, mandant, (tx) => fuerNachricht(tx, nachrichtId))
+    expect(k.platzhalter).toHaveProperty('notfall.heizung.telefon')
+    expect(k.daten.wissen).toEqual([
+      { titel: 'Heizung entlüften', kategorie: 'anleitung', inhalt: 'Ventil oben links.' },
+    ])
+    expect(k.referenzen.map((r) => r.entitaet)).toEqual(
+      expect.arrayContaining(['notfallkarte', 'wissensartikel']),
+    )
+    expect(JSON.stringify(k)).not.toContain('0171')
+    const f = await withMandant(db, mandant, (tx) => nachrichtFakten(tx, nachrichtId))
+    expect(f['notfall.heizung.telefon']).toBe('0171 222')
+    expect(f['notfall.heizung.name']).toBe('Heizung Schmidt')
   })
 })
 

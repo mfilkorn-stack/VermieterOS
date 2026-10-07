@@ -134,6 +134,20 @@
       "when": 1791335208166,
       "tag": "0018_ki_regeln",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791338181179,
+      "tag": "0019_handwerker_tickets",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791338182150,
+      "tag": "0020_handwerker_tickets_regeln",
+      "breakpoints": true
     }
   ]
 }

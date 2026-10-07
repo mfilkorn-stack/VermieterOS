@@ -16,7 +16,9 @@ import {
   DoorOpen,
   MapPin,
   Pencil,
+  Phone,
   Plus,
+  Siren,
   Store,
   TriangleAlert,
   Users,
@@ -25,7 +27,10 @@ import {
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AmpelStatus, MODUL_ICON, MODUL_TEXT } from '@/components/status'
+import { ladeNotfallkarte, listeTickets, listeWissen } from '@vermieteros/db'
+import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { ladeAkte, type Akte } from '@/lib/akte'
+import { NOTFALL_TEXT, WISSEN_TEXT } from '@/lib/betrieb-text'
 import { datumAnzeige, dezimalText, euroAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 
@@ -111,8 +116,18 @@ function ziel(a: Akte, b: Befund): string {
 
 export default async function ObjektSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const akte = await mitMandant((tx) => ladeAkte(tx, id))
-  if (!akte) notFound()
+  const daten = await mitMandant(async (tx) => {
+    const akte = await ladeAkte(tx, id)
+    if (!akte) return null
+    return {
+      akte,
+      notfall: await ladeNotfallkarte(tx, id),
+      wissen: await listeWissen(tx, id),
+      tickets: await listeTickets(tx, { offen: true, objektId: id }),
+    }
+  })
+  if (!daten) notFound()
+  const { akte, notfall, wissen, tickets } = daten
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const o = akte.objekt
   const q = akte.qualitaet
@@ -384,6 +399,86 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
           </li>
         ))}
       </ul>
+      <Abschnitt titel="Tickets">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/tickets/neu?objekt=${id}`}
+            text="Ticket anlegen"
+            testId="objekt-ticket-neu"
+          />
+        ) : null}
+      </Abschnitt>
+      {tickets.length === 0 ? <p className="leise">Keine offenen Tickets.</p> : null}
+      <ul className="liste" data-testid="objekt-tickets">
+        {tickets.map((t) => (
+          <li key={t.id} className="karte zeile">
+            <Link href={`/tickets/${t.id}`}>{t.titel}</Link>
+            <span className="meta">
+              <PrioritaetBadge p={t.prioritaet} />
+              <TicketStatusBadge status={t.status} />
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <Abschnitt titel="Notfallkarte">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/objekte/${id}/notfallkarte`}
+            testId="notfallkarte-bearbeiten"
+            text={notfall ? 'Bearbeiten' : 'Notfallkarte anlegen'}
+          />
+        ) : null}
+      </Abschnitt>
+      {notfall?.zeilen.length ? (
+        <ul className="karte befunde" data-testid="notfallkarte">
+          {notfall.zeilen.map((z, i) => (
+            <li key={i}>
+              <Siren size={16} aria-hidden color="var(--rot)" />
+              <span style={{ flex: 1 }}>
+                <strong>{NOTFALL_TEXT[z.art]}</strong> · {z.name}
+                {z.hinweis ? <span className="leise"> · {z.hinweis}</span> : null}
+              </span>
+              {z.telefon ? (
+                <a href={`tel:${z.telefon.replace(/[^+\d]/g, '')}`} className="ziffern">
+                  <Phone size={14} aria-hidden /> {z.telefon}
+                </a>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="leise">Noch keine Notfallkarte. Sie steht später im Mieterportal.</p>
+      )}
+
+      <Abschnitt titel="Wissensbasis">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/objekte/${id}/wissen/neu`}
+            text="Artikel anlegen"
+            testId="wissen-neu"
+          />
+        ) : null}
+      </Abschnitt>
+      {wissen.length === 0 ? (
+        <p className="leise">Hausordnung, Anleitungen, Müllabfuhr, häufige Fragen.</p>
+      ) : null}
+      <ul className="liste" data-testid="wissensbasis">
+        {wissen.map((w) => (
+          <li key={w.id} className="karte zeile">
+            {schreiben ? (
+              <Link href={`/objekte/${id}/wissen/${w.id}`}>{w.titel}</Link>
+            ) : (
+              <strong>{w.titel}</strong>
+            )}
+            <span className="meta">
+              <span>{WISSEN_TEXT[w.kategorie]}</span>
+              {w.mieterSichtbar ? null : <span>nur intern</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+
       <p className="leise" style={{ marginTop: 24 }}>
         Kennzahlen sind eine Vorbereitung für den Steuerberater, keine Steuerberatung. Gebäudeanteil
         und AfA-Satz bitte mit dem Berater abstimmen.

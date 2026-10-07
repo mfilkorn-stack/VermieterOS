@@ -292,6 +292,66 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Mails und Telefonnotizen in einer Zeitleiste; Notizen lassen sich nachvollziehbar korrigieren.',
   )
 
+  bereich = 'Handwerker und Tickets'
+  await page.goto('/handwerker/neu')
+  const hw = page.getByTestId('handwerker')
+  await hw.getByLabel('Firma oder Name').fill('Heizung Schmidt GmbH')
+  await hw.getByLabel('Heizung und Sanitär').check()
+  await hw.getByLabel('Telefon', { exact: true }).fill('0221 123456')
+  await hw.getByLabel('Notdienst außerhalb der Geschäftszeiten').check()
+  await hw.getByLabel('Notdienst-Telefon').fill('0171 9876543')
+  await hw.getByLabel('E-Mail').fill('auftrag@heizung-schmidt.example')
+  await hw.getByLabel('Bewertung').selectOption('5')
+  await hw.getByRole('button', { name: 'Speichern' }).click()
+  await expect(page.getByTestId('handwerkerliste')).toContainText('Heizung Schmidt GmbH')
+  await bild(
+    page,
+    'Handwerker',
+    'Verzeichnis mit Gewerk, Notdienst, Bewertung und direkten Anruf-Links.',
+  )
+
+  await page.goto(`${akte}/notfallkarte`)
+  await page
+    .getByTestId('notfall-0')
+    .getByLabel('Kontakt')
+    .selectOption({ label: 'Heizung Schmidt GmbH' })
+  await page.getByRole('button', { name: 'Eintrag hinzufügen' }).click()
+  const wasser = page.getByTestId('notfall-1')
+  await wasser.getByLabel('Wofür').selectOption('wasser')
+  await wasser.getByLabel('Name').fill('Stadtwerke Störungsdienst')
+  await wasser.getByLabel('Telefon').fill('0800 112233')
+  await wasser.getByLabel('Hinweis').fill('Haupthahn im Keller links')
+  await page.getByTestId('notfallkarte').getByRole('button', { name: 'Speichern' }).click()
+  await expect(page.getByTestId('notfallkarte')).toContainText('Heizung Schmidt GmbH')
+  await page.getByTestId('wissen-neu').click()
+  const wi = page.getByTestId('wissen')
+  await wi.getByLabel('Titel').fill('Hausordnung')
+  await wi.getByLabel('Inhalt').fill('Ruhezeiten mittags und nachts. Fahrräder in den Keller.')
+  await wi.getByRole('button', { name: 'Speichern' }).click()
+  await expect(page.getByTestId('wissensbasis')).toContainText('Hausordnung')
+
+  await page.goto('/posteingang?alle=1')
+  await page.getByRole('link', { name: 'Heizung im Bad bleibt kalt' }).click()
+  await page.getByTestId('nachricht-ticket-neu').click()
+  await page.getByTestId('ticket-anlegen').getByRole('button', { name: 'Ticket anlegen' }).click()
+  const tf = page.getByTestId('ticket-aktualisieren')
+  await tf.getByLabel('Status').selectOption('termin')
+  await tf.getByLabel('Handwerker').selectOption({ label: 'Heizung Schmidt GmbH' })
+  await tf.getByLabel('Termin', { exact: true }).fill('2026-11-05T09:00')
+  await tf.getByRole('button', { name: 'Speichern' }).click()
+  await expect(page.getByTestId('ticket-verlauf').locator('li')).toHaveCount(2)
+  await bild(
+    page,
+    'Ticket',
+    'Aus der Mail angelegt, vorbefüllt aus Zuordnung und Einschätzung. Jeder Statuswechsel steht im Verlauf; der Auftrag geht per Mail an den Handwerker.',
+  )
+  await page.goto(akte)
+  await bild(
+    page,
+    'Objektakte mit Notfallkarte',
+    'Offene Tickets, Notfallkarte und Wissensbasis am Objekt. Die KI nutzt beides für Antwortentwürfe, Telefonnummern setzt die Software ein.',
+  )
+
   bereich = 'Auf dem Handy'
   const handy = await browser.newContext({
     viewport: { width: 390, height: 844 },
