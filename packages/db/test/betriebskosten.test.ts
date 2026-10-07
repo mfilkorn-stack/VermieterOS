@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   bkAbrechnungZuJahr,
+  bkFristen,
   bkNutzungen,
   ladeBkAbrechnung,
   listeBkAbrechnungen,
@@ -186,6 +187,16 @@ describe('Betriebskostenabrechnung: Datenhaltung', () => {
     expect(geladen!.version.status).toBe('entwurf')
     expect(geladen!.jahr).toBe(2024)
     expect(await withMandant(v.app, a, (tx) => bkAbrechnungZuJahr(tx, einheit, 2024))).toBe(id)
+  })
+
+  it('Frist-Übersicht: je vermietetem Jahr der Stand, Mandanten getrennt', async () => {
+    const f = await withMandant(v.app, a, (tx) => bkFristen(tx, [2018, 2023, 2024]))
+    expect(f.map((x) => [x.jahr, x.status, x.versendet])).toEqual([
+      [2023, null, false],
+      [2024, 'entwurf', false],
+    ])
+    expect(f[0]!.zeitraumBis).toBe('2023-12-31')
+    expect(await withMandant(v.app, b, (tx) => bkFristen(tx, [2024]))).toEqual([])
   })
 
   it('Zeitraum höchstens zwölf Monate; Mandanten getrennt', async () => {

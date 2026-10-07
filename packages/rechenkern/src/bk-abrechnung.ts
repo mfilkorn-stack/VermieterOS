@@ -60,13 +60,49 @@ function positionen(p: readonly BkPosition[]): Kostenposition[] {
   }))
 }
 
-/** Letzter Tag, an dem die Abrechnung dem Mieter zugehen muss (§ 556 Abs. 3 Satz 2 BGB). */
-export function abrechnungsfrist(zeitraumBis: string): string {
-  const [j, m, t] = zeitraumBis.split('-').map(Number) as [number, number, number]
-  // Tag nach dem Ende, zwölf Monate weiter, einen Tag zurück
-  const d = new Date(Date.UTC(j + 1, m - 1, t + 1))
+function plusMonate(iso: string, monate: number): string {
+  const [j, m, t] = iso.split('-').map(Number) as [number, number, number]
+  // Tag nach dem Ende, n Monate weiter, einen Tag zurück (Monatsende bleibt Monatsende)
+  const tagDanach = new Date(Date.UTC(j, m - 1, t + 1))
+  const d = new Date(
+    Date.UTC(tagDanach.getUTCFullYear(), tagDanach.getUTCMonth() + monate, tagDanach.getUTCDate()),
+  )
   d.setUTCDate(d.getUTCDate() - 1)
   return d.toISOString().slice(0, 10)
+}
+
+export type FristStufe = 'laufend' | 'offen' | 'warnung' | 'eskalation' | 'abgelaufen' | 'erledigt'
+
+/**
+ * Frist-Wächter (WP 2.5): Stand einer Abrechnung gemessen an § 556 Abs. 3 BGB. Warnung ab
+ * Monat 9 nach Ende des Zeitraums, Eskalation ab Monat 11, danach abgelaufen. Erledigt ist sie,
+ * sobald der Versand vermerkt ist.
+ */
+export function fristStatus(
+  zeitraumBis: string,
+  heute: string,
+  versendet: boolean,
+): { stufe: FristStufe; fristBis: string; warnungAb: string; eskalationAb: string } {
+  const fristBis = abrechnungsfrist(zeitraumBis)
+  const warnungAb = plusMonate(zeitraumBis, 9)
+  const eskalationAb = plusMonate(zeitraumBis, 11)
+  const stufe: FristStufe = versendet
+    ? 'erledigt'
+    : heute > fristBis
+      ? 'abgelaufen'
+      : heute > eskalationAb
+        ? 'eskalation'
+        : heute > warnungAb
+          ? 'warnung'
+          : heute > zeitraumBis
+            ? 'offen'
+            : 'laufend'
+  return { stufe, fristBis, warnungAb, eskalationAb }
+}
+
+/** Letzter Tag, an dem die Abrechnung dem Mieter zugehen muss (§ 556 Abs. 3 Satz 2 BGB). */
+export function abrechnungsfrist(zeitraumBis: string): string {
+  return plusMonate(zeitraumBis, 12)
 }
 
 function tageZwischen(a: string, b: string): number {

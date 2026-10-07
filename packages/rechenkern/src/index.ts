@@ -78,6 +78,8 @@ export {
 
 export {
   abrechnungsfrist,
+  fristStatus,
+  type FristStufe,
   pruefeBkAbrechnung,
   rechneBkAbrechnung,
   type BkBefund,
