@@ -51,3 +51,18 @@ export {
   type ReferenzStatus,
   type ReferenzErgebnis,
 } from './referenz'
+
+export {
+  betriebskostenabrechnung,
+  monate,
+  vorauszahlungSoll,
+  type Abrechnung,
+  type Einheit,
+  type Einzelabrechnung,
+  type Hinweis,
+  type Kostenposition,
+  type Nutzung,
+  type Verteilerschluessel,
+  type Zeile,
+  type Zeitraum,
+} from './nebenkosten'
