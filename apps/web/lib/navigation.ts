@@ -24,6 +24,7 @@ const MEHR_BEREICHE = [
   '/mehr',
   '/journal',
   '/betriebskosten',
+  '/steuer',
   '/handwerker',
   '/eigentuemer',
   '/mitglieder',
@@ -99,6 +100,7 @@ export async function ladeNavigation(): Promise<Navigation> {
     icon: 'betriebskosten',
     zaehler: { n: daten.fristen, art: 'handlung', text: 'Frist in Sicht oder abgelaufen' },
   }
+  const steuer: NavEintrag = { href: '/steuer', label: 'Steuer', icon: 'steuer' }
   const verwaltung: NavEintrag[] = [
     { href: '/handwerker', label: 'Handwerker', icon: 'handwerker' },
     { href: '/eigentuemer', label: 'Eigentümer', icon: 'eigentuemer' },
@@ -110,7 +112,7 @@ export async function ladeNavigation(): Promise<Navigation> {
   ]
   return {
     mandant: { name: daten.name, rolle: ROLLEN_TEXT[k.rolle].split(' (')[0]! },
-    haupt: [objekte, ...posteingang, tickets, belege, betriebskosten, journal],
+    haupt: [objekte, ...posteingang, tickets, belege, betriebskosten, journal, steuer],
     verwaltung,
     tabs: [
       objekte,

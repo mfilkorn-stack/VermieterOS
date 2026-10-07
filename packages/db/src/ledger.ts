@@ -5,6 +5,8 @@ import type { Tx } from './client'
 import {
   bkAbrechnungen,
   bkAbrechnungVersionen,
+  steuerpakete,
+  steuerpaketVersionen,
   darlehen,
   darlehenVersionen,
   dokumente,
@@ -85,6 +87,11 @@ export const ENTITAETEN = {
     identitaet: bkAbrechnungen,
     versionen: bkAbrechnungVersionen,
     fk: 'bkAbrechnungId',
+  },
+  steuerpaket: {
+    identitaet: steuerpakete,
+    versionen: steuerpaketVersionen,
+    fk: 'steuerpaketId',
   },
 } as const
 
