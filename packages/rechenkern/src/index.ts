@@ -86,3 +86,15 @@ export {
   type BkErgebnis,
   type BkMietzeit,
 } from './bk-abrechnung'
+
+export {
+  anlageV,
+  sollImJahr,
+  type SteuerBefund,
+  type SteuerEingabe,
+  type SteuerErgebnis,
+  type SteuerJournalEintrag,
+  type SteuerKorrekturen,
+  type SteuerMietzeit,
+  type SteuerZeile,
+} from './steuer'

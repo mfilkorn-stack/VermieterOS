@@ -10,3 +10,4 @@ export {
   type WohnungsgeberDaten,
 } from './schreiben'
 export { betriebskostenabrechnungBrief, type BkBriefDaten } from './betriebskosten'
+export { steuerUebersichtBrief, type SteuerUebersichtDaten } from './steuer'

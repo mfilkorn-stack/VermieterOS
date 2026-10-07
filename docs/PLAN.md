@@ -320,6 +320,15 @@ WP 2.4 steht (ADR 0012). Je Einheit und Jahr eine versionierte Abrechnung: Koste
 
 WP 2.5 steht. Der Frist-Wächter zeigt für die letzten beiden Jahre jede vermietete Einheit mit dem Stand ihrer Abrechnung: nicht angelegt, Entwurf, festgeschrieben, versendet. Die Stufe folgt § 556 Abs. 3 BGB: offen, ab Monat 9 nach Ende des Zeitraums „Frist in Sicht“, ab Monat 11 „Frist läuft ab“, danach „abgelaufen“. Erledigt ist eine Abrechnung erst, wenn der Versand an alle Mieter vermerkt ist. Die Frist endet mit Ablauf des zwölften Monats, im Schaltjahr also am 29. Februar. Dringende Fristen zählt das Menü „Betriebskosten“ in Amber, und die Startseite listet sie auf. Fehlende Abrechnungen lassen sich direkt aus der Übersicht anlegen.
 
+WP 2.6 steht (ADR 0013). Unter „Steuer“ steht je Objekt das Vorjahr und das Jahr davor. Die Seite rechnet die Einkünfte aus Vermietung aus vorhandenen Daten:
+
+- Sollmiete und Vorauszahlungen laut Mietkonditionen
+- Salden festgeschriebener BK-Abrechnungen im Jahr des Versands
+- Journal nach Zahlungstag: Erhaltung sofort oder verteilt (§ 82b EStDV), Zinsen, Betriebs- und Verwaltungskosten
+- AfA aus den Stammdaten, nachträgliche Herstellungskosten ab dem Zahlungsjahr
+
+Korrekturen sind Mietausfall, Hausgeld nach BFH (gezahlt minus Zuführung zur Erhaltungsrücklage plus Entnahmen), Zinsen laut Bescheinigung und weitere Werbungskosten. Der 15-%-Wächter zeigt den Erhaltungsaufwand netto seit Anschaffung gegen die Grenze; über der Grenze ist Festschreiben nur mit Bestätigung möglich. Ergebnis und Aufteilung auf die Miteigentümer gehen auf den Cent auf. Festschreiben legt ein ZIP am Objekt ab: Übersicht (PDF), Journal (CSV für Excel), Belege nach Belegnummer, Prüfprotokoll, `manifest.sha256`. Danach sperrt die Datenbank, Korrektur per Storno mit Grund. Der Steuerberater liest und lädt herunter. Der E2E-Test rechnet ein Jahr mit Korrekturen nach, schreibt fest, prüft jede Prüfsumme im heruntergeladenen ZIP und hebt die Festschreibung wieder auf.
+
 ### Phase 3 · Mieterhöhung (Wo 13–15)
 
 | WP  | Inhalt                                                                                                                                                                 |

@@ -28,6 +28,7 @@ export const DOKUMENT_TYP_TEXT: Record<DokumentTyp, string> = {
   hausgeldabrechnung: 'Hausgeldabrechnung',
   heizkostenabrechnung: 'Heizkostenabrechnung (Messdienst)',
   betriebskostenabrechnung: 'Betriebskostenabrechnung',
+  steuerpaket: 'Steuerpaket (ZIP für den Steuerberater)',
   weg_protokoll: 'Protokoll Eigentümerversammlung',
   hausordnung: 'Hausordnung',
   grundsteuer: 'Grundsteuer (Erklärung, Bescheid)',
@@ -93,6 +94,7 @@ export const DOKUMENT_GRUPPEN: ReadonlyArray<readonly [string, readonly Dokument
     [
       'grundsteuer',
       'versicherung',
+      'steuerpaket',
       'beleg',
       'mietspiegel',
       'bescheinigung',

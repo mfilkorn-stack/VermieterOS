@@ -104,6 +104,7 @@ export const DOKUMENT_TYPEN = [
   'hausordnung',
   'heizkostenabrechnung',
   'betriebskostenabrechnung',
+  'steuerpaket',
   // Laufend
   'grundsteuer',
   'versicherung',

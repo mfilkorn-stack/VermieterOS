@@ -438,7 +438,20 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
       </ul>
 
       <Abschnitt titel={`Journal ${heuteBerlin().slice(0, 4)}`}>
-        <Bearbeiten href={`/journal?objekt=${id}`} text="Journal öffnen" testId="objekt-journal" />
+        <div className="aktionen">
+          <Link
+            className="knopf zweit"
+            href={'/steuer/' + id + '/' + (Number(heuteBerlin().slice(0, 4)) - 1)}
+            data-testid="objekt-steuer"
+          >
+            Steuer {Number(heuteBerlin().slice(0, 4)) - 1}
+          </Link>
+          <Bearbeiten
+            href={`/journal?objekt=${id}`}
+            text="Journal öffnen"
+            testId="objekt-journal"
+          />
+        </div>
       </Abschnitt>
       <div className="karte" data-testid="objekt-journal-summen">
         {journal.length === 0 ? (

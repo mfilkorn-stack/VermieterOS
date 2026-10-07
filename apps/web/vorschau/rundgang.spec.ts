@@ -528,6 +528,16 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Kosten aus der WEG-Abrechnung, Heizung vom Messdienst mit Abzug des CO2-Anteils des Vermieters, Grundsteuer direkt. Ergebnis je Mieter, Prüfung auf Frist und Auffälligkeiten; Festschreiben erzeugt das PDF mit Anschreiben.',
   )
 
+  bereich = 'Steuer'
+  await page.goto('/steuer')
+  await page.getByTestId('steuer-zelle').first().getByRole('link').click()
+  await expect(page.getByTestId('steuer-ergebnis')).toBeVisible()
+  await bild(
+    page,
+    'Steuerpaket',
+    'Einkünfte aus Vermietung je Objekt und Jahr: Sollmiete, Journal nach Zahlungstag, AfA, Korrekturen wie Hausgeld nach BFH und Zinsbescheinigung, Aufteilung auf die Miteigentümer. Festschreiben erzeugt das ZIP für den Steuerberater.',
+  )
+
   bereich = 'Auf dem Handy'
   const handy = await browser.newContext({
     viewport: { width: 390, height: 844 },
