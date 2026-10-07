@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { extractText, getDocumentProxy } from 'unpdf'
 import { konto, registrieren } from './hilfen'
+import { warteAufMail } from './postfach'
 
 /**
  * WP 2.4: Betriebskostenabrechnung einer Eigentumswohnung. Kosten aus der WEG-Abrechnung,
@@ -31,6 +32,7 @@ test('Betriebskosten: Abrechnung mit Messdienst, CO2-Abzug, Ergebnis und Folgeja
   page,
 }) => {
   test.setTimeout(120_000)
+  const mieterMail = `bk.mieter.${Date.now()}@example.org`
   await registrieren(page, konto('BK Test', 'bk'))
   await page.getByTestId('mandant-neu').click()
   const m = page.getByTestId('mandant-anlegen')
@@ -53,6 +55,7 @@ test('Betriebskosten: Abrechnung mit Messdienst, CO2-Abzug, Ergebnis und Folgeja
   await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Nachname').fill('Beispiel')
+  await v.getByLabel('E-Mail').fill(mieterMail)
   await v.getByLabel('Mietbeginn').fill('2022-02-01')
   await v.getByLabel('Kaltmiete €').fill('650,00')
   await v.getByLabel('Vorauszahlung Betriebskosten €').fill('189,00')
@@ -135,6 +138,22 @@ test('Betriebskosten: Abrechnung mit Messdienst, CO2-Abzug, Ergebnis und Folgeja
   expect(t).toContain('Lohnkostenanteil beträgt 112,24 €')
   expect(t).toContain('Wohnfläche: Ihre Wohnung 59,72 m² von 671,79 m² gesamt.')
   expect(t).toContain('Anteil Vermieter 30 %')
+
+  // Versand: per Mail mit PDF (GreenMail) und Vermerk per Post, beides im Ledger
+  await page.goto(bkUrl)
+  await page.getByTestId('bk-mail').getByRole('button', { name: 'Per Mail senden' }).click()
+  await expect(page.getByTestId('bk-versand').first()).toContainText(`an ${mieterMail}`)
+  const mail = await warteAufMail(mieterMail, /Betriebskostenabrechnung 2024/)
+  expect(mail).toContain('mit einem Guthaben von 479,11 €')
+  await page.getByTestId('bk-ausgestellt').getByText('Versand per Post vermerken').click()
+  const post = page.getByTestId('bk-post')
+  await post.getByLabel('Datum').fill('2025-11-12')
+  await post.getByLabel('Notiz').fill('Einwurf-Einschreiben')
+  await post.getByRole('button', { name: 'Vermerken' }).click()
+  await expect(page.getByTestId('bk-versand')).toHaveCount(2)
+  await expect(page.getByTestId('bk-versand').nth(1)).toHaveText(
+    'Per Post am 12.11.2025 (Einwurf-Einschreiben)',
+  )
 
   // Korrektur: Festschreibung aufheben, PDF gilt als ersetzt, Entwurf wieder bearbeitbar
   await page.goto(bkUrl)

@@ -9,7 +9,7 @@ import { datumAnzeige, dezimalText, euroAnzeige, euroText } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { anpassungAbVorschlag, vorschlagVorauszahlung } from '@/lib/bk-festschreiben'
 import { heuteBerlin } from '@/lib/zeit'
-import { bkAufheben, bkFestschreiben, bkSpeichern } from '../aktionen'
+import { bkAufheben, bkFestschreiben, bkPostVermerken, bkSpeichern, bkVersenden } from '../aktionen'
 
 const TON = { fehler: 'rot', warnung: 'gelb', hinweis: 'neutral' } as const
 
@@ -68,42 +68,84 @@ function Festschreiben({ s }: { s: NonNullable<BkSeite> }) {
   )
 }
 
-function Ausgestellt({ s }: { s: NonNullable<BkSeite> }) {
-  const namen = new Map(s.nutzungen.map((n) => [n.mietverhaeltnisId, n.mieter.join(', ')]))
+function Ausgestellt({ s, schreiben }: { s: NonNullable<BkSeite>; schreiben: boolean }) {
+  const nutzung = new Map(s.nutzungen.map((n) => [n.mietverhaeltnisId, n]))
   return (
     <div className="karte" data-testid="bk-ausgestellt">
       <h2>Ausgestellt</h2>
+      <p className="leise">
+        Die Abrechnung muss dem Mieter bis {datumAnzeige(s.ergebnis?.fristBis)} zugehen. Per Mail
+        nur, wenn der Mieter damit einverstanden ist; bei einer Nachzahlung ist ein Nachweis des
+        Zugangs (Einwurf-Einschreiben, Bote) sicherer.
+      </p>
       <ul className="liste-schlicht">
-        {(s.daten.ergebnis ?? []).map((e) => (
-          <li key={e.mietverhaeltnisId} className="zeile">
-            <span>
-              {namen.get(e.mietverhaeltnisId) ?? 'Mieter'}:{' '}
-              {e.saldoCent >= 0 ? 'Nachzahlung ' : 'Guthaben '}
-              {euroAnzeige(Math.abs(e.saldoCent))}
-              {e.vorauszahlungNeuCent != null
-                ? ' · neue Vorauszahlung ' +
-                  euroText(e.vorauszahlungNeuCent) +
-                  ' € ab ' +
-                  datumAnzeige(e.vorauszahlungAb)
-                : ''}
-            </span>
-            <Link href={`/dokumente/${e.dokumentId}`} data-testid="bk-dokument">
-              PDF
-            </Link>
-          </li>
-        ))}
+        {(s.daten.ergebnis ?? []).map((e) => {
+          const n = nutzung.get(e.mietverhaeltnisId)
+          const versand = s.versand.filter((v) => v.mietverhaeltnisId === e.mietverhaeltnisId)
+          return (
+            <li key={e.mietverhaeltnisId} data-testid="bk-ausgestellt-mieter">
+              <div className="zeile">
+                <span>
+                  <strong>{n?.mieter.join(', ') || 'Mieter'}</strong>:{' '}
+                  {e.saldoCent >= 0 ? 'Nachzahlung ' : 'Guthaben '}
+                  {euroAnzeige(Math.abs(e.saldoCent))}
+                  {e.vorauszahlungNeuCent != null
+                    ? ' · neue Vorauszahlung ' +
+                      euroText(e.vorauszahlungNeuCent) +
+                      ' € ab ' +
+                      datumAnzeige(e.vorauszahlungAb)
+                    : ''}
+                </span>
+                <Link href={`/dokumente/${e.dokumentId}`} data-testid="bk-dokument">
+                  PDF
+                </Link>
+              </div>
+              {versand.map((v, i) => (
+                <p key={i} className="leise" data-testid="bk-versand">
+                  {v.art === 'mail'
+                    ? 'Per Mail am ' + datumAnzeige(v.datum) + ' an ' + v.an.join(', ')
+                    : 'Per Post am ' +
+                      datumAnzeige(v.datum) +
+                      (v.notiz ? ' (' + v.notiz + ')' : '')}
+                </p>
+              ))}
+              {versand.length === 0 ? <p className="leise">Noch nicht versendet.</p> : null}
+              {schreiben ? (
+                <div className="aktionen">
+                  {n?.emails.length ? (
+                    <Formular aktion={bkVersenden} knopf="Per Mail senden" zweit testId="bk-mail">
+                      <input type="hidden" name="id" value={s.id} />
+                      <input type="hidden" name="mietverhaeltnisId" value={e.mietverhaeltnisId} />
+                    </Formular>
+                  ) : null}
+                  <details>
+                    <summary>Versand per Post vermerken</summary>
+                    <Formular aktion={bkPostVermerken} knopf="Vermerken" zweit testId="bk-post">
+                      <input type="hidden" name="id" value={s.id} />
+                      <input type="hidden" name="mietverhaeltnisId" value={e.mietverhaeltnisId} />
+                      <Feld label="Datum" name="datum" type="date" defaultValue={heuteBerlin()} />
+                      <Feld label="Notiz" name="notiz" placeholder="z. B. Einwurf-Einschreiben" />
+                    </Formular>
+                  </details>
+                </div>
+              ) : null}
+            </li>
+          )
+        })}
       </ul>
-      <details>
-        <summary>Korrigieren</summary>
-        <p className="leise">
-          Hebt die Festschreibung auf; die ausgestellten PDFs gelten danach als ersetzt. Eine
-          angepasste Vorauszahlung bleibt bestehen und wird bei Bedarf an der Vermietung geändert.
-        </p>
-        <Formular aktion={bkAufheben} knopf="Festschreibung aufheben" zweit testId="bk-aufheben">
-          <input type="hidden" name="id" value={s.id} />
-          <Feld label="Grund der Korrektur" name="grund" required />
-        </Formular>
-      </details>
+      {schreiben ? (
+        <details>
+          <summary>Korrigieren</summary>
+          <p className="leise">
+            Hebt die Festschreibung auf; die ausgestellten PDFs gelten danach als ersetzt. Eine
+            angepasste Vorauszahlung bleibt bestehen und wird bei Bedarf an der Vermietung geändert.
+          </p>
+          <Formular aktion={bkAufheben} knopf="Festschreibung aufheben" zweit testId="bk-aufheben">
+            <input type="hidden" name="id" value={s.id} />
+            <Feld label="Grund der Korrektur" name="grund" required />
+          </Formular>
+        </details>
+      ) : null}
     </div>
   )
 }
@@ -258,7 +300,7 @@ export default async function BkSeiteAnzeige({ params }: { params: Promise<{ id:
         <p className="leise">Im Zeitraum gibt es kein Mietverhältnis.</p>
       ) : null}
 
-      {fest ? <Ausgestellt s={s} /> : null}
+      {fest ? <Ausgestellt s={s} schreiben={schreiben} /> : null}
       {schreiben && !fest && s.ergebnis && s.fehler.length === 0 && s.nutzungen.length ? (
         <Festschreiben s={s} />
       ) : null}

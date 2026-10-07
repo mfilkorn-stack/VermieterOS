@@ -2,6 +2,7 @@ import 'server-only'
 import {
   bkAbrechnungZuJahr,
   bkNutzungen,
+  bkVersand,
   ladeBkAbrechnung,
   letzteVersion,
   type BkNutzung,
@@ -297,5 +298,6 @@ export async function ladeBkSeite(tx: Tx, id: string) {
     nutzungen,
     ergebnis,
     fehler,
+    versand: await bkVersand(tx, id),
   }
 }

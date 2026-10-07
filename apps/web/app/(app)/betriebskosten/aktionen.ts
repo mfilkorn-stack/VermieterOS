@@ -2,6 +2,9 @@
 
 import {
   bkAbrechnungZuJahr,
+  bkNutzungen,
+  vermerkeBkVersand,
+  portalZugaengeZuMv,
   ladeBkAbrechnung,
   ladeDokument,
   neueVersion,
@@ -11,6 +14,11 @@ import type { BkAbrechnungDaten } from '@vermieteros/schema'
 import { redirect } from 'next/navigation'
 import { ausRoh, datenAusVersion, ladeBkSeite, type BkRoh } from '@/lib/bk'
 import { festschreiben } from '@/lib/bk-festschreiben'
+import { euroAnzeige } from '@/lib/format'
+import { sendeMail } from '@/lib/mail'
+import { BASIS_URL } from '@/lib/portal'
+import { schreibDaten } from '@/lib/schreiben'
+import { objektSpeicher } from '@/lib/speicher'
 import { datum, Eingabefehler, euro, json, pflicht } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
 import { mitMandant, verlange } from '@/lib/sitzung'
@@ -168,6 +176,123 @@ export async function bkAufheben(_: FormStatus, d: FormData): Promise<FormStatus
         versionId: a.version.id,
         akteur,
         grund,
+      })
+    })
+  } catch (e) {
+    return { fehler: fehlertext(e) }
+  }
+  redirect(`/betriebskosten/${id}`)
+}
+
+async function festgeschriebenFuer(
+  tx: Parameters<Parameters<typeof mitMandant>[0]>[0],
+  id: string,
+  mvId: string,
+) {
+  const a = await ladeBkAbrechnung(tx, id)
+  if (!a || a.version.status !== 'festgeschrieben')
+    throw new Eingabefehler('Die Abrechnung ist nicht festgeschrieben.')
+  const e = a.version.ergebnis?.find((x) => x.mietverhaeltnisId === mvId)
+  if (!e) throw new Eingabefehler('Für dieses Mietverhältnis gibt es keine Abrechnung.')
+  return { a, e }
+}
+
+/** Abrechnung per Mail an alle Mieter mit Adresse, PDF im Anhang; Versand steht im Ledger. */
+export async function bkVersenden(_: FormStatus, d: FormData): Promise<FormStatus> {
+  const id = pflicht(d, 'id', 'Abrechnung')
+  try {
+    await verlange({ stammdaten: ['schreiben'] })
+    const mvId = pflicht(d, 'mietverhaeltnisId', 'Mietverhältnis')
+    const r = await mitMandant(async (tx, k) => {
+      const { a, e } = await festgeschriebenFuer(tx, id, mvId)
+      const n = (
+        await bkNutzungen(tx, a.einheitId, a.version.zeitraumVon, a.version.zeitraumBis)
+      ).find((x) => x.mietverhaeltnisId === mvId)
+      if (!n?.emails.length)
+        throw new Eingabefehler('Für die Mieter ist keine Mail-Adresse erfasst.')
+      const dok = await ladeDokument(tx, e.dokumentId)
+      if (!dok) throw new Eingabefehler('PDF nicht gefunden.')
+      const sd = await schreibDaten(tx, mvId)
+      const portal = (await portalZugaengeZuMv(tx, mvId)).some((z) => !z.widerrufenAm)
+      return {
+        a,
+        e,
+        n,
+        dok,
+        sd,
+        portal,
+        inhalt: await objektSpeicher().holen(dok.speicherSchluessel),
+        k,
+      }
+    })
+    const wohnung = [r.sd?.wohnung.lage, ...(r.sd?.wohnung.anschrift ?? [])]
+      .filter(Boolean)
+      .join(', ')
+    const ergebnis =
+      r.e.saldoCent > 0
+        ? 'mit einer Nachzahlung von ' + euroAnzeige(r.e.saldoCent)
+        : r.e.saldoCent < 0
+          ? 'mit einem Guthaben von ' + euroAnzeige(-r.e.saldoCent)
+          : 'ausgeglichen'
+    const ok = await sendeMail({
+      art: 'bk-abrechnung',
+      an: r.n.emails.join(', '),
+      betreff: 'Betriebskostenabrechnung ' + r.a.jahr + ' · ' + wohnung,
+      text: [
+        'Guten Tag,',
+        '',
+        'anbei erhalten Sie die Betriebskostenabrechnung ' + r.a.jahr + ' für ' + wohnung + '.',
+        'Die Abrechnung endet ' + ergebnis + '. Alle Einzelheiten stehen im angehängten PDF.',
+        ...(r.portal
+          ? ['', 'Sie finden die Abrechnung auch im Mieterportal: ' + BASIS_URL + '/portal']
+          : []),
+        '',
+        'Mit freundlichen Grüßen',
+        r.sd?.vermieter.name ?? '',
+      ].join('\n'),
+      anhaenge: [{ dateiname: r.dok.dateiname, inhalt: r.inhalt, mime: r.dok.mime }],
+    })
+    if (!ok)
+      throw new Eingabefehler(
+        'Die Mail konnte nicht verschickt werden (Mailversand nicht eingerichtet oder abgelehnt).',
+      )
+    await mitMandant((tx, k) =>
+      vermerkeBkVersand(tx, {
+        mandantId: k.mandantId,
+        abrechnungId: id,
+        akteur: { art: 'nutzer', id: k.nutzerId },
+        mietverhaeltnisId: mvId,
+        dokumentId: r.e.dokumentId,
+        art: 'mail',
+        an: r.n.emails,
+        datum: heuteBerlin(),
+      }),
+    )
+  } catch (e) {
+    return { fehler: fehlertext(e) }
+  }
+  redirect(`/betriebskosten/${id}`)
+}
+
+/** Versand per Post vermerken (Einwurf, Einschreiben, Bote), mit Datum für die Frist. */
+export async function bkPostVermerken(_: FormStatus, d: FormData): Promise<FormStatus> {
+  const id = pflicht(d, 'id', 'Abrechnung')
+  try {
+    await verlange({ stammdaten: ['schreiben'] })
+    const mvId = pflicht(d, 'mietverhaeltnisId', 'Mietverhältnis')
+    const tag = datum(d, 'datum', 'Datum') ?? heuteBerlin()
+    if (tag > heuteBerlin()) throw new Eingabefehler('Das Datum liegt in der Zukunft.')
+    await mitMandant(async (tx, k) => {
+      const { e } = await festgeschriebenFuer(tx, id, mvId)
+      await vermerkeBkVersand(tx, {
+        mandantId: k.mandantId,
+        abrechnungId: id,
+        akteur: { art: 'nutzer', id: k.nutzerId },
+        mietverhaeltnisId: mvId,
+        dokumentId: e.dokumentId,
+        art: 'post',
+        notiz: (d.get('notiz') as string | null)?.trim() || null,
+        datum: tag,
       })
     })
   } catch (e) {

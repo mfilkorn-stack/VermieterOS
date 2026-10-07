@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm'
 import type { Tx } from './client'
+import { ereignis } from './ereignis'
 import { letzteVersion, type Version } from './ledger'
+import type { Akteur } from './schema/index'
 
 /**
  * Lesefunktionen für Betriebskostenabrechnungen (WP 2.4). Schreiben läuft über `neueVersion`
@@ -66,6 +68,8 @@ export type BkNutzung = {
   mietverhaeltnisId: string
   mieter: string[]
   mieterIds: string[]
+  /** Mail-Adressen der Mieter, für den Versand */
+  emails: string[]
   /** Zeitraum innerhalb des Abrechnungszeitraums */
   von: string
   bis: string
@@ -95,9 +99,11 @@ export async function bkNutzungen(
     const ende = mv.ende && mv.ende < bis ? mv.ende : bis
     if (ende < start) continue
     const mieter: string[] = []
+    const emails: string[] = []
     for (const pid of mv.mieterIds) {
       const p = await letzteVersion(tx, 'person', pid)
       if (p) mieter.push(name(p))
+      if (p?.email) emails.push(p.email)
     }
     const stufen = await tx.execute<{ ab: string; monat: number; personen: number }>(sql`
       SELECT DISTINCT ON (v.gueltig_ab) v.gueltig_ab::text AS ab,
@@ -113,6 +119,7 @@ export async function bkNutzungen(
       mietverhaeltnisId: id,
       mieter,
       mieterIds: mv.mieterIds,
+      emails,
       von: start,
       bis: ende,
       personen: Number(imZeitraum.at(-1)?.personen ?? stufen[0]?.personen ?? 1),
@@ -120,4 +127,62 @@ export async function bkNutzungen(
     })
   }
   return out.sort((a, b) => a.von.localeCompare(b.von))
+}
+
+export type BkVersand = {
+  mietverhaeltnisId: string
+  art: 'mail' | 'post'
+  /** Mail: Empfänger; Post: Notiz (z. B. Einschreiben) */
+  an: string[]
+  notiz: string | null
+  /** Tag des Versands bzw. Einwurfs */
+  datum: string
+  erfasstAm: string
+}
+
+/** Versand der festgeschriebenen Abrechnung, aus dem Ledger (Ereignis `bk_versand`). */
+export async function bkVersand(tx: Tx, abrechnungId: string): Promise<BkVersand[]> {
+  const rows = await tx.execute<{ payload: Record<string, unknown>; erfasst_am: string }>(sql`
+    SELECT payload, erfasst_am FROM ereignisse
+    WHERE typ = 'bk_versand' AND entitaet = 'bk_abrechnung' AND entitaet_id = ${abrechnungId}
+    ORDER BY seq`)
+  return rows.map((r) => ({
+    mietverhaeltnisId: String(r.payload['mietverhaeltnisId']),
+    art: r.payload['art'] === 'post' ? 'post' : 'mail',
+    an: (r.payload['an'] as string[] | undefined) ?? [],
+    notiz: (r.payload['notiz'] as string | null | undefined) ?? null,
+    datum: String(r.payload['datum']),
+    erfasstAm: r.erfasst_am,
+  }))
+}
+
+export async function vermerkeBkVersand(
+  tx: Tx,
+  p: {
+    mandantId: string
+    abrechnungId: string
+    akteur: Akteur
+    mietverhaeltnisId: string
+    dokumentId: string
+    art: 'mail' | 'post'
+    an?: string[]
+    notiz?: string | null
+    datum: string
+  },
+): Promise<void> {
+  await ereignis(tx, {
+    mandantId: p.mandantId,
+    typ: 'bk_versand',
+    entitaet: 'bk_abrechnung',
+    entitaetId: p.abrechnungId,
+    akteur: p.akteur,
+    payload: {
+      mietverhaeltnisId: p.mietverhaeltnisId,
+      dokumentId: p.dokumentId,
+      art: p.art,
+      an: p.an ?? [],
+      notiz: p.notiz ?? null,
+      datum: p.datum,
+    },
+  })
 }
