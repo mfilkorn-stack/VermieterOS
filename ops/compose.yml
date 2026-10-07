@@ -52,6 +52,10 @@ services:
     command: ['node', 'worker/dist/worker.mjs']
     restart: unless-stopped
     init: true
+    # Das Image prüft Port 3000 (Web). Der Worker öffnet keinen Port; ob er läuft, meldet
+    # HEALTHCHECK_ABRUF als Totmannschalter.
+    healthcheck:
+      disable: true
     environment:
       DATABASE_URL: postgres://vermieteros_worker:${VOS_WORKER_PASSWORT}@postgres:5432/vermieteros
       POSTFACH_SCHLUESSEL: ${POSTFACH_SCHLUESSEL}
