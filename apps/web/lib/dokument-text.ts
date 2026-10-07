@@ -14,6 +14,7 @@ export const DOKUMENT_TYP_TEXT: Record<DokumentTyp, string> = {
   beleg: 'Beleg',
   mietspiegel: 'Mietspiegel',
   bescheinigung: 'Bescheinigung (ausgestellt)',
+  mangelfoto: 'Foto zu einer Mängelmeldung',
   sonstiges: 'Sonstiges',
 }
 

@@ -1,4 +1,10 @@
-import { belegeZuTicket, ladeTicket, listeHandwerker, ticketVerlauf } from '@vermieteros/db'
+import {
+  belegeZuTicket,
+  ladeTicket,
+  listeDokumente,
+  listeHandwerker,
+  ticketVerlauf,
+} from '@vermieteros/db'
 import { TICKET_STATUS } from '@vermieteros/schema'
 import { Mail, MapPin, ReceiptText } from 'lucide-react'
 import Link from 'next/link'
@@ -24,13 +30,16 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
       t,
       verlauf: await ticketVerlauf(tx, id),
       rechnungen: await belegeZuTicket(tx, id),
+      fotos: (await listeDokumente(tx, { ticketId: id })).filter(
+        (x) => x.typ === 'mangelfoto' && x.status === 'gueltig',
+      ),
       handwerker: (await listeHandwerker(tx)).filter(
         (h) => h.objektIds.length === 0 || h.objektIds.includes(t.objektId),
       ),
     }
   })
   if (!d) notFound()
-  const { t, verlauf, handwerker, rechnungen } = d
+  const { t, verlauf, handwerker, rechnungen, fotos } = d
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const auftragnehmer = handwerker.find((h) => h.id === t.auftragnehmerId)
   const ort = t.einheit ? `${t.objekt} · ${t.einheit}` : t.objekt
@@ -74,6 +83,18 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
             <div className="karte">
               <h2>Beschreibung</h2>
               <pre className="mailtext">{t.beschreibung}</pre>
+            </div>
+          ) : null}
+          {fotos.length ? (
+            <div className="karte" data-testid="ticket-fotos">
+              <h2>Fotos</h2>
+              <div className="fotos">
+                {fotos.map((f) => (
+                  <a key={f.id} href={`/dokumente/${f.id}`}>
+                    <img src={`/api/dokument/${f.id}?ansicht=1`} alt={f.dateiname} />
+                  </a>
+                ))}
+              </div>
             </div>
           ) : null}
           <div className="karte">

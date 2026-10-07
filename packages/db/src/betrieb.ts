@@ -161,9 +161,11 @@ export type TicketSchritt = {
 export async function ticketVerlauf(tx: Tx, id: string): Promise<TicketSchritt[]> {
   return tx.execute<TicketSchritt>(sql`
     SELECT v.version_nr AS "versionNr", v.status, v.erfasst_am AS "erfasstAm",
-           coalesce(u.name, v.erfasst_von) AS "erfasstVon", v.begruendung
+           coalesce(u.name, 'Mieterportal, ' || z.email, v.erfasst_von) AS "erfasstVon",
+           v.begruendung
     FROM ticket_versionen v
     LEFT JOIN auth."user" u ON u.id = v.erfasst_von
+    LEFT JOIN portal_zugaenge z ON z.id::text = v.erfasst_von
     WHERE v.ticket_id = ${id}
       AND NOT EXISTS (SELECT 1 FROM stornos s WHERE s.version_id = v.id)
     ORDER BY v.version_nr`)

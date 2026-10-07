@@ -7,6 +7,7 @@ import { nextCookies } from 'better-auth/next-js'
 import { magicLink, organization, twoFactor } from 'better-auth/plugins'
 import { v7 as uuidv7 } from 'uuid'
 import { db } from './db'
+import { sendeMail } from './mail'
 import { ac, roles } from './rechte'
 
 const BASIS_URL = process.env['BETTER_AUTH_URL'] ?? 'http://localhost:3000'
@@ -34,7 +35,12 @@ export const auth = betterAuth({
     autoSignInAfterVerification: true,
     expiresIn: 24 * 60 * 60,
     async sendVerificationEmail({ user, url }) {
-      mailNochNichtEingerichtet('bestaetigung', user.email, url)
+      await sendeMail({
+        art: 'bestaetigung',
+        an: user.email,
+        betreff: 'Vermieter.OS: E-Mail-Adresse bestätigen',
+        text: `Bitte bestätige deine E-Mail-Adresse:\n\n${url}\n\nDer Link gilt 24 Stunden.`,
+      })
     },
   },
   databaseHooks: {
@@ -65,8 +71,13 @@ export const auth = betterAuth({
       disableOrganizationDeletion: true,
       invitationExpiresIn: 7 * 24 * 60 * 60,
       async sendInvitationEmail({ id, email, organization: org }) {
-        // Bis der Mailversand steht, zeigt die Mitgliederseite den Link.
-        mailNochNichtEingerichtet(`einladung ${org.name}`, email, `${BASIS_URL}/einladungen/${id}`)
+        // Ohne Mailversand zeigt die Mitgliederseite den Link zum Weitergeben.
+        await sendeMail({
+          art: 'einladung',
+          an: email,
+          betreff: `Einladung zu ${org.name} in Vermieter.OS`,
+          text: `Du bist zu „${org.name}“ eingeladen:\n\n${BASIS_URL}/einladungen/${id}\n\nDie Einladung gilt 7 Tage.`,
+        })
       },
       organizationHooks: {
         async afterCreateOrganization({ organization: org, user }) {
@@ -88,7 +99,12 @@ export const auth = betterAuth({
       expiresIn: 15 * 60,
       disableSignUp: true,
       async sendMagicLink({ email, url }) {
-        mailNochNichtEingerichtet('magic-link', email, url)
+        await sendeMail({
+          art: 'magic-link',
+          an: email,
+          betreff: 'Vermieter.OS: Anmeldelink',
+          text: `Hier ist dein Anmeldelink:\n\n${url}\n\nEr gilt 15 Minuten.`,
+        })
       },
     }),
     nextCookies(),
@@ -96,15 +112,6 @@ export const auth = betterAuth({
 })
 
 export type Auth = typeof auth
-
-/**
- * Platzhalter bis zum Mail-Worker (Phase 1): Links stehen in der Entwicklung im Server-Log.
- * In Produktion nie Links ins Log, nur ein Hinweis.
- */
-function mailNochNichtEingerichtet(art: string, an: string, link: string): void {
-  if (process.env.NODE_ENV !== 'production') console.log(`[mail:${art}] ${an}: ${link}`)
-  else console.warn(`[mail:${art}] Mailversand nicht eingerichtet, keine Mail an ${an}`)
-}
 
 /** Mandant der jüngsten Sitzung mit aktiver Mitgliedschaft, sonst die älteste Mitgliedschaft. */
 async function letzterMandant(nutzerId: string): Promise<string | null> {

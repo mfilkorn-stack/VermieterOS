@@ -162,6 +162,20 @@
       "when": 1791340301491,
       "tag": "0022_belege_journal_regeln",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791370768634,
+      "tag": "0023_mieterportal",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791370769661,
+      "tag": "0024_mieterportal_regeln",
+      "breakpoints": true
     }
   ]
 }

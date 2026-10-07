@@ -83,6 +83,22 @@ Dokumente liegen wie Mails im Object Storage (`mandanten/<id>/dokument/…`), un
 
 Eine eigene Beleg-Adresse ist ein Postfach mit Zweck „Belege“ (eigene Adresse oder eigener Ordner per Regel im Mailprogramm). Ihre Mails erscheinen nicht im Posteingang; jeder PDF- oder Bild-Anhang wird ein Beleg, dieselbe Datei nur einmal. Mit KI-Schlüssel liest der Worker neue Belege der letzten 30 Tage aus, höchstens `KI_BELEGE_LIMIT` (Standard 10) pro Durchlauf, nach zwei Fehlversuchen nicht mehr automatisch. Belege sind steuerlich aufbewahrungspflichtig (mindestens zehn Jahre); sie liegen unveränderlich im Object Storage und werden nie gelöscht, auch nicht nach „Aus dem Eingang nehmen“.
 
+### Mailversand
+
+Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten und das Mieterportal über SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_BENUTZER`, `SMTP_PASSWORT`, `MAIL_ABSENDER` in der `.env`). Welcher Anbieter, entscheidet nur die Umgebung:
+
+| Anbieter                  | Kosten                         | Einrichtung                                                                    |
+| ------------------------- | ------------------------------ | ------------------------------------------------------------------------------ |
+| Brevo                     | kostenlos bis 300 Mails am Tag | `smtp-relay.brevo.com`, Port 587, SMTP-Schlüssel aus dem Konto; AVV im Konto   |
+| eigener Mail-Hoster       | im Paket enthalten             | SMTP-Daten des Postfachs, z. B. `noreply@`; Versandlimits des Hosters beachten |
+| Amazon SES (eu-central-1) | etwa 0,10 USD je 1000 Mails    | Domain verifizieren, Sandbox verlassen, SMTP-Zugangsdaten erzeugen             |
+
+Für jeden Anbieter SPF und DKIM für die Absender-Domain setzen, sonst landen Anmeldelinks im Spam. Ohne `SMTP_HOST` wird nichts verschickt: Einladungslinks fürs Portal erscheinen dann in der App zum persönlichen Weitergeben, Bestätigungsmails fehlen. Fehler beim Versand stehen im Log von `web`, ohne Inhalt.
+
+### Mieterportal
+
+Erreichbar unter `https://<domain>/portal`. Mieter werden am Mietverhältnis (Verlauf, Karte „Mieterportal“) eingeladen und dort auch gesperrt. Anmeldelinks gelten 15 Minuten, Einladungen 7 Tage, jeweils einmal; die Sitzung hält 30 Tage. In der Datenbank stehen nur Prüfsummen der Links und Sitzungen (ADR 0010). Mängelmeldungen erscheinen als Ticket „gemeldet“, Nachrichten im Verlauf; Eigentümer, Miteigentümer und Mitverwalter bekommen dazu eine Mail.
+
 ### Monitoring
 
 Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `.env` eintragen:

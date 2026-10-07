@@ -1,11 +1,22 @@
 import {
   ladeVerlauf,
   ladeZuordnungsKandidaten,
+  letzteVersion,
   listeDokumente,
+  portalZugaengeZuMv,
+  type PortalZugang,
   type VerlaufEintrag,
 } from '@vermieteros/db'
 import { DokumentListe } from '@/components/dokument-liste'
-import { Mail, Paperclip, Phone, PhoneIncoming, PhoneOutgoing } from 'lucide-react'
+import {
+  KeyRound,
+  Mail,
+  MessageSquare,
+  Paperclip,
+  Phone,
+  PhoneIncoming,
+  PhoneOutgoing,
+} from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Feld } from '@/components/felder'
@@ -14,7 +25,81 @@ import { zeitpunktAnzeige } from '@/lib/format'
 import { anhangText, mietverhaeltnisText, ZUORDNUNG_TEXT } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { isoZuBerlin } from '@/lib/zeit'
-import { telefonnotizSpeichern } from './aktionen'
+import { portalEinladen, portalSperren, telefonnotizSpeichern } from './aktionen'
+
+type Mieter = { id: string; name: string; email: string | null }
+
+/** Mieterportal: aktive Zugänge, Einladen, Sperren (WP 1.10). */
+function PortalKarte({
+  mvId,
+  zugaenge,
+  mieter,
+  verwalten,
+}: {
+  mvId: string
+  zugaenge: PortalZugang[]
+  mieter: Mieter[]
+  verwalten: boolean
+}) {
+  const aktiv = zugaenge.filter((z) => !z.widerrufenAm)
+  const name = new Map(mieter.map((m) => [m.id, m.name]))
+  const vorschlag = mieter.find((m) => m.email && !aktiv.some((z) => z.personId === m.id))
+  return (
+    <div className="karte" data-testid="mv-portal">
+      <h2>
+        <KeyRound size={16} aria-hidden style={{ verticalAlign: '-2px', marginRight: 6 }} />
+        Mieterportal
+      </h2>
+      {aktiv.length === 0 ? (
+        <p className="leise">
+          Noch kein Zugang. Mieter sehen dort Vertrag, Notfallnummern und können Mängel melden.
+        </p>
+      ) : (
+        <ul className="liste-schlicht">
+          {aktiv.map((z) => (
+            <li key={z.id} className="zeile" data-testid="portal-zugang">
+              <span>
+                {name.get(z.personId) ?? 'Mieter'} · {z.email}
+                <span className="leise"> · seit {zeitpunktAnzeige(z.erstelltAm)}</span>
+              </span>
+              {verwalten ? (
+                <Formular aktion={portalSperren} knopf="Sperren" zweit testId="portal-sperren">
+                  <input type="hidden" name="mietverhaeltnisId" value={mvId} />
+                  <input type="hidden" name="zugangId" value={z.id} />
+                </Formular>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
+      {verwalten && mieter.length > 0 ? (
+        <>
+          <h3>Mieter einladen</h3>
+          <Formular aktion={portalEinladen} knopf="Einladung senden" testId="portal-einladen">
+            <input type="hidden" name="mietverhaeltnisId" value={mvId} />
+            <label>
+              Mieter
+              <select name="personId" defaultValue={vorschlag?.id ?? mieter[0]!.id}>
+                {mieter.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Feld
+              label="E-Mail für das Portal"
+              name="email"
+              type="email"
+              defaultValue={vorschlag?.email ?? ''}
+              required
+            />
+          </Formular>
+        </>
+      ) : null}
+    </div>
+  )
+}
 
 function NotizFelder({
   mietverhaeltnisId,
@@ -93,6 +178,25 @@ function Eintrag({ e, notieren, mvId }: { e: VerlaufEintrag; notieren: boolean; 
       </li>
     )
   }
+  if (e.art === 'portal') {
+    return (
+      <li className="karte" data-testid="verlauf-eintrag" data-art="portal">
+        <div className="zeile">
+          <strong>{e.betreff}</strong>
+          <span className="leise">{zeitpunktAnzeige(e.zeitpunkt)}</span>
+        </div>
+        <p className="meta">
+          <span>
+            <MessageSquare size={14} aria-hidden />
+            Mieterportal, {e.von}
+          </span>
+        </p>
+        <p className="auszug" style={{ whiteSpace: 'pre-wrap' }}>
+          {e.text}
+        </p>
+      </li>
+    )
+  }
   return (
     <li className="karte verlauf-notiz" data-testid="verlauf-eintrag" data-art="telefonnotiz">
       <div className="zeile">
@@ -147,11 +251,26 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
   const { id } = await params
   if (!(await darf({ post: ['lesen'] }))) redirect('/')
   const notieren = await darf({ post: ['notieren'] })
-  const { kopf, verlauf, dokumente } = await mitMandant(async (tx) => ({
-    kopf: (await ladeZuordnungsKandidaten(tx)).find((k) => k.mietverhaeltnisId === id),
-    verlauf: await ladeVerlauf(tx, id),
-    dokumente: await listeDokumente(tx, { mietverhaeltnisId: id }),
-  }))
+  const { kopf, verlauf, dokumente, zugaenge, mieter } = await mitMandant(async (tx) => {
+    const mv = await letzteVersion(tx, 'mietverhaeltnis', id)
+    const mieter: Mieter[] = []
+    for (const pid of mv?.mieterIds ?? []) {
+      const p = await letzteVersion(tx, 'person', pid)
+      if (p)
+        mieter.push({
+          id: pid,
+          name: p.firma || [p.vorname, p.nachname].filter(Boolean).join(' '),
+          email: p.email ?? null,
+        })
+    }
+    return {
+      kopf: (await ladeZuordnungsKandidaten(tx)).find((k) => k.mietverhaeltnisId === id),
+      verlauf: await ladeVerlauf(tx, id),
+      dokumente: await listeDokumente(tx, { mietverhaeltnisId: id }),
+      zugaenge: await portalZugaengeZuMv(tx, id),
+      mieter,
+    }
+  })
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   if (!kopf) notFound()
 
@@ -200,6 +319,8 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
         </div>
         <DokumentListe dokumente={dokumente} />
       </div>
+
+      <PortalKarte mvId={id} zugaenge={zugaenge} mieter={mieter} verwalten={schreiben} />
 
       {notieren ? (
         <details className="karte" open={verlauf.length === 0}>
