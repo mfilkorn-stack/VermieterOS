@@ -175,4 +175,11 @@ test('Betriebskosten: Abrechnung mit Messdienst, CO2-Abzug, Ergebnis und Folgeja
   await expect(
     page.getByTestId('bk-befunde').locator('[data-code="heizkosten_fehlen"]'),
   ).toHaveCount(1)
+
+  // Frist-Wächter: beide Jahre stehen in der Übersicht, mit Link zur Abrechnung
+  await page.goto('/betriebskosten')
+  const fristen = page.getByTestId('bk-frist')
+  await expect(fristen).toHaveCount(2)
+  await expect(fristen.first()).toContainText('2024')
+  await expect(fristen.first().getByRole('link', { name: 'Öffnen' })).toBeVisible()
 })

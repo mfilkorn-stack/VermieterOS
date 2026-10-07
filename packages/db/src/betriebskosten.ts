@@ -186,3 +186,64 @@ export async function vermerkeBkVersand(
     },
   })
 }
+
+export type BkFristZeile = {
+  objektId: string
+  objekt: string
+  einheitId: string
+  einheit: string
+  jahr: number
+  abrechnungId: string | null
+  status: 'entwurf' | 'festgeschrieben' | null
+  zeitraumBis: string
+  /** Versand an alle Mietverhältnisse der Abrechnung vermerkt */
+  versendet: boolean
+}
+
+/**
+ * Für den Frist-Wächter (WP 2.5): je Einheit und Jahr, in dem sie vermietet war, der Stand der
+ * Abrechnung. Ohne Abrechnung gilt das Kalenderjahr als Zeitraum.
+ */
+export async function bkFristen(tx: Tx, jahre: number[]): Promise<BkFristZeile[]> {
+  if (jahre.length === 0) return []
+  const liste = sql.join(
+    jahre.map((j) => sql`(${j}::int)`),
+    sql`, `,
+  )
+  return tx.execute<BkFristZeile>(sql`
+    WITH bedarf AS (
+      SELECT DISTINCT e.id AS einheit_id, y.jahr
+      FROM einheiten e
+      JOIN mietverhaeltnisse m ON m.einheit_id = e.id
+      JOIN mietverhaeltnisse_aktuell ma ON ma.mietverhaeltnis_id = m.id
+      CROSS JOIN (VALUES ${liste}) AS y(jahr)
+      WHERE ma.beginn <= make_date(y.jahr, 12, 31)
+        AND (ma.ende IS NULL OR ma.ende >= make_date(y.jahr, 1, 1))
+    )
+    SELECT o.objekt_id AS "objektId", o.bezeichnung AS objekt, b.einheit_id AS "einheitId",
+           ea.bezeichnung AS einheit, b.jahr, a.id AS "abrechnungId", v.status,
+           coalesce(v.zeitraum_bis, make_date(b.jahr, 12, 31))::text AS "zeitraumBis",
+           coalesce(
+             v.status = 'festgeschrieben' AND NOT EXISTS (
+               SELECT 1 FROM jsonb_array_elements(v.ergebnis) x
+               WHERE NOT EXISTS (
+                 SELECT 1 FROM ereignisse ev
+                 WHERE ev.typ = 'bk_versand' AND ev.entitaet_id = a.id
+                   AND ev.payload->>'mietverhaeltnisId' = x->>'mietverhaeltnisId'
+               )
+             ),
+             false
+           ) AS versendet
+    FROM bedarf b
+    JOIN einheiten e ON e.id = b.einheit_id
+    JOIN einheiten_aktuell ea ON ea.einheit_id = e.id
+    JOIN objekte_aktuell o ON o.objekt_id = e.objekt_id
+    LEFT JOIN bk_abrechnungen a ON a.einheit_id = b.einheit_id AND a.jahr = b.jahr
+    LEFT JOIN LATERAL (
+      SELECT x.status, x.zeitraum_bis, x.ergebnis FROM bk_abrechnung_versionen x
+      WHERE x.bk_abrechnung_id = a.id
+        AND NOT EXISTS (SELECT 1 FROM stornos s WHERE s.version_id = x.id)
+      ORDER BY x.version_nr DESC LIMIT 1
+    ) v ON true
+    ORDER BY b.jahr, o.bezeichnung, ea.bezeichnung`)
+}

@@ -3,12 +3,14 @@ import { type Ampel, type Modul } from '@vermieteros/rechenkern'
 import { sql } from 'drizzle-orm'
 import { Building2, ChevronRight, MapPin, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { ModulAmpeln } from '@/components/status'
+import { ModulAmpeln, Status } from '@/components/status'
+import { DRINGEND, ladeBkFristen, STUFE_TEXT, STUFE_TON } from '@/lib/bk-fristen'
+import { datumAnzeige } from '@/lib/format'
 import { ROLLEN_TEXT } from '@/lib/rechte'
 import { darf, mitMandant } from '@/lib/sitzung'
 
 export default async function Startseite() {
-  const { mandant, rolle, objekte } = await mitMandant(async (tx, k) => {
+  const { mandant, rolle, objekte, fristen } = await mitMandant(async (tx, k) => {
     const [m] = await tx.select().from(schema.mandanten)
     const rows = await tx.execute<{ objekt_id: string; bezeichnung: string; ort: string | null }>(
       sql`select objekt_id, bezeichnung, ort from objekte_aktuell order by bezeichnung`,
@@ -28,7 +30,8 @@ export default async function Startseite() {
         ampel: q?.ampel ?? null,
       })
     }
-    return { mandant: m, rolle: k.rolle, objekte }
+    const fristen = (await ladeBkFristen(tx)).filter((f) => DRINGEND.has(f.stufe))
+    return { mandant: m, rolle: k.rolle, objekte, fristen }
   })
   const schreiben = await darf({ stammdaten: ['schreiben'] })
 
@@ -46,6 +49,26 @@ export default async function Startseite() {
           </Link>
         ) : null}
       </div>
+
+      {fristen.length ? (
+        <div className="karte" data-testid="start-fristen">
+          <h2>Betriebskosten: Fristen</h2>
+          <ul className="liste-schlicht">
+            {fristen.map((f) => (
+              <li key={f.einheitId + f.jahr} className="zeile">
+                <span>
+                  {f.jahr} · {f.objekt} · {f.einheit}
+                  <span className="leise"> · Frist {datumAnzeige(f.fristBis)}</span>
+                </span>
+                <Status ton={STUFE_TON[f.stufe]}>{STUFE_TEXT[f.stufe]}</Status>
+              </li>
+            ))}
+          </ul>
+          <p className="leise">
+            <Link href="/betriebskosten">Zur Übersicht</Link>
+          </p>
+        </div>
+      ) : null}
 
       <h2>Objekte</h2>
       {objekte.length === 0 ? (

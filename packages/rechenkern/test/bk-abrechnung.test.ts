@@ -1,6 +1,6 @@
 import type { BkAbrechnungDaten, BkPosition } from '@vermieteros/schema'
 import { describe, expect, it } from 'vitest'
-import { abrechnungsfrist, pruefeBkAbrechnung, rechneBkAbrechnung } from '../src/index'
+import { abrechnungsfrist, fristStatus, pruefeBkAbrechnung, rechneBkAbrechnung } from '../src/index'
 
 /** Sollwert 2024 (nur Beträge): WEG-Einzelabrechnung, Messdienst, Grundsteuer wie 2022. */
 const FL = { art: 'wohnflaeche', gesamtQm100: 67_179 } as const
@@ -94,7 +94,8 @@ describe('Prüfung der Abrechnung', () => {
   it('Abrechnungsfrist: zwölf Monate nach Ende des Zeitraums', () => {
     expect(abrechnungsfrist('2024-12-31')).toBe('2025-12-31')
     expect(abrechnungsfrist('2024-06-30')).toBe('2025-06-30')
-    expect(abrechnungsfrist('2023-02-28')).toBe('2024-02-28')
+    // Ablauf des zwölften Monats: im Schaltjahr der 29. Februar
+    expect(abrechnungsfrist('2023-02-28')).toBe('2024-02-29')
   })
 
   it('abgelaufene Frist ist ein Fehler, festgeschrieben nicht mehr', () => {
@@ -149,5 +150,28 @@ describe('Prüfung der Abrechnung', () => {
       'heizkosten_fehlen',
       'betrag_null',
     ])
+  })
+})
+
+describe('Frist-Wächter', () => {
+  const stufe = (heute: string, versendet = false) =>
+    fristStatus('2024-12-31', heute, versendet).stufe
+  it('Stufen über das Jahr nach dem Abrechnungszeitraum', () => {
+    expect(stufe('2024-11-01')).toBe('laufend')
+    expect(stufe('2025-01-02')).toBe('offen')
+    expect(stufe('2025-09-30')).toBe('offen')
+    expect(stufe('2025-10-01')).toBe('warnung')
+    expect(stufe('2025-12-01')).toBe('eskalation')
+    expect(stufe('2025-12-31')).toBe('eskalation')
+    expect(stufe('2026-01-01')).toBe('abgelaufen')
+    expect(stufe('2026-01-01', true)).toBe('erledigt')
+  })
+  it('Daten der Stufen', () => {
+    expect(fristStatus('2024-12-31', '2025-01-01', false)).toMatchObject({
+      fristBis: '2025-12-31',
+      warnungAb: '2025-09-30',
+      eskalationAb: '2025-11-30',
+    })
+    expect(fristStatus('2024-06-30', '2025-01-01', false).fristBis).toBe('2025-06-30')
   })
 })
