@@ -1,6 +1,8 @@
-import { ladePosteingang, ladeZuordnungsKandidaten } from '@vermieteros/db'
+import { ladePosteingang, ladeZuordnungsKandidaten, offeneNachrichten } from '@vermieteros/db'
+import { CircleDot, Link2, Mail, Paperclip, Search, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Status } from '@/components/status'
 import { ZuordnenFormular } from '@/components/zuordnen-formular'
 import { zeitpunktAnzeige } from '@/lib/format'
 import { anhangText, mietverhaeltnisText, ZUORDNUNG_TEXT } from '@/lib/post-text'
@@ -18,9 +20,10 @@ export default async function PosteingangSeite({
   const alle = sp.alle === '1' || suche !== ''
   const zuordnen = await darf({ post: ['zuordnen'] })
   const postfaecher = await darf({ post: ['postfaecher'] })
-  const { eintraege, kandidaten } = await mitMandant(async (tx) => ({
+  const { eintraege, kandidaten, offen } = await mitMandant(async (tx) => ({
     eintraege: await ladePosteingang(tx, { nurOffen: !alle, suche }),
     kandidaten: await ladeZuordnungsKandidaten(tx),
+    offen: await offeneNachrichten(tx),
   }))
   const kandidatNach = new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k]))
   const zurueck = suche
@@ -31,32 +34,43 @@ export default async function PosteingangSeite({
 
   return (
     <>
-      <h1>Posteingang</h1>
-      <div className="zeile">
-        <p className="leise">
+      <div className="seitenkopf">
+        <div>
+          <h1>Posteingang</h1>
+          <p className="leise">
+            {offen === 0
+              ? 'Alles zugeordnet.'
+              : `${offen} ${offen === 1 ? 'Nachricht wartet' : 'Nachrichten warten'} auf Zuordnung.`}
+          </p>
+        </div>
+        {postfaecher ? (
+          <Link className="knopf zweit" href="/postfaecher">
+            <Settings size={16} aria-hidden />
+            Postfächer einrichten
+          </Link>
+        ) : null}
+      </div>
+      <div className="zeile" style={{ marginBottom: 16 }}>
+        <nav className="reiter" aria-label="Filter">
           <Link href="/posteingang" aria-current={alle ? undefined : 'page'}>
-            Offen
-          </Link>{' '}
-          ·{' '}
+            Offen{offen > 0 ? <span className="zahl">{offen}</span> : null}
+          </Link>
           <Link href="/posteingang?alle=1" aria-current={alle && !suche ? 'page' : undefined}>
             Alle
           </Link>
-          {postfaecher ? (
-            <>
-              {' '}
-              · <Link href="/postfaecher">Postfächer einrichten</Link>
-            </>
-          ) : null}
-        </p>
+        </nav>
         <form action="/posteingang" role="search" className="suche">
           <label>
-            Suche
-            <input
-              name="q"
-              type="search"
-              defaultValue={suche}
-              placeholder="Betreff, Absender, Text"
-            />
+            <span className="sr-only">Suche</span>
+            <span className="suchfeld">
+              <Search size={16} aria-hidden />
+              <input
+                name="q"
+                type="search"
+                defaultValue={suche}
+                placeholder="Betreff, Absender, Text"
+              />
+            </span>
           </label>
         </form>
       </div>
@@ -74,30 +88,46 @@ export default async function PosteingangSeite({
           const z = n.zuordnung
           const mv = z?.mietverhaeltnisId ? kandidatNach.get(z.mietverhaeltnisId) : undefined
           return (
-            <li key={n.id} className="karte" data-testid="nachricht" data-betreff={n.betreff}>
-              <div className="zeile">
-                <Link href={`/posteingang/${n.id}`}>
-                  <strong>{n.betreff || '(ohne Betreff)'}</strong>
-                </Link>
-                <span className="leise">{zeitpunktAnzeige(n.gesendetAm ?? n.empfangenAm)}</span>
+            <li
+              key={n.id}
+              className="karte nachricht"
+              data-testid="nachricht"
+              data-betreff={n.betreff}
+            >
+              <div className="nachricht-kopf">
+                <Link href={`/posteingang/${n.id}`}>{n.betreff || '(ohne Betreff)'}</Link>
+                <span className="leise ziffern" style={{ whiteSpace: 'nowrap' }}>
+                  {zeitpunktAnzeige(n.gesendetAm ?? n.empfangenAm)}
+                </span>
               </div>
-              <p className="leise">
-                {n.vonName ? `${n.vonName} <${n.vonAdresse}>` : n.vonAdresse} · {n.postfach}
-                {n.anhaenge.length ? ` · ${anhangText(n.anhaenge.length)}` : ''}
+              <p className="meta">
+                <span>
+                  <Mail size={14} aria-hidden />
+                  {n.vonName ? `${n.vonName} <${n.vonAdresse}>` : n.vonAdresse}
+                </span>
+                <span>{n.postfach}</span>
+                {n.anhaenge.length ? (
+                  <span>
+                    <Paperclip size={14} aria-hidden />
+                    {anhangText(n.anhaenge.length)}
+                  </span>
+                ) : null}
               </p>
-              <p data-testid="zuordnung">
+              <p className="meta" data-testid="zuordnung">
                 {mv && z ? (
                   <>
-                    <span className="ampel ampel-gruen">Zugeordnet</span>{' '}
+                    <Status ton="gruen" icon={Link2}>
+                      Zugeordnet
+                    </Status>
                     <Link href={`/mietverhaeltnisse/${mv.mietverhaeltnisId}`}>
                       {mietverhaeltnisText(mv)}
-                    </Link>{' '}
-                    ({ZUORDNUNG_TEXT[z.art]})
+                    </Link>
+                    <span>({ZUORDNUNG_TEXT[z.art]})</span>
                   </>
                 ) : (
-                  <span className="ampel ampel-gelb">
+                  <Status ton="gelb" icon={CircleDot}>
                     Offen{z ? ` · ${ZUORDNUNG_TEXT[z.art]}` : ''}
-                  </span>
+                  </Status>
                 )}
               </p>
               {zuordnen && !mv ? (

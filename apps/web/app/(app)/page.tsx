@@ -1,17 +1,11 @@
 import { datenqualitaet, schema } from '@vermieteros/db'
-import { MODULE, type Ampel, type Modul } from '@vermieteros/rechenkern'
+import { type Ampel, type Modul } from '@vermieteros/rechenkern'
 import { sql } from 'drizzle-orm'
+import { Building2, ChevronRight, MapPin, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { ModulAmpeln } from '@/components/status'
 import { ROLLEN_TEXT } from '@/lib/rechte'
 import { darf, mitMandant } from '@/lib/sitzung'
-
-const MODUL_TEXT: Record<Modul, string> = {
-  stammdaten: 'Stammdaten',
-  nebenkosten: 'Nebenkosten',
-  steuerpaket: 'Steuerpaket',
-  mieterhoehung: 'Mieterhöhung',
-  finanzen: 'Finanzen',
-}
 
 export default async function Startseite() {
   const { mandant, rolle, objekte } = await mitMandant(async (tx, k) => {
@@ -40,36 +34,46 @@ export default async function Startseite() {
 
   return (
     <>
-      <h1 data-testid="mandant-name">{mandant?.name}</h1>
-      <p className="leise">Deine Rolle: {ROLLEN_TEXT[rolle]}</p>
-
-      <div className="zeile">
-        <h2>Objekte</h2>
+      <div className="seitenkopf">
+        <div>
+          <h1 data-testid="mandant-name">{mandant?.name}</h1>
+          <p className="leise">Deine Rolle: {ROLLEN_TEXT[rolle]}</p>
+        </div>
         {schreiben ? (
           <Link className="knopf" href="/objekte/neu" data-testid="objekt-neu">
+            <Plus size={18} aria-hidden />
             Objekt anlegen
           </Link>
         ) : null}
       </div>
+
+      <h2>Objekte</h2>
       {objekte.length === 0 ? (
         <p className="leise">Noch keine Objekte.</p>
       ) : (
         <ul className="liste" data-testid="objektliste">
           {objekte.map((o) => (
-            <li key={o.id} className="karte">
-              <Link href={`/objekte/${o.id}`}>
-                <strong>{o.bezeichnung}</strong>
-              </Link>
-              {o.ort ? <span className="leise"> · {o.ort}</span> : null}
-              {o.ampel ? (
-                <div className="ampeln" aria-label="Datenqualität">
-                  {MODULE.map((m) => (
-                    <span key={m} className={`ampel ampel-${o.ampel![m]}`} title={o.ampel![m]}>
-                      {MODUL_TEXT[m]}
+            <li key={o.id} className="karte objektkarte">
+              <div className="objektkarte-kopf">
+                <span className="icon-kachel">
+                  <Building2 size={20} strokeWidth={1.75} aria-hidden />
+                </span>
+                <span className="objektkarte-titel">
+                  <Link href={`/objekte/${o.id}`}>
+                    <strong>{o.bezeichnung}</strong>
+                  </Link>
+                  {o.ort ? (
+                    <span className="meta">
+                      <span>
+                        <MapPin size={14} aria-hidden />
+                        {o.ort}
+                      </span>
                     </span>
-                  ))}
-                </div>
-              ) : null}
+                  ) : null}
+                </span>
+                <ChevronRight size={18} color="var(--dezent)" aria-hidden />
+              </div>
+              {o.ampel ? <ModulAmpeln ampel={o.ampel} /> : null}
             </li>
           ))}
         </ul>

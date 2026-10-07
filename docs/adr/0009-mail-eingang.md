@@ -4,7 +4,7 @@ Status: angenommen · 07.10.2026 · ergänzt PLAN.md 2.1 (BullMQ/Redis vorerst n
 
 ## Entscheidung
 
-**Worker ohne Queue.** `apps/worker` ist eine Schleife: alle aktiven Postfächer nacheinander abrufen, dann Pause (`ABRUF_INTERVALL_SEKUNDEN`, Standard 300). Den Abrufstand hält Postgres am Postfach. Er besteht aus UIDVALIDITY, letzter UID, letztem Abruf und letztem Fehler. BullMQ und Redis kommen erst, wenn Aufträge aus der Web-App asynchron laufen müssen, etwa KI-Aufrufe in WP 1.3.
+**Worker ohne Queue.** `apps/worker` ist eine Schleife: alle aktiven Postfächer nacheinander abrufen, dann Pause (`ABRUF_INTERVALL_SEKUNDEN`, Standard 300). Den Abrufstand hält Postgres am Postfach. Er besteht aus UIDVALIDITY, letzter UID, letztem Abruf und letztem Fehler. BullMQ und Redis kommen erst, wenn Aufträge aus der Web-App asynchron laufen müssen, etwa KI-Aufrufe in WP 1.4.
 
 **Eigene Datenbankrolle `vermieteros_worker`.** Sie hat keine Sonderrechte an RLS vorbei. Eine zusätzliche Policy erlaubt ihr nur, die Postfächer aller Mandanten zu sehen. Alles andere schreibt sie wie die App im Mandantenkontext. Ihre Rechte sind auf Postfach-Stand, Nachrichten, Anhänge, Zuordnungen und Ledger beschränkt. Stammdaten kann sie nur lesen.
 

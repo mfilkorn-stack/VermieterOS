@@ -36,18 +36,28 @@ export type MandantKontext = {
 }
 
 /**
+ * Aktiver Mandant aus der Sitzung, Mitgliedschaft geprüft, oder `null`, wenn keiner gewählt ist.
+ * Für Stellen, die auch ohne Mandant funktionieren müssen (Navigation, Mandantenauswahl).
+ */
+export const mandantOderNull = cache(async (): Promise<MandantKontext | null> => {
+  const s = await erfordereGesicherteSitzung()
+  const mandantId = s.session.activeOrganizationId
+  if (!mandantId) return null
+  const mitglied = await auth.api.getActiveMember({ headers: await headers() })
+  if (!mitglied || mitglied.organizationId !== mandantId) return null
+  const rolle = mitglied.role.split(',')[0] ?? ''
+  if (!istRolle(rolle)) throw new Error(`unbekannte Rolle: ${mitglied.role}`)
+  return { mandantId, rolle, nutzerId: s.user.id, nutzerName: s.user.name }
+})
+
+/**
  * Aktiver Mandant aus der Sitzung, Mitgliedschaft geprüft. Ohne aktiven Mandanten
  * geht es zur Mandantenauswahl. Einzige Quelle für `mandantId` in der Web-App.
  */
 export const aktiverMandant = cache(async (): Promise<MandantKontext> => {
-  const s = await erfordereGesicherteSitzung()
-  const mandantId = s.session.activeOrganizationId
-  if (!mandantId) redirect('/mandanten')
-  const mitglied = await auth.api.getActiveMember({ headers: await headers() })
-  if (!mitglied || mitglied.organizationId !== mandantId) redirect('/mandanten')
-  const rolle = mitglied.role.split(',')[0] ?? ''
-  if (!istRolle(rolle)) throw new Error(`unbekannte Rolle: ${mitglied.role}`)
-  return { mandantId, rolle, nutzerId: s.user.id, nutzerName: s.user.name }
+  const k = await mandantOderNull()
+  if (!k) redirect('/mandanten')
+  return k
 })
 
 /** Führt `fn` im RLS-Kontext des aktiven Mandanten aus. */

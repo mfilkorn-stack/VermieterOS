@@ -1,4 +1,5 @@
 import { ladeVerlauf, ladeZuordnungsKandidaten, type VerlaufEintrag } from '@vermieteros/db'
+import { Mail, Paperclip, Phone, PhoneIncoming, PhoneOutgoing } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Feld } from '@/components/felder'
@@ -69,9 +70,18 @@ function Eintrag({ e, notieren, mvId }: { e: VerlaufEintrag; notieren: boolean; 
           </Link>
           <span className="leise">{zeitpunktAnzeige(e.zeitpunkt)}</span>
         </div>
-        <p className="leise">
-          Mail von {e.von}
-          {e.anhaenge ? ` · ${anhangText(e.anhaenge)}` : ''} · {ZUORDNUNG_TEXT[e.zuordnung]}
+        <p className="meta">
+          <span>
+            <Mail size={14} aria-hidden />
+            Mail von {e.von}
+          </span>
+          {e.anhaenge ? (
+            <span>
+              <Paperclip size={14} aria-hidden />
+              {anhangText(e.anhaenge)}
+            </span>
+          ) : null}
+          <span>{ZUORDNUNG_TEXT[e.zuordnung]}</span>
         </p>
         <p className="auszug">{e.auszug}</p>
       </li>
@@ -83,12 +93,19 @@ function Eintrag({ e, notieren, mvId }: { e: VerlaufEintrag; notieren: boolean; 
         <strong>{e.betreff}</strong>
         <span className="leise">{zeitpunktAnzeige(e.zeitpunkt)}</span>
       </div>
-      <p className="leise">
-        Telefonat ·{' '}
-        {e.richtung === 'eingehend'
-          ? `Anruf von ${e.gespraechspartner}`
-          : `Anruf bei ${e.gespraechspartner}`}
-        {e.korrigiert ? ' · korrigiert' : ''}
+      <p className="meta">
+        <span>
+          {e.richtung === 'eingehend' ? (
+            <PhoneIncoming size={14} aria-hidden />
+          ) : (
+            <PhoneOutgoing size={14} aria-hidden />
+          )}
+          Telefonat ·{' '}
+          {e.richtung === 'eingehend'
+            ? `Anruf von ${e.gespraechspartner}`
+            : `Anruf bei ${e.gespraechspartner}`}
+        </span>
+        {e.korrigiert ? <span>korrigiert</span> : null}
       </p>
       <p className="mailtext">{e.inhalt}</p>
       {notieren ? (
@@ -132,22 +149,30 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <p className="leise">
-        <Link href={`/objekte/${kopf.objektId}`}>{kopf.objekt}</Link> ·{' '}
+      <nav className="brotkrumen" aria-label="Pfad">
+        <Link href="/">Objekte</Link>
+        <span aria-hidden>/</span>
+        <Link href={`/objekte/${kopf.objektId}`}>{kopf.objekt}</Link>
+        <span aria-hidden>/</span>
         <Link href={`/objekte/${kopf.objektId}/einheiten/${kopf.einheitId}/vermietung`}>
           Vermietung
         </Link>
-      </p>
-      <h1>Verlauf · {kopf.mieterNamen.join(', ') || kopf.einheit}</h1>
-      <p className="leise" data-testid="verlauf-kopf">
-        {mietverhaeltnisText(kopf)}
-        {kopf.mieterEmails.length ? ` · ${kopf.mieterEmails.join(', ')}` : ''}
-      </p>
+      </nav>
+      <div className="seitenkopf">
+        <div>
+          <h1>Verlauf · {kopf.mieterNamen.join(', ') || kopf.einheit}</h1>
+          <p className="leise" data-testid="verlauf-kopf">
+            {mietverhaeltnisText(kopf)}
+            {kopf.mieterEmails.length ? ` · ${kopf.mieterEmails.join(', ')}` : ''}
+          </p>
+        </div>
+      </div>
 
       {notieren ? (
         <details className="karte" open={verlauf.length === 0}>
           <summary>
-            <strong>Telefonnotiz erfassen</strong>
+            <Phone size={16} aria-hidden style={{ verticalAlign: '-3px', marginRight: 6 }} />
+            Telefonnotiz erfassen
           </summary>
           <Formular aktion={telefonnotizSpeichern} knopf="Notiz speichern" testId="telefonnotiz">
             <NotizFelder

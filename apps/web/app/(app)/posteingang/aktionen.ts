@@ -1,6 +1,7 @@
 'use server'
 
 import { ordneNachrichtZu } from '@vermieteros/db'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { pflicht, text } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
@@ -26,5 +27,7 @@ export async function nachrichtZuordnen(_: FormStatus, d: FormData): Promise<For
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
+  // Menü im Layout zeigt Mandant und Zähler; Layouts rendern bei Navigation sonst nicht neu.
+  revalidatePath('/', 'layout')
   redirect(sicheresZiel(text(d, 'zurueck'), '/posteingang'))
 }

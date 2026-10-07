@@ -1,0 +1,88 @@
+import 'server-only'
+import { offeneNachrichten, schema, withMandant } from '@vermieteros/db'
+import { sql } from 'drizzle-orm'
+import type { NavEintrag } from '@/components/navigation'
+import { db } from './db'
+import { ROLLEN_TEXT, roles } from './rechte'
+import { mandantOderNull } from './sitzung'
+
+export type Navigation = {
+  mandant: { name: string; rolle: string } | null
+  haupt: NavEintrag[]
+  verwaltung: NavEintrag[]
+  tabs: NavEintrag[]
+}
+
+const MEHR_BEREICHE = [
+  '/mehr',
+  '/eigentuemer',
+  '/mitglieder',
+  '/postfaecher',
+  '/referenzdaten',
+  '/mandanten',
+]
+
+/**
+ * Menü des aktiven Mandanten mit Zählern. Zähler nur, wo sie etwas aussagen:
+ * offene Mails (Handlung, Amber) und Anzahl Objekte (Menge, Grau).
+ */
+export async function ladeNavigation(): Promise<Navigation> {
+  const k = await mandantOderNull()
+  if (!k) {
+    return {
+      mandant: null,
+      haupt: [],
+      verwaltung: [],
+      tabs: [{ href: '/mandanten', label: 'Mandanten', icon: 'mandanten' }],
+    }
+  }
+  const rolle = roles[k.rolle]
+  const post = rolle.authorize({ post: ['lesen'] }).success
+  const postfaecher = rolle.authorize({ post: ['postfaecher'] }).success
+
+  const daten = await withMandant(db, k.mandantId, async (tx) => {
+    const [m] = await tx.select({ name: schema.mandanten.name }).from(schema.mandanten)
+    const [o] = await tx.execute<{ n: number }>(sql`select count(*)::int as n from objekte_aktuell`)
+    return {
+      name: m?.name ?? '',
+      objekte: o?.n ?? 0,
+      offen: post ? await offeneNachrichten(tx) : 0,
+    }
+  })
+
+  const objekte: NavEintrag = {
+    href: '/',
+    label: 'Objekte',
+    icon: 'objekte',
+    bereiche: ['/', '/objekte', '/mietverhaeltnisse'],
+    zaehler: { n: daten.objekte, art: 'menge', text: daten.objekte === 1 ? 'Objekt' : 'Objekte' },
+  }
+  const posteingang: NavEintrag[] = post
+    ? [
+        {
+          href: '/posteingang',
+          label: 'Posteingang',
+          icon: 'posteingang',
+          zaehler: { n: daten.offen, art: 'handlung', text: 'offen' },
+        },
+      ]
+    : []
+  const verwaltung: NavEintrag[] = [
+    { href: '/eigentuemer', label: 'Eigentümer', icon: 'eigentuemer' },
+    { href: '/mitglieder', label: 'Mitglieder', icon: 'mitglieder' },
+    ...(postfaecher
+      ? [{ href: '/postfaecher', label: 'Postfächer', icon: 'postfaecher' } as const]
+      : []),
+    { href: '/referenzdaten', label: 'Referenzdaten', icon: 'referenzdaten' },
+  ]
+  return {
+    mandant: { name: daten.name, rolle: ROLLEN_TEXT[k.rolle].split(' (')[0]! },
+    haupt: [objekte, ...posteingang],
+    verwaltung,
+    tabs: [
+      objekte,
+      ...posteingang,
+      { href: '/mehr', label: 'Mehr', icon: 'mehr', bereiche: MEHR_BEREICHE },
+    ],
+  }
+}
