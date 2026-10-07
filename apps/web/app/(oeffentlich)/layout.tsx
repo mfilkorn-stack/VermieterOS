@@ -1,12 +1,18 @@
+import { Building2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export default function OeffentlichLayout({ children }: { children: ReactNode }) {
   return (
-    <main>
+    <div className="oeffentlich">
       <div className="schmal">
-        <p className="leise">Vermieter.OS</p>
-        {children}
+        <div className="marke">
+          <span className="marke-zeichen">
+            <Building2 size={18} strokeWidth={2} aria-hidden />
+          </span>
+          <span className="marke-name">Vermieter.OS</span>
+        </div>
+        <main>{children}</main>
       </div>
-    </main>
+    </div>
   )
 }

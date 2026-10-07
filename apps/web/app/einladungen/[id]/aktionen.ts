@@ -1,6 +1,7 @@
 'use server'
 
 import { headers } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { feld, fehlertext, type FormStatus } from '@/lib/form-status'
@@ -17,5 +18,7 @@ export async function einladungAnnehmen(_: FormStatus, daten: FormData): Promise
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
+  // Menü im Layout zeigt Mandant und Zähler; Layouts rendern bei Navigation sonst nicht neu.
+  revalidatePath('/', 'layout')
   redirect('/')
 }

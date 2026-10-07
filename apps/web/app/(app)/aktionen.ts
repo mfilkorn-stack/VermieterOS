@@ -3,6 +3,7 @@
 import { neueVersion } from '@vermieteros/db'
 import { EigentuemerschaftArt, ObjektDaten, type Herkunft } from '@vermieteros/schema'
 import { headers } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { feld, fehlertext, type FormStatus } from '@/lib/form-status'
@@ -22,6 +23,8 @@ export async function mandantAnlegen(_: FormStatus, daten: FormData): Promise<Fo
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
+  // Menü im Layout zeigt Mandant und Zähler; Layouts rendern bei Navigation sonst nicht neu.
+  revalidatePath('/', 'layout')
   redirect('/')
 }
 
@@ -30,6 +33,7 @@ export async function mandantAktivieren(daten: FormData): Promise<void> {
     body: { organizationId: feld(daten, 'id') },
     headers: await headers(),
   })
+  revalidatePath('/', 'layout')
   redirect('/')
 }
 
@@ -88,6 +92,7 @@ export async function objektAnlegen(_: FormStatus, daten: FormData): Promise<For
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
+  revalidatePath('/', 'layout')
   redirect(`/objekte/${objektId}`)
 }
 

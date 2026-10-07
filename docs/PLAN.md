@@ -259,17 +259,18 @@ Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 
 
 ### Phase 1 · Kommunikation & Belegeingang (Wo 4–7)
 
-| WP  | Inhalt                                                                                                                                                                                                               |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.1 | Mail-Eingang: IMAP-Abruf pro Mandant (Worker), Postfach-Zuordnung zu Mietverhältnis über Absender und Betreff, manuelle Zuordnung, Anhänge in Object Storage mit Prüfsumme                                           |
-| 1.2 | Posteingang-UI, Verlauf pro Mietverhältnis, Telefonnotiz als Formular (Transkription optional, Whisper-Container, CPU)                                                                                               |
-| 1.3 | `packages/ki`: Anthropic-Client, Kontext-Builder, Vorschlags-Tabelle, Stempel-Prüfung, Platzhalter-Renderer, Golden-Set-Gerüst                                                                                       |
-| 1.4 | KI-Sortierung (Kategorie, Dringlichkeit, Frist) und Antwortvorschlag                                                                                                                                                 |
-| 1.5 | Handwerkerverzeichnis, Notfallkarte pro Objekt, Wissensbasis pro Objekt, Ticket-Workflow                                                                                                                             |
-| 1.6 | Dokumente: Upload, Typ, Status, Ersetzen, KI-Extraktion mit Seitenangabe, Übernahme in Stammdaten als Version mit Herkunft                                                                                           |
-| 1.7 | Belegeingang und Journal (Modul 08 Grundgerüst): Beleg → KI-Extraktion → Bestätigung → Journaleintrag mit Zahlungsdatum und Leistungszeitraum, Aufteilung auf Objekte, Storno; `belege@`-Adresse; Sammel-Import 2026 |
-| 1.8 | Standardschreiben (Vermieterbescheinigung, Wohnungsgeberbestätigung, Mietschuldenfreiheit) als erste `packages/pdf`-Vorlagen                                                                                         |
-| 1.9 | Mieterportal Basis: Magic-Link, Vertrag und Notfallkarte sehen, Mangel melden mit Foto, Nachricht schreiben                                                                                                          |
+| WP   | Inhalt                                                                                                                                                                                                               |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1  | Mail-Eingang: IMAP-Abruf pro Mandant (Worker), Postfach-Zuordnung zu Mietverhältnis über Absender und Betreff, manuelle Zuordnung, Anhänge in Object Storage mit Prüfsumme                                           |
+| 1.2  | Posteingang-UI, Verlauf pro Mietverhältnis, Telefonnotiz als Formular (Transkription optional, Whisper-Container, CPU)                                                                                               |
+| 1.3  | Gestaltung: Design-Tokens, selbst gehostete Schrift, Icons, Navigation mit Zählern, Status als Icon plus Wort, Objektakte und Posteingang neu, Handy-Ansicht mit Tab-Leiste                                          |
+| 1.4  | `packages/ki`: Anthropic-Client, Kontext-Builder, Vorschlags-Tabelle, Stempel-Prüfung, Platzhalter-Renderer, Golden-Set-Gerüst                                                                                       |
+| 1.5  | KI-Sortierung (Kategorie, Dringlichkeit, Frist) und Antwortvorschlag                                                                                                                                                 |
+| 1.6  | Handwerkerverzeichnis, Notfallkarte pro Objekt, Wissensbasis pro Objekt, Ticket-Workflow                                                                                                                             |
+| 1.7  | Dokumente: Upload, Typ, Status, Ersetzen, KI-Extraktion mit Seitenangabe, Übernahme in Stammdaten als Version mit Herkunft                                                                                           |
+| 1.8  | Belegeingang und Journal (Modul 08 Grundgerüst): Beleg → KI-Extraktion → Bestätigung → Journaleintrag mit Zahlungsdatum und Leistungszeitraum, Aufteilung auf Objekte, Storno; `belege@`-Adresse; Sammel-Import 2026 |
+| 1.9  | Standardschreiben (Vermieterbescheinigung, Wohnungsgeberbestätigung, Mietschuldenfreiheit) als erste `packages/pdf`-Vorlagen                                                                                         |
+| 1.10 | Mieterportal Basis: Magic-Link, Vertrag und Notfallkarte sehen, Mangel melden mit Foto, Nachricht schreiben                                                                                                          |
 
 **Phasen-DoD:** Drei Vermieter nutzen Posteingang und Belegeingang im Alltag, Belege für 2026 liegen vollständig im Journal, Golden-Set mit mindestens 30 echten Beispielen besteht.
 
@@ -278,6 +279,8 @@ Der Stand in diesem Repository deckt WP 0.1 bis 0.4 ab: alle Entitäten aus 3.5 
 WP 1.2 steht. Der Posteingang hat Suche, eine Detailansicht mit Zuordnungsverlauf und Downloads von Anhängen und Rohmail. Downloads gehen immer als Datei, nie eingebettet, und die Prüfsumme wird geprüft. Jedes Mietverhältnis hat einen Verlauf aus Mails und Telefonnotizen. Telefonnotizen sind append-only, eine Korrektur ersetzt die alte Fassung nachvollziehbar.
 
 **Bewusst nicht gebaut (WP 1.2): Transkription per Whisper.** Gespräche ohne Einwilligung aller Beteiligten aufzunehmen ist nach § 201 StGB strafbar. Eine Transkription käme also nur für eigene Sprachnotizen nach dem Gespräch infrage. Dafür bräuchte es einen zusätzlichen Container mit mehreren GB Modell und spürbarer CPU-Last auf dem einzigen Server, für wenig Nutzen gegenüber dem Tippen von zwei Sätzen. Wiedervorlage, sobald Sprachnotizen im Alltag fehlen; dann ein eigenes WP mit Einwilligungstext.
+
+WP 1.3 steht, eingeschoben vor die KI-Arbeit; die folgenden WPs rücken um eins weiter. Grundlage ist das Designkonzept aus der Analyse der Oberfläche nach WP 1.2. Die Farben sind als Tokens für hellen und dunklen Modus angelegt, mit einer dunklen Seitenleiste in Petrol. Die Schrift ist IBM Plex, selbst gehostet über `@fontsource`, damit kein Abruf bei Google erfolgt. Die Icons kommen aus Lucide (ISC-Lizenz). Jedes Modul hat ein festes Icon. Status steht immer als Icon plus Wort, nie nur als Farbe. Zähler gibt es im Menü nur, wo sie etwas aussagen: offene Mails in Amber als Handlung, die Anzahl der Objekte in Grau als Menge. Nach Aktionen, die einen Zähler ändern, wird das Layout neu gerendert. Was der Worker im Hintergrund abruft, erscheint im Zähler beim nächsten Seitenaufruf. Die Objektakte hat einen Fortschrittsring, Modulkacheln, offene Punkte gruppiert nach Modul und Kennzahlen-Karten. Der Posteingang hat Reiter und Suchfeld, das Nachrichtendetail ist zweispaltig. Unter 960 px gibt es oben einen Kopf und unten eine Tab-Leiste mit „Mehr“ für die Verwaltung. Fachlogik und Datenmodell sind unverändert.
 
 ### Phase 2 · Nebenkosten & Steuerpaket (Wo 8–12)
 

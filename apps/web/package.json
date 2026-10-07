@@ -13,12 +13,15 @@
     "vorschau": "playwright test -c playwright.vorschau.config.ts"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
     "@vermieteros/db": "workspace:*",
     "@vermieteros/post": "workspace:*",
     "@vermieteros/rechenkern": "workspace:*",
     "@vermieteros/schema": "workspace:*",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3",
+    "lucide-react": "^1.52.0",
     "next": "^16.3.8",
     "postgres": "^3.4.9",
     "qrcode": "^1.5.4",

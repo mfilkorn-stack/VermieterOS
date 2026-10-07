@@ -88,6 +88,11 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(offen).toHaveCount(1)
   await expect(offen.first()).toHaveAttribute('data-betreff', 'Baum an der Grundstücksgrenze')
   await expect(offen.first().getByTestId('zuordnung')).toContainText('Offen')
+  // Das Menü zählt offene Mails (Amber-Zähler)
+  const menuePost = page
+    .getByRole('navigation', { name: 'Hauptmenü' })
+    .getByRole('link', { name: /Posteingang/ })
+  await expect(menuePost).toContainText('1 offen')
 
   // Alle: die Mail der Mieterin ist über den Absender zugeordnet, mit Anhang
   await page.getByRole('link', { name: 'Alle' }).click()
@@ -110,6 +115,8 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(page.getByTestId('posteingang-leer')).toHaveText(
     'Nichts offen. Alle Nachrichten sind zugeordnet.',
   )
+  // Zähler verschwindet ohne Neuladen (Layout wird nach der Aktion neu gerendert)
+  await expect(menuePost).not.toContainText('offen')
   await page.goto('/posteingang?alle=1')
   await expect(baum.getByTestId('zuordnung')).toContainText('(von Hand)')
 

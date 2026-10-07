@@ -31,7 +31,8 @@ async function bild(page: Page, titel: string, text: string, mobil = false) {
   await page.waitForLoadState('networkidle')
   await page.screenshot({
     path: join(ausgabe, 'bilder', datei),
-    fullPage: true,
+    // Handy: nur der sichtbare Bildschirm, so wie er mit Tab-Leiste unten aussieht.
+    fullPage: !mobil,
     animations: 'disabled',
   })
   bilder.push({ bereich, titel, text, datei, mobil })
@@ -265,6 +266,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Die Mail des Mieters ist automatisch über den Absender zugeordnet, mit Anhang.',
   )
   await page.getByRole('link', { name: 'Heizung im Bad bleibt kalt' }).click()
+  await expect(page.getByTestId('nachricht-betreff')).toHaveText('Heizung im Bad bleibt kalt')
   await bild(
     page,
     'Nachricht im Detail',
