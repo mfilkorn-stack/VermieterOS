@@ -80,6 +80,8 @@ export const DOKUMENT_TYPEN = [
   'kreditvertrag',
   'teilungserklaerung',
   'hausgeldabrechnung',
+  'heizkostenabrechnung',
+  'betriebskostenabrechnung',
   'beleg',
   'mietspiegel',
   'bescheinigung',

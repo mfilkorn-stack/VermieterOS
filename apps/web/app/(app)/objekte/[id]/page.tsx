@@ -354,6 +354,12 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
                     >
                       Vermietung
                     </Link>
+                    <Link
+                      className="knopf zweit"
+                      href={`/objekte/${id}/einheiten/${e.id}/betriebskosten`}
+                    >
+                      Betriebskosten
+                    </Link>
                   </span>
                 ) : null}
               </div>

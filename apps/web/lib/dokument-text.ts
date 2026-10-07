@@ -11,6 +11,8 @@ export const DOKUMENT_TYP_TEXT: Record<DokumentTyp, string> = {
   kreditvertrag: 'Kreditvertrag',
   teilungserklaerung: 'Teilungserklärung',
   hausgeldabrechnung: 'Hausgeldabrechnung',
+  heizkostenabrechnung: 'Heizkostenabrechnung (Messdienst)',
+  betriebskostenabrechnung: 'Betriebskostenabrechnung',
   beleg: 'Beleg',
   mietspiegel: 'Mietspiegel',
   bescheinigung: 'Bescheinigung (ausgestellt)',

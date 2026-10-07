@@ -3,6 +3,8 @@ import type { ZaehlerstandQuelle } from '@vermieteros/schema'
 import { v7 as uuidv7 } from 'uuid'
 import type { Tx } from './client'
 import {
+  bkAbrechnungen,
+  bkAbrechnungVersionen,
   darlehen,
   darlehenVersionen,
   dokumente,
@@ -79,6 +81,11 @@ export const ENTITAETEN = {
     fk: 'wissensartikelId',
   },
   ticket: { identitaet: tickets, versionen: ticketVersionen, fk: 'ticketId' },
+  bk_abrechnung: {
+    identitaet: bkAbrechnungen,
+    versionen: bkAbrechnungVersionen,
+    fk: 'bkAbrechnungId',
+  },
 } as const
 
 export type EntitaetName = keyof typeof ENTITAETEN
