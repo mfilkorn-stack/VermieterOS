@@ -142,6 +142,85 @@ describe('Betriebskosten: Sollwert Abrechnung 2022', () => {
   })
 })
 
+/**
+ * Zweiter Sollwert: Einzelabrechnung 2024 der WEG für dieselbe Einheit (Hausgeldabrechnung
+ * der Verwaltung, nur Beträge). Jede Zeile auf den Cent wie die Verwaltung; umlagefähig sind
+ * nur die Betriebskosten nach § 2 BetrKV, Verwaltung, Bankspesen und Reparaturen nicht.
+ */
+describe('Betriebskosten: Sollwert WEG-Einzelabrechnung 2024', () => {
+  const bk = (
+    kostenart: Kostenposition['kostenart'],
+    bezeichnung: string,
+    gesamt: number,
+    schluessel: Kostenposition['schluessel'] = FLAECHE,
+  ): Kostenposition => ({ kostenart, bezeichnung, gesamtCent: cent(gesamt), schluessel })
+  const positionen = [
+    bk('heizung', 'Heizung/Wasser/Abwasser laut Messdienst', 1_121_592, {
+      art: 'direkt',
+      einheitCent: cent(145_510),
+    }),
+    bk('entwaesserung', 'Niederschlagswasser', 23_105),
+    bk('strassenreinigung_muell', 'Restmüll', 73_200),
+    bk('antenne_kabel', 'Kabelgebühr', 65_102, { art: 'einheiten', anzahl: 12 }),
+    bk('beleuchtung', 'Strom allgemein', 72_648),
+    bk('versicherung', 'Gebäudeversicherung', 213_446),
+    bk('gebaeudereinigung', 'Hausreinigung', 250_839),
+    bk('strassenreinigung_muell', 'Winterdienst', 74_197),
+    bk('strassenreinigung_muell', 'Straßenreinigung', 16_384),
+  ]
+  const a = betriebskostenabrechnung({
+    zeitraum: { von: '2024-01-01', bis: '2024-12-31' },
+    einheit: EINHEIT,
+    positionen,
+    nutzungen: [
+      {
+        id: 'mieter',
+        zeitraum: { von: '2024-01-01', bis: '2024-12-31' },
+        personen: 2,
+        vorauszahlungenCent: vorauszahlungSoll([{ ab: '2023-12-01', monatCent: cent(18_900) }], {
+          von: '2024-01-01',
+          bis: '2024-12-31',
+        }),
+      },
+    ],
+  })
+  const m = a.mieter[0]!
+
+  it('jede Zeile wie die Verwaltung, Summe 2.152,80 €', () => {
+    expect(m.zeilen.map((z) => z.anteilCent)).toEqual([
+      145_510, 2_054, 6_507, 5_425, 6_458, 18_975, 22_299, 6_596, 1_456,
+    ])
+    expect(m.kostenCent).toBe(215_280)
+    expect(a.leerstandCent).toBe(0)
+  })
+
+  it('Verwaltung und Reparaturen rechnet der Kern ebenso nach, sie gehören aber nicht in die Mieterabrechnung', () => {
+    const nicht = [
+      [8_791, 781],
+      [23_800, 2_116],
+      [22_361, 1_988],
+      [46_279, 4_114],
+      [1_396, 124],
+      [79_992, 7_111],
+      [671_808, 59_722], // Zuführung Rücklage
+    ]
+    for (const [gesamt, soll] of nicht) {
+      expect(
+        betriebskostenabrechnung({
+          zeitraum: JAHR,
+          einheit: EINHEIT,
+          positionen: [bk('sonstige_betriebskosten', 'x', gesamt!)],
+          nutzungen: [],
+        }).jahresanteil[0]!.anteilCent,
+      ).toBe(soll)
+    }
+  })
+
+  it('weist auf das Ende der Kabel-Umlage zum 30.06.2024 hin', () => {
+    expect(m.hinweise.map((h) => h.code)).toEqual(['kabel_nebenkostenprivileg'])
+  })
+})
+
 describe('Betriebskosten: Zeitanteile und Schlüssel', () => {
   it('Monate: volle Monate ganz, angebrochene nach Tagen', () => {
     expect(monate(JAHR)).toBe(12)

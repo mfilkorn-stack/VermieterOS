@@ -23,6 +23,8 @@ Sollwert ist eine echte Abrechnung 2022 (Eigentumswohnung, Mieter ab Februar). I
 
 Monate statt Tage, weil Miete monatlich gezahlt wird und Mieter das ohne Kalender nachrechnen können.
 
+Zweiter Sollwert ist die Einzelabrechnung 2024 der WEG für dieselbe Einheit: alle Zeilen auf den Cent, ohne Abweichung.
+
 ## Konsequenzen
 
 Heizkosten bei Nutzerwechsel nur nach Monaten zu teilen genügt der HeizKV nicht (§ 9b: Zwischenablesung, sonst Gradtagzahlen). Der Kern rechnet dennoch und gibt einen Hinweis aus; die richtige Aufteilung liefert der Messdienst, sie kommt als Betrag mit Schlüssel „direkt“ je Mietverhältnis (WP 2.2).
