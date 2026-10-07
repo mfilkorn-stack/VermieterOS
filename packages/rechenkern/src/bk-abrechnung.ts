@@ -73,6 +73,7 @@ function tageZwischen(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000)
 }
 
+const deutsch = (iso: string) => iso.split('-').reverse().join('.')
 const betragVon = (p: BkPosition) =>
   p.schluessel.art === 'direkt' ? p.schluessel.einheitCent : p.gesamtCent
 const euro = (c: number) => (c / 100).toLocaleString('de-DE', { minimumFractionDigits: 2 })
@@ -92,13 +93,13 @@ export function pruefeBkAbrechnung(p: {
       befunde.push({
         schwere: 'fehler',
         code: 'frist_abgelaufen',
-        text: `Abrechnungsfrist am ${fristBis} abgelaufen: Nachforderungen sind ausgeschlossen (§ 556 Abs. 3 Satz 3 BGB), Guthaben müssen trotzdem ausgezahlt werden.`,
+        text: `Abrechnungsfrist am ${deutsch(fristBis)} abgelaufen: Nachforderungen sind ausgeschlossen (§ 556 Abs. 3 Satz 3 BGB), Guthaben müssen trotzdem ausgezahlt werden.`,
       })
     } else if (tageZwischen(heute, fristBis) <= 60) {
       befunde.push({
         schwere: 'warnung',
         code: 'frist_naht',
-        text: `Die Abrechnung muss dem Mieter bis ${fristBis} zugehen.`,
+        text: `Die Abrechnung muss dem Mieter bis ${deutsch(fristBis)} zugehen.`,
       })
     }
   }

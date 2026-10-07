@@ -15,7 +15,8 @@ CREATE TABLE "bk_abrechnung_versionen" (
 	"messdienst" jsonb,
 	"vorauszahlungen" jsonb,
 	"status" text DEFAULT 'entwurf' NOT NULL,
-	"notizen" text
+	"notizen" text,
+	"ergebnis" jsonb
 );
 --> statement-breakpoint
 CREATE TABLE "bk_abrechnungen" (

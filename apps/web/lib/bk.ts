@@ -226,6 +226,7 @@ export function datenAusVersion(v: {
   vorauszahlungen: Record<string, number> | null
   status: BkAbrechnungDaten['status']
   notizen: string | null
+  ergebnis?: BkAbrechnungDaten['ergebnis'] | null
 }): BkAbrechnungDaten {
   return {
     zeitraumVon: v.zeitraumVon,
@@ -235,6 +236,7 @@ export function datenAusVersion(v: {
     vorauszahlungen: v.vorauszahlungen,
     status: v.status,
     notizen: v.notizen,
+    ergebnis: v.ergebnis ?? null,
   }
 }
 

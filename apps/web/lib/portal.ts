@@ -24,6 +24,7 @@ export const PORTAL_DOKUMENTTYPEN = new Set([
   'nachtrag',
   'uebergabeprotokoll',
   'bescheinigung',
+  'betriebskostenabrechnung',
 ])
 
 export async function portalKontext(): Promise<PortalSitzung | null> {

@@ -13,6 +13,16 @@ export type Block =
   | { art: 'hinweis'; text: string }
   | { art: 'abstand' }
   | { art: 'unterschrift'; zeilen: string[] }
+  /**
+   * Tabelle über die Satzbreite. Breiten in mm (die erste Spalte nimmt den Rest), Zahlen-
+   * spalten rechtsbündig. `fett` markiert Summenzeilen (mit Linie darüber).
+   */
+  | {
+      art: 'tabelle'
+      spalten: Array<{ titel: string; breiteMm?: number; rechts?: boolean }>
+      zeilen: Array<{ zellen: string[]; fett?: boolean }>
+    }
+  | { art: 'seitenumbruch' }
 
 export type Brief = {
   /** Absender: erste Zeile Name, dann Anschrift */
@@ -157,6 +167,56 @@ export async function briefPdf(b: Brief): Promise<Uint8Array> {
         schreibe(seite, label, LINKS, y, { grau: true })
         werte.forEach((w, i) => schreibe(seite, w, LINKS + spalte, y - i * ZEILE))
         y -= werte.length * ZEILE + 3
+      }
+      y -= ZEILE * 0.6
+      continue
+    }
+    if (block.art === 'seitenumbruch') {
+      seite = doc.addPage([BREITE, HOEHE])
+      y = oben(25)
+      continue
+    }
+    if (block.art === 'tabelle') {
+      const fest = block.spalten.reduce((s, sp) => s + (sp.breiteMm ?? 0) * MM, 0)
+      const breiten = block.spalten.map((sp, i) =>
+        i === 0 ? SATZBREITE - fest : (sp.breiteMm ?? 0) * MM,
+      )
+      const xs = breiten.map((_, i) => LINKS + breiten.slice(0, i).reduce((a, b) => a + b, 0))
+      const g = 9
+      const zh = 12
+      const zeile = (zellen: string[], font: PDFFont, grau = false) => {
+        const erste = umbrechen(font, zellen[0] ?? '', g, breiten[0]! - 4)
+        platz(erste.length * zh)
+        erste.forEach((t, k) => schreibe(seite, t, xs[0]!, y - k * zh, { font, groesse: g, grau }))
+        zellen.slice(1).forEach((t, j) => {
+          const i = j + 1
+          const sp = block.spalten[i]!
+          const w = font.widthOfTextAtSize(sicher(font, t), g)
+          const x = sp.rechts ? xs[i]! + breiten[i]! - w : xs[i]! + 4
+          schreibe(seite, t, x, y, { font, groesse: g, grau })
+        })
+        y -= erste.length * zh + 2
+      }
+      const linie = () =>
+        seite.drawLine({
+          start: { x: LINKS, y: y + zh - 3 },
+          end: { x: LINKS + SATZBREITE, y: y + zh - 3 },
+          thickness: 0.5,
+          color: GRAU,
+        })
+      zeile(
+        block.spalten.map((s) => s.titel),
+        fett,
+        true,
+      )
+      y -= 1
+      linie()
+      for (const z of block.zeilen) {
+        if (z.fett) {
+          platz(zh * 2)
+          linie()
+        }
+        zeile(z.zellen, z.fett ? fett : normal)
       }
       y -= ZEILE * 0.6
       continue

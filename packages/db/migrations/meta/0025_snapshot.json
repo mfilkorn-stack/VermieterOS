@@ -1,5 +1,5 @@
 {
-  "id": "b31ce2af-cfee-46ed-8709-d805c379eec4",
+  "id": "e7865b4e-c0cc-4968-9b3e-72fd52299993",
   "prevId": "67079750-ecd6-4e75-b5be-734ba05c3def",
   "version": "7",
   "dialect": "postgresql",
@@ -5281,6 +5281,12 @@
         "notizen": {
           "name": "notizen",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ergebnis": {
+          "name": "ergebnis",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         }

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { extractText, getDocumentProxy } from 'unpdf'
 import { konto, registrieren } from './hilfen'
 
 /**
@@ -106,6 +107,43 @@ test('Betriebskosten: Abrechnung mit Messdienst, CO2-Abzug, Ergebnis und Folgeja
   // Eingaben bleiben nach dem Speichern erhalten
   await expect(page.getByTestId('bk-position')).toHaveCount(2)
   await expect(page.getByTestId('bk-messdienst').getByLabel('CO2 in kg')).toHaveValue('15900')
+
+  // Festschreiben mit neuer Vorauszahlung: PDF als Dokument, Abrechnung gesperrt
+  const bkUrl = page.url()
+  const f = page.getByTestId('bk-festschreiben-formular')
+  await f.getByLabel('Datum des Schreibens').fill('2025-11-11')
+  await f.getByLabel('Neue Vorauszahlung €').fill('150,00')
+  await f.getByLabel('ab').fill('2026-01-01')
+  await f.getByRole('button', { name: 'Festschreiben und PDF erstellen' }).click()
+  const aus = page.getByTestId('bk-ausgestellt')
+  await expect(aus).toContainText('Guthaben 479,11 €')
+  await expect(aus).toContainText('neue Vorauszahlung 150,00 € ab 01.01.2026')
+  await expect(page.getByTestId('bk-formular')).toHaveCount(0)
+  await aus.getByTestId('bk-dokument').click()
+  await expect(page.getByTestId('dokument-titel')).toHaveText('Betriebskostenabrechnung 2024')
+  const r = await page.request.get(
+    (await page.getByTestId('dokument-download').getAttribute('href'))!,
+  )
+  const { text } = await extractText(await getDocumentProxy(new Uint8Array(await r.body())), {
+    mergePages: true,
+  })
+  const t = text.replace(/\s+/g, ' ')
+  expect(t).toContain('Guthaben von 479,11 €')
+  expect(t).toContain(
+    'senken wir Ihre monatliche Vorauszahlung von bisher 189,00 € um 39,00 € auf 150,00 €',
+  )
+  expect(t).toContain('Lohnkostenanteil beträgt 112,24 €')
+  expect(t).toContain('Wohnfläche: Ihre Wohnung 59,72 m² von 671,79 m² gesamt.')
+  expect(t).toContain('Anteil Vermieter 30 %')
+
+  // Korrektur: Festschreibung aufheben, PDF gilt als ersetzt, Entwurf wieder bearbeitbar
+  await page.goto(bkUrl)
+  await page.getByTestId('bk-ausgestellt').getByText('Korrigieren').click()
+  const k = page.getByTestId('bk-aufheben')
+  await k.getByLabel('Grund der Korrektur').fill('Grundsteuerbescheid geändert')
+  await k.getByRole('button', { name: 'Festschreibung aufheben' }).click()
+  await expect(page.getByTestId('bk-formular')).toBeVisible()
+  await expect(page.getByTestId('bk-ausgestellt')).toHaveCount(0)
 
   // Folgejahr: Positionen mit Bezugsgrößen übernommen, Beträge leer → Prüfung meldet sie
   await page.getByRole('link', { name: /Betriebskosten EG rechts/ }).click()

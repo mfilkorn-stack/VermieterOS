@@ -180,14 +180,14 @@
     {
       "idx": 25,
       "version": "7",
-      "when": 1791374702512,
+      "when": 1791375652262,
       "tag": "0025_betriebskostenabrechnung",
       "breakpoints": true
     },
     {
       "idx": 26,
       "version": "7",
-      "when": 1791374710953,
+      "when": 1791375653366,
       "tag": "0026_betriebskostenabrechnung_regeln",
       "breakpoints": true
     }

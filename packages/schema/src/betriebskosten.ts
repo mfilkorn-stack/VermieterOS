@@ -59,6 +59,19 @@ export const BkMessdienst = z.object({
 })
 export type BkMessdienst = z.infer<typeof BkMessdienst>
 
+/** Ergebnis je Mietverhältnis, beim Festschreiben gespeichert (mit dem ausgestellten PDF) */
+export const BkFestschreibung = z.object({
+  mietverhaeltnisId: Uuid,
+  kostenCent: Cent,
+  vorauszahlungenCent: Cent,
+  saldoCent: Cent,
+  dokumentId: Uuid,
+  /** neue monatliche Vorauszahlung, falls angepasst (§ 560 Abs. 4 BGB) */
+  vorauszahlungNeuCent: CentNichtNegativ.nullish(),
+  vorauszahlungAb: Datum.nullish(),
+})
+export type BkFestschreibung = z.infer<typeof BkFestschreibung>
+
 export const BkAbrechnungDaten = z
   .object({
     zeitraumVon: Datum,
@@ -69,6 +82,8 @@ export const BkAbrechnungDaten = z
     vorauszahlungen: z.record(Uuid, CentNichtNegativ).nullish(),
     status: BkStatus.default('entwurf'),
     notizen: Notiz.nullish(),
+    /** nur bei Status „festgeschrieben“ */
+    ergebnis: z.array(BkFestschreibung).nullish(),
   })
   .refine((d) => d.zeitraumBis >= d.zeitraumVon, {
     path: ['zeitraumBis'],

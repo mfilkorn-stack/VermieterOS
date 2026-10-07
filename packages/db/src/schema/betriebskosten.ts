@@ -1,4 +1,4 @@
-import type { BkMessdienst, BkPosition, BkStatus } from '@vermieteros/schema'
+import type { BkFestschreibung, BkMessdienst, BkPosition, BkStatus } from '@vermieteros/schema'
 import { date, index, jsonb, pgTable, smallint, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { einheiten } from './einheiten'
 import { identitaetsSpalten, versionsSpalten } from './versionierung'
@@ -33,6 +33,7 @@ export const bkAbrechnungVersionen = pgTable(
     vorauszahlungen: jsonb('vorauszahlungen').$type<Record<string, number>>(),
     status: text('status').$type<BkStatus>().notNull().default('entwurf'),
     notizen: text('notizen'),
+    ergebnis: jsonb('ergebnis').$type<BkFestschreibung[]>(),
   },
   (t) => [uniqueIndex('bk_abrechnung_versionen_nr_uq').on(t.bkAbrechnungId, t.versionNr)],
 )
