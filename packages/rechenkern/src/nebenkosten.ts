@@ -27,6 +27,11 @@ export type Verteilerschluessel =
   | { art: 'personen'; gesamtPersonenmonate: number }
   /** Betrag gilt schon für die Einheit (Grundsteuerbescheid, Abrechnung des Messdienstes) */
   | { art: 'direkt'; einheitCent: Cent }
+  /**
+   * Betrag je Nutzung schon bekannt (Zwischenablesung des Messdienstes bei Nutzerwechsel);
+   * was `jeNutzung` nicht abdeckt, ist Leerstand.
+   */
+  | { art: 'nutzer'; einheitCent: Cent; jeNutzung: Readonly<Record<string, Cent>> }
 
 export type Kostenposition = {
   kostenart: BetrkvKostenart
@@ -56,7 +61,12 @@ export type Zeile = {
 }
 
 export type Hinweis = {
-  code: 'heizkosten_zeitanteilig' | 'kabel_nebenkostenprivileg' | 'ohne_kosten'
+  code:
+    | 'heizkosten_zeitanteilig'
+    | 'kabel_nebenkostenprivileg'
+    | 'ohne_kosten'
+    | 'co2_fehlt'
+    | 'co2_abweichung'
   text: string
 }
 
@@ -69,6 +79,8 @@ export type Einzelabrechnung = {
   vorauszahlungenCent: Cent
   /** positiv: Nachzahlung des Mieters, negativ: Guthaben */
   saldoCent: Cent
+  /** Lohnanteil haushaltsnaher Dienstleistungen (§ 35a EStG) für die Steuererklärung des Mieters */
+  lohnanteil35aCent: Cent
   hinweise: Hinweis[]
 }
 
@@ -158,13 +170,15 @@ function einheitsfaktor(p: Kostenposition, e: Einheit): number {
         throw new RangeError(`${p.bezeichnung}: Miteigentumsanteil fehlt`)
       return e.mea / s.gesamt
     case 'direkt':
+    case 'nutzer':
     case 'personen':
       throw new Error('kein Flächen- oder Einheitenfaktor')
   }
 }
 
 function jahresanteil(p: Kostenposition, e: Einheit): Cent | null {
-  if (p.schluessel.art === 'direkt') return p.schluessel.einheitCent
+  if (p.schluessel.art === 'direkt' || p.schluessel.art === 'nutzer')
+    return p.schluessel.einheitCent
   if (p.schluessel.art === 'personen') return null
   return anteil(p.gesamtCent, einheitsfaktor(p, e))
 }
@@ -178,6 +192,11 @@ function mieteranteil(
 ): Cent {
   const s = p.schluessel
   if (s.art === 'direkt') return anteil(s.einheitCent, zeitAnteil)
+  if (s.art === 'nutzer') {
+    const b = s.jeNutzung[n.id]
+    if (b == null) throw new RangeError(`${p.bezeichnung}: kein Betrag für Nutzung ${n.id}`)
+    return b
+  }
   if (s.art === 'personen') {
     if (s.gesamtPersonenmonate <= 0)
       throw new RangeError(`${p.bezeichnung}: Personenmonate im Haus fehlen`)
@@ -208,6 +227,8 @@ export function betriebskostenabrechnung(eingabe: {
   einheit: Einheit
   positionen: readonly Kostenposition[]
   nutzungen: readonly Nutzung[]
+  /** Lohnanteil § 35a EStG der Einheit im Zeitraum, z. B. laut Messdienst */
+  lohnanteil35aCent?: Cent
 }): Abrechnung {
   const { zeitraum, einheit, positionen } = eingabe
   const gesamtMonate = monate(zeitraum)
@@ -230,7 +251,10 @@ export function betriebskostenabrechnung(eingabe: {
     const zeilen = positionen.map((p) => zeile(p, mieteranteil(p, einheit, n, zeitAnteil, m)))
     const kostenCent = summe(zeilen.map((z) => z.anteilCent))
     const hinweise: Hinweis[] = []
-    if (zeitAnteil < 1 && positionen.some((p) => HEIZKOSTEN.has(p.kostenart))) {
+    const heizNachZeit = positionen.some(
+      (p) => HEIZKOSTEN.has(p.kostenart) && p.schluessel.art !== 'nutzer',
+    )
+    if (zeitAnteil < 1 && heizNachZeit) {
       hinweise.push({
         code: 'heizkosten_zeitanteilig',
         text: 'Heizkosten bei Nutzerwechsel: Zwischenablesung oder Aufteilung nach Gradtagzahlen (§ 9b HeizKV), nicht nur nach Monaten.',
@@ -255,6 +279,9 @@ export function betriebskostenabrechnung(eingabe: {
       kostenCent,
       vorauszahlungenCent: n.vorauszahlungenCent,
       saldoCent: cent(kostenCent - n.vorauszahlungenCent),
+      lohnanteil35aCent: eingabe.lohnanteil35aCent
+        ? anteil(eingabe.lohnanteil35aCent, zeitAnteil)
+        : cent(0),
       hinweise,
     }
   })
