@@ -1,15 +1,21 @@
 import { ladeDokument, ladeZuordnungsKandidaten, letzteVersion } from '@vermieteros/db'
+import { DokumentTyp } from '@vermieteros/schema'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { DokumentFormular } from '@/components/dokument-formular'
 import { mietverhaeltnisText } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
 
-/** Upload am Objekt oder Mietverhältnis; mit `ersetzt` als Nachfolger eines Dokuments. */
+/** Upload am Objekt oder Mietverhältnis; mit `ersetzt` als Nachfolger eines Dokuments, mit `typ` vorbelegt. */
 export default async function DokumentNeu({
   searchParams,
 }: {
-  searchParams: Promise<{ objekt?: string; mietverhaeltnis?: string; ersetzt?: string }>
+  searchParams: Promise<{
+    objekt?: string
+    mietverhaeltnis?: string
+    ersetzt?: string
+    typ?: string
+  }>
 }) {
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect('/')
   const sp = await searchParams
@@ -43,7 +49,7 @@ export default async function DokumentNeu({
           objektId={d.mv ? undefined : (d.objektId ?? undefined)}
           mietverhaeltnisId={d.mvId ?? undefined}
           ersetztId={d.alt?.id}
-          typ={d.alt?.typ}
+          typ={d.alt?.typ ?? (DokumentTyp.safeParse(sp.typ).data || undefined)}
         />
       </div>
     </>

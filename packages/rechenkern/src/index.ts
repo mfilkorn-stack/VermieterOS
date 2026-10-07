@@ -98,3 +98,11 @@ export {
   type SteuerMietzeit,
   type SteuerZeile,
 } from './steuer'
+export {
+  jahresabschluss,
+  type Abschluss,
+  type AbschlussDokument,
+  type AbschlussEingabe,
+  type AbschlussPunkt,
+  type AbschlussStand,
+} from './jahresabschluss'

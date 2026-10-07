@@ -9,6 +9,7 @@ import {
 import { sql } from 'drizzle-orm'
 import type { NavEintrag } from '@/components/navigation'
 import { DRINGEND, ladeBkFristen } from './bk-fristen'
+import { offeneAbschlussPunkte } from './jahresabschluss'
 import { db } from './db'
 import { ROLLEN_TEXT, roles } from './rechte'
 import { mandantOderNull } from './sitzung'
@@ -25,6 +26,7 @@ const MEHR_BEREICHE = [
   '/journal',
   '/betriebskosten',
   '/steuer',
+  '/jahresabschluss',
   '/handwerker',
   '/eigentuemer',
   '/mitglieder',
@@ -61,6 +63,7 @@ export async function ladeNavigation(): Promise<Navigation> {
       tickets: await gemeldeteTickets(tx),
       belege: await offeneBelege(tx),
       fristen: (await ladeBkFristen(tx)).filter((f) => DRINGEND.has(f.stufe)).length,
+      abschluss: await offeneAbschlussPunkte(tx),
     }
   })
 
@@ -101,6 +104,12 @@ export async function ladeNavigation(): Promise<Navigation> {
     zaehler: { n: daten.fristen, art: 'handlung', text: 'Frist in Sicht oder abgelaufen' },
   }
   const steuer: NavEintrag = { href: '/steuer', label: 'Steuer', icon: 'steuer' }
+  const abschluss: NavEintrag = {
+    href: '/jahresabschluss',
+    label: 'Jahresabschluss',
+    icon: 'jahresabschluss',
+    zaehler: { n: daten.abschluss, art: 'handlung', text: 'offen' },
+  }
   const verwaltung: NavEintrag[] = [
     { href: '/handwerker', label: 'Handwerker', icon: 'handwerker' },
     { href: '/eigentuemer', label: 'Eigentümer', icon: 'eigentuemer' },
@@ -112,7 +121,7 @@ export async function ladeNavigation(): Promise<Navigation> {
   ]
   return {
     mandant: { name: daten.name, rolle: ROLLEN_TEXT[k.rolle].split(' (')[0]! },
-    haupt: [objekte, ...posteingang, tickets, belege, betriebskosten, journal, steuer],
+    haupt: [objekte, ...posteingang, tickets, belege, betriebskosten, journal, steuer, abschluss],
     verwaltung,
     tabs: [
       objekte,
