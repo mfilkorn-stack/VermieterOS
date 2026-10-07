@@ -3,7 +3,7 @@
 import { CircleCheck, Copy, LoaderCircle, TriangleAlert } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { HochladenErgebnis } from '@/app/(app)/belege/aktionen'
 
 type Zustand = {
@@ -34,6 +34,9 @@ export function BelegImport({
   const router = useRouter()
   const [liste, setListe] = useState<Zustand[]>([])
   const [laeuft, setLaeuft] = useState(false)
+  // Erst nach der Hydrierung absendbar, sonst ginge ein nativer Submit ohne Upload raus.
+  const [bereit, setBereit] = useState(false)
+  useEffect(() => setBereit(true), [])
 
   async function starte(form: HTMLFormElement) {
     const eingabe = form.elements.namedItem('dateien') as HTMLInputElement
@@ -109,7 +112,7 @@ export function BelegImport({
           </select>
         </label>
       ) : null}
-      <button type="submit" disabled={laeuft}>
+      <button type="submit" disabled={laeuft || !bereit}>
         {laeuft ? 'Lädt hoch …' : ki ? 'Hochladen und auslesen' : 'Hochladen'}
       </button>
       {liste.length > 0 ? (
