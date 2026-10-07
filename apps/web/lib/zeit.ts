@@ -36,3 +36,8 @@ export function isoZuBerlin(iso: string): string {
   const ms = new Date(iso).getTime()
   return new Date(ms + versatzMinuten(ms) * 60_000).toISOString().slice(0, 16)
 }
+
+/** Heutiges Datum in Berlin, „2026-10-07“. */
+export function heuteBerlin(): string {
+  return isoZuBerlin(new Date().toISOString()).slice(0, 10)
+}

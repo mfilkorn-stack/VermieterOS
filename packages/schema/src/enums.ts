@@ -175,3 +175,52 @@ export type ZuordnungArt = (typeof ZUORDNUNG_ARTEN)[number]
 /** Telefonnotiz (WP 1.2): Wer hat angerufen? */
 export const GESPRAECH_RICHTUNGEN = ['eingehend', 'ausgehend'] as const
 export type GespraechRichtung = (typeof GESPRAECH_RICHTUNGEN)[number]
+
+/** Gewerke im Handwerkerverzeichnis (WP 1.6). */
+export const GEWERKE = [
+  'heizung_sanitaer',
+  'elektro',
+  'schluesseldienst',
+  'dach_fassade',
+  'fenster_tueren',
+  'maler_boden',
+  'garten',
+  'reinigung',
+  'hausmeister',
+  'sonstiges',
+] as const
+export const Gewerk = z.enum(GEWERKE)
+export type Gewerk = z.infer<typeof Gewerk>
+
+/** Zeilen der Notfallkarte eines Objekts. */
+export const NOTFALL_ARTEN = [
+  'heizung',
+  'wasser',
+  'strom',
+  'gas',
+  'schluessel',
+  'hausverwaltung',
+  'sonstiges',
+] as const
+export const NotfallArt = z.enum(NOTFALL_ARTEN)
+export type NotfallArt = z.infer<typeof NotfallArt>
+
+export const WISSEN_KATEGORIEN = ['hausordnung', 'anleitung', 'muell', 'faq', 'sonstiges'] as const
+export const WissenKategorie = z.enum(WISSEN_KATEGORIEN)
+export type WissenKategorie = z.infer<typeof WissenKategorie>
+
+/** Ticket-Ablauf: Meldung → beauftragt → Termin → erledigt → abgeschlossen (Rechnung da). */
+export const TICKET_STATUS = [
+  'gemeldet',
+  'beauftragt',
+  'termin',
+  'erledigt',
+  'abgeschlossen',
+  'verworfen',
+] as const
+export const TicketStatus = z.enum(TICKET_STATUS)
+export type TicketStatus = z.infer<typeof TicketStatus>
+
+export const PRIORITAETEN = ['notfall', 'hoch', 'normal', 'niedrig'] as const
+export const Prioritaet = z.enum(PRIORITAETEN)
+export type Prioritaet = z.infer<typeof Prioritaet>

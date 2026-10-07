@@ -92,7 +92,8 @@ export const SORTIERUNG: Aufgabe<NachrichtDaten, Sortierung> = {
     '',
     'Bewerte nur, was in der Mail steht. Gib keine rechtliche Einschätzung ab.',
   ].join('\n'),
-  nachricht: (d) => JSON.stringify({ mail: d }, null, 2),
+  // Für die Sortierung genügt die Mail; die Wissensbasis kostet hier nur Tokens.
+  nachricht: ({ wissen: _, ...mail }) => JSON.stringify({ mail }, null, 2),
   ausgabe: Sortierung,
   pruefe: (a, d) => {
     if (!a.frist) return []

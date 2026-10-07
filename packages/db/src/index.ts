@@ -28,3 +28,4 @@ export type { Akteur, AkteurArt, EreignisTyp, KiEntscheidung, KiStatus } from '.
 export { datenqualitaet, ladeReferenzdaten } from './qualitaet'
 export * from './post'
 export * from './ki'
+export * from './betrieb'

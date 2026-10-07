@@ -24,3 +24,8 @@ export const Plz = z
   .trim()
   .regex(/^\d{5}$/, 'PLZ hat fünf Ziffern')
 export const Email = z.email()
+/** Telefonnummer wie eingegeben; nur Ziffern, Leerzeichen und + / ( ) - */
+export const Telefon = z
+  .string()
+  .trim()
+  .regex(/^[+\d][\d\s/()-]{3,30}$/, 'Telefonnummer: Ziffern, Leerzeichen, + / ( ) -')

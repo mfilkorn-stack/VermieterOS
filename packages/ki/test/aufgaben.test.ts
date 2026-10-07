@@ -16,6 +16,7 @@ const MAIL: NachrichtDaten = {
   eingegangen: '2026-11-03T08:00:00Z',
   anhaenge: [],
   zuordnung: null,
+  wissen: [],
 }
 
 describe('Prompt-Register und Golden-Set', () => {

@@ -1078,3 +1078,18 @@ body > main {
 .karte .aktionen form {
   display: inline-grid;
 }
+
+/* Häkchen-Gruppen (WP 1.6) */
+.haken-gruppe {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px 16px;
+}
+label.haken {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 400;
+  font-size: 0.95rem;
+}

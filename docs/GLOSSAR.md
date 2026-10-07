@@ -47,6 +47,9 @@ Bezeichner im Code, in der Datenbank und in Prompts verwenden genau diese Formen
 | Notfallkarte                        | `notfallkarte`        | Notfallkontakte pro Objekt                                                                 |
 | Wissensbasis                        | `wissensbasis`        | Hausordnung, Anleitungen, Müllkalender pro Objekt                                          |
 | Ticket                              | `ticket`              | Mangelmeldung bis Rechnung                                                                 |
+| Handwerker                          | `handwerker`          | Eintrag im Verzeichnis des Mandanten: Gewerke, Kontakt, Notdienst, Bewertung               |
+| Auftragnehmer                       | `auftragnehmer`       | Der für ein Ticket beauftragte Handwerker                                                  |
+| Wissensartikel                      | `wissensartikel`      | Ein Eintrag der Wissensbasis eines Objekts                                                 |
 | Postfach                            | `postfach`            | IMAP-Zugang eines Mandanten, wird nur gelesen (ADR 0009)                                   |
 | Nachricht                           | `nachricht`           | Eingegangene Mail; Rohfassung und Anhänge mit Prüfsumme im Object Storage                  |
 | Zuordnung                           | `zuordnung`           | Verknüpfung Nachricht → Mietverhältnis; append-only, die jüngste gilt                      |

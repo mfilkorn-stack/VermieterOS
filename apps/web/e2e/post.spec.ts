@@ -159,6 +159,16 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await page.getByTestId('antwort-uebernehmen').getByRole('button').click()
   await expect(antwort).toContainText('übernommen')
   await expect(page.getByTestId('antwort-mailto')).toHaveAttribute('href', /^mailto:/)
+
+  // WP 1.6: Ticket aus der Mail, vorbefüllt aus Zuordnung und Einschätzung
+  await page.getByTestId('nachricht-ticket-neu').click()
+  const neu = page.getByTestId('ticket-anlegen')
+  await expect(neu.getByLabel('Titel')).toHaveValue('Die Heizung ist ausgefallen.')
+  await expect(neu.getByLabel('Priorität')).toHaveValue('notfall')
+  await neu.getByRole('button', { name: 'Ticket anlegen' }).click()
+  await expect(page.getByTestId('ticket-titel')).toHaveText('Die Heizung ist ausgefallen.')
+  await page.getByRole('link', { name: 'Ursprüngliche Mail' }).click()
+  await expect(page.getByTestId('nachricht-tickets')).toContainText('Die Heizung ist ausgefallen.')
   const [anhang] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('link', { name: 'thermostat.jpg' }).click(),

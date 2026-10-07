@@ -1,5 +1,5 @@
 import 'server-only'
-import { offeneNachrichten, schema, withMandant } from '@vermieteros/db'
+import { gemeldeteTickets, offeneNachrichten, schema, withMandant } from '@vermieteros/db'
 import { sql } from 'drizzle-orm'
 import type { NavEintrag } from '@/components/navigation'
 import { db } from './db'
@@ -15,6 +15,7 @@ export type Navigation = {
 
 const MEHR_BEREICHE = [
   '/mehr',
+  '/handwerker',
   '/eigentuemer',
   '/mitglieder',
   '/postfaecher',
@@ -47,6 +48,7 @@ export async function ladeNavigation(): Promise<Navigation> {
       name: m?.name ?? '',
       objekte: o?.n ?? 0,
       offen: post ? await offeneNachrichten(tx) : 0,
+      tickets: await gemeldeteTickets(tx),
     }
   })
 
@@ -67,7 +69,14 @@ export async function ladeNavigation(): Promise<Navigation> {
         },
       ]
     : []
+  const tickets: NavEintrag = {
+    href: '/tickets',
+    label: 'Tickets',
+    icon: 'tickets',
+    zaehler: { n: daten.tickets, art: 'handlung', text: 'neu gemeldet' },
+  }
   const verwaltung: NavEintrag[] = [
+    { href: '/handwerker', label: 'Handwerker', icon: 'handwerker' },
     { href: '/eigentuemer', label: 'Eigentümer', icon: 'eigentuemer' },
     { href: '/mitglieder', label: 'Mitglieder', icon: 'mitglieder' },
     ...(postfaecher
@@ -77,11 +86,12 @@ export async function ladeNavigation(): Promise<Navigation> {
   ]
   return {
     mandant: { name: daten.name, rolle: ROLLEN_TEXT[k.rolle].split(' (')[0]! },
-    haupt: [objekte, ...posteingang],
+    haupt: [objekte, ...posteingang, tickets],
     verwaltung,
     tabs: [
       objekte,
       ...posteingang,
+      tickets,
       { href: '/mehr', label: 'Mehr', icon: 'mehr', bereiche: MEHR_BEREICHE },
     ],
   }

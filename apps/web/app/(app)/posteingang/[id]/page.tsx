@@ -1,9 +1,15 @@
-import { juengsterKiVorschlag, ladeNachricht, ladeZuordnungsKandidaten } from '@vermieteros/db'
+import {
+  juengsterKiVorschlag,
+  ladeNachricht,
+  ladeZuordnungsKandidaten,
+  listeTickets,
+} from '@vermieteros/db'
 import { nachrichtFakten } from '@vermieteros/ki'
-import { CircleDot, Download, FileText, Link2, Mail } from 'lucide-react'
+import { CircleDot, Download, FileText, Link2, Mail, Wrench } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { AntwortKarte, EinschaetzungKarte } from '@/components/ki-karten'
+import { TicketStatusBadge } from '@/components/ticket-badges'
 import { Status } from '@/components/status'
 import { ZuordnenFormular } from '@/components/zuordnen-formular'
 import { zeitpunktAnzeige } from '@/lib/format'
@@ -24,10 +30,12 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
       sortierung: await juengsterKiVorschlag(tx, 'sortierung', bezug),
       antwort: await juengsterKiVorschlag(tx, 'antwortvorschlag', bezug),
       fakten: await nachrichtFakten(tx, id),
+      tickets: await listeTickets(tx, { nachrichtId: id }),
     }
   })
   if (!daten) notFound()
-  const { n, kandidaten, sortierung, antwort, fakten } = daten
+  const { n, kandidaten, sortierung, antwort, fakten, tickets } = daten
+  const schreiben = await darf({ stammdaten: ['schreiben'] })
   const kandidatNach = new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k]))
   const aktuell = n.zuordnungen.at(-1)
   const mv = aktuell?.mietverhaeltnisId ? kandidatNach.get(aktuell.mietverhaeltnisId) : undefined
@@ -111,6 +119,27 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
         </div>
         <div>
           <EinschaetzungKarte nachrichtId={n.id} v={sortierung} darf={zuordnen} />
+          {tickets.length || schreiben ? (
+            <div className="karte" data-testid="nachricht-tickets">
+              <h2>Tickets</h2>
+              {tickets.map((t) => (
+                <p key={t.id} className="meta">
+                  <Link href={`/tickets/${t.id}`}>{t.titel}</Link>
+                  <TicketStatusBadge status={t.status} />
+                </p>
+              ))}
+              {schreiben ? (
+                <Link
+                  className="knopf zweit"
+                  href={`/tickets/neu?nachricht=${n.id}`}
+                  data-testid="nachricht-ticket-neu"
+                >
+                  <Wrench size={16} aria-hidden />
+                  Ticket anlegen
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
           <div className="karte">
             <h2>Text</h2>
             <pre className="mailtext" data-testid="nachricht-text">

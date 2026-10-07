@@ -4,13 +4,18 @@ import {
   DokumentStatus,
   DokumentTyp,
   EinheitTyp,
+  Gewerk,
   GrundbuchArt,
   NebenkostenArt,
   KautionArt,
   KonditionGrund,
   Mietart,
+  NotfallArt,
+  Prioritaet,
   ObjektArt,
   PersonRolle,
+  TicketStatus,
+  WissenKategorie,
   ZaehlerArt,
   ZaehlerstandQuelle,
 } from './enums'
@@ -23,6 +28,7 @@ import {
   Notiz,
   Plz,
   Promille,
+  Telefon,
   Text,
   Uuid,
 } from './gemeinsam'
@@ -244,3 +250,72 @@ export const EigentumsanteilIdentitaet = z.object({ personId: Uuid })
 /** Wert eines Grunderwerbsteuer-Eintrags: Satz in Promille (3,5 % = 35). */
 export const GrunderwerbsteuerWert = z.object({ satzPromille: z.number().int().min(0).max(100) })
 export type GrunderwerbsteuerWert = z.infer<typeof GrunderwerbsteuerWert>
+
+// ---------------------------------------------------------------------------
+// Handwerker, Notfallkarte, Wissensbasis, Tickets (WP 1.6)
+// ---------------------------------------------------------------------------
+
+export const HandwerkerDaten = z.object({
+  firma: Text,
+  ansprechpartner: Text.nullish(),
+  gewerke: z.array(Gewerk).min(1, 'Mindestens ein Gewerk'),
+  telefon: Telefon.nullish(),
+  notdienstTelefon: Telefon.nullish(),
+  email: Email.nullish(),
+  /** Erreichbar außerhalb der Geschäftszeiten */
+  notdienst: z.boolean().default(false),
+  /** Für welche Objekte; leer = alle */
+  objektIds: z.array(Uuid).default([]),
+  /** Eigene Bewertung 1 (schlecht) bis 5 (sehr gut) */
+  bewertung: z.number().int().min(1).max(5).nullish(),
+  notizen: Notiz.nullish(),
+})
+export type HandwerkerDaten = z.infer<typeof HandwerkerDaten>
+
+/** Eine Zeile der Notfallkarte: ein Handwerker aus dem Verzeichnis oder ein freier Kontakt. */
+export const NotfallEintrag = z
+  .object({
+    art: NotfallArt,
+    handwerkerId: Uuid.nullish(),
+    name: Text.nullish(),
+    telefon: Telefon.nullish(),
+    hinweis: Notiz.nullish(),
+  })
+  .refine((e) => e.handwerkerId || (e.name && e.telefon), {
+    message: 'Handwerker wählen oder Name und Telefon angeben',
+  })
+export type NotfallEintrag = z.infer<typeof NotfallEintrag>
+
+export const NotfallkarteDaten = z.object({ eintraege: z.array(NotfallEintrag) })
+export type NotfallkarteDaten = z.infer<typeof NotfallkarteDaten>
+export const NotfallkarteIdentitaet = z.object({ objektId: Uuid })
+
+export const WissensartikelDaten = z.object({
+  titel: Text,
+  kategorie: WissenKategorie,
+  inhalt: z.string().trim().min(1).max(20_000),
+  /** Im Mieterportal sichtbar (WP 1.10) */
+  mieterSichtbar: z.boolean().default(true),
+})
+export type WissensartikelDaten = z.infer<typeof WissensartikelDaten>
+export const WissensartikelIdentitaet = z.object({ objektId: Uuid })
+
+export const TicketDaten = z.object({
+  titel: Text,
+  beschreibung: Notiz.nullish(),
+  status: TicketStatus.default('gemeldet'),
+  prioritaet: Prioritaet.default('normal'),
+  /** Beauftragter Handwerker */
+  auftragnehmerId: Uuid.nullish(),
+  /** Vereinbarter Termin (Zeitpunkt, ISO) */
+  termin: z.iso.datetime({ offset: true }).nullish(),
+  notizen: Notiz.nullish(),
+})
+export type TicketDaten = z.infer<typeof TicketDaten>
+export const TicketIdentitaet = z.object({
+  objektId: Uuid,
+  einheitId: Uuid.nullish(),
+  mietverhaeltnisId: Uuid.nullish(),
+  /** Mail, aus der das Ticket entstanden ist */
+  nachrichtId: Uuid.nullish(),
+})
