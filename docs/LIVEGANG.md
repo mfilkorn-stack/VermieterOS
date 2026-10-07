@@ -4,7 +4,7 @@ Checkliste für das erste Produktiv-Deployment. Die Einzelheiten stehen in [BETR
 
 ## 1 · Vorbedingungen im Repository
 
-- [ ] Offene PRs in dieser Reihenfolge nach `main`: WP 2.5 → WP 2.6 → WP 2.7 → Livegang-Vorbereitung
+- [x] WP 2.5 bis 2.7, Livegang-Vorbereitung und Domain sind in `main`
 - [ ] CI auf `main` grün, Job „images“ hat beide Images veröffentlicht
 - [ ] Tag notieren: GitHub → Packages → `vermieteros` → `sha-<kurz>` des letzten Merge-Commits
 
@@ -48,12 +48,24 @@ done
 - [ ] Keine Weiterleitung beim Registrar einrichten: `.app` erzwingt HTTPS (HSTS-Preload), das Zertifikat für beide Namen holt Caddy
 - [ ] Prüfpunkt: `dig +short www.vermieteros.app` und `dig +short vermieteros.app` liefern die Server-IP. Erst dann deployen, sonst scheitert das Zertifikat
 
-## 6 · Mailversand (Brevo)
+## 6 · Mailversand: im MVP ausgelassen
 
-- [ ] Konto anlegen, Auftragsverarbeitungsvertrag im Konto bestätigen
-- [ ] Absender-Domain `vermieteros.app` hinzufügen, die angezeigten DNS-Einträge setzen: DKIM, Brevo-Code, SPF (`include:spf.brevo.com` in den bestehenden SPF-Eintrag, nicht als zweiten), DMARC mindestens `v=DMARC1; p=none; rua=mailto:…`
-- [ ] SMTP-Schlüssel erzeugen → `SMTP_BENUTZER` (Login laut Konto), `SMTP_PASSWORT`; `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`
-- [ ] Prüfpunkt: Domain in Brevo als authentifiziert markiert
+Der erste Livegang läuft ohne Mailversand: `SMTP_HOST` bleibt leer. Was das bedeutet:
+
+| Funktion                            | ohne Mailversand                                                                                             |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Registrieren, Anmelden, 2FA         | geht; die E-Mail-Adresse bleibt unbestätigt                                                                  |
+| Objekte, Belege, Abrechnung, Steuer | geht vollständig                                                                                             |
+| Einladungen in den Mandanten        | gehen nicht: Annehmen verlangt eine bestätigte Adresse. Miteigentümer und Steuerberater erst mit Mailversand |
+| Mieterportal                        | Einladungslink erscheint in der App zum persönlichen Weitergeben                                             |
+| BK-Abrechnung an Mieter             | PDF herunterladen und per Post oder eigener Mail schicken, Versand in der App vermerken                      |
+
+Nachholen, sobald es gebraucht wird (geplant über IONOS):
+
+- [ ] Postfach `noreply@vermieteros.app` im IONOS-Kundenbereich anlegen (E-Mail → E-Mail-Adresse erstellen), Weiterleitung an die eigene Adresse, damit Antworten von Mietern ankommen
+- [ ] DNS bei IONOS: MX (setzt IONOS selbst), genau ein SPF-Eintrag mit IONOS-Include, DKIM in den E-Mail-Einstellungen aktivieren, DMARC `v=DMARC1; p=none; rua=mailto:noreply@vermieteros.app` auf `_dmarc`
+- [ ] `.env`: `SMTP_HOST=smtp.ionos.de`, `SMTP_PORT=587`, `SMTP_BENUTZER=noreply@vermieteros.app`, `SMTP_PASSWORT=<Postfach-Passwort>`, dann `docker compose up -d web`
+- [ ] Prüfpunkt: unter „Sicherheit“ die eigene Adresse bestätigen; die Mail kommt an, Header zeigt `spf=pass` und `dkim=pass`
 
 ## 7 · Monitoring
 
@@ -74,7 +86,7 @@ sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
 docker login ghcr.io -u <github-nutzer>       # Token (classic) nur mit read:packages
 ```
 
-`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` bleibt leer.
+`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` und `SMTP_HOST` bleiben leer.
 
 - [ ] Prüfpunkt: `docker compose config -q` ohne Fehler (meldet fehlende Pflichtwerte)
 
@@ -92,11 +104,11 @@ docker compose logs --tail 50 web worker ops caddy
 
 Mit Musterdaten, noch ohne echte Mieter:
 
-- [ ] Registrieren mit der freigegebenen Adresse, Bestätigungsmail kommt an und ist nicht im Spam (Header: `spf=pass`, `dkim=pass`)
+- [ ] Registrieren mit der freigegebenen Adresse (ohne Mailversand bleibt sie unbestätigt, das ist im MVP so gewollt)
 - [ ] Registrieren mit einer anderen Adresse wird abgewiesen
 - [ ] Zwei-Faktor einrichten, ab- und wieder anmelden
 - [ ] Mandant und Musterobjekt anlegen, Dokument hochladen und wieder herunterladen (Object Storage)
-- [ ] Mieterportal-Einladung an eine eigene Zweitadresse, Anmeldung per Link
+- [ ] Mieterportal-Einladung an eine eigene Zweitadresse: Link aus der App kopieren, im privaten Fenster öffnen, Anmeldung klappt
 - [ ] Backup von Hand: `docker compose run --rm ops backup`, dann `docker compose run --rm ops integritaet`; im Backup-Bucket liegt eine `.age`-Datei
 - [ ] Restore-Test einmal von Hand (BETRIEB „Von Hand sichern und prüfen“)
 - [ ] Alle Healthchecks grün; einen absichtlich ausbleiben lassen und den Alarm prüfen
@@ -105,7 +117,7 @@ Mit Musterdaten, noch ohne echte Mieter:
 ## 11 · Danach
 
 - Musterdaten-Mandant behalten oder stehen lassen; echte Daten in einem neuen Mandanten
-- Miteigentümer und Steuerberater einladen (Mitglieder), Rollen prüfen
+- Mailversand nachholen (Schritt 6), danach Miteigentümer und Steuerberater einladen (Mitglieder), Rollen prüfen
 - Postfach für den Posteingang und eine Beleg-Adresse verbinden (ohne KI läuft alles bis auf die Vorschläge)
 - KI einschalten erst nach Auftragsverarbeitungsvertrag; vorher `KI_MODELL` nur mit bestandenem Golden-Set
 - Updates: `./deploy.sh sha-<neu>` (sichert vorher automatisch)
