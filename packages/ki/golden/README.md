@@ -24,3 +24,5 @@ Echte, geschwärzte Beispiele mit erwarteten Ergebnissen (PLAN 4.5). Ein Ordner 
 **Schwärzen:** Namen, Adressen, Telefonnummern, IBAN, Vertragsnummern ersetzen, bevor ein Fall ins Repository kommt. Das Repository ist kein Ort für personenbezogene Daten.
 
 **Ausführen:** `ANTHROPIC_API_KEY=… pnpm --filter @vermieteros/ki golden [aufgabe]`. Läuft vor jedem Prompt- oder Modellwechsel und wöchentlich in CI (`.github/workflows/ki-golden.yml`). Ein günstigeres Modell (`KI_MODELL=…`) wird nur eingesetzt, wenn es das Set gleich gut besteht.
+
+**Dateien:** Für Aufgaben, die eine Datei lesen (`mietvertrag_extraktion`), nennt `datei` eine Datei neben dem Fall, z. B. `"datei": "01-vertrag.pdf"`. Der Runner lädt sie als `daten.datei` und liest bei PDFs den Text je Seite. Erwartet werden dann Felder wie `{"kaltmiete": {"wert": "650,00 €", "seite": 2}}`. Für Mietverträge fehlt noch ein geschwärzter Mustervertrag (PLAN Kapitel 8).

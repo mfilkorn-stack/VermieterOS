@@ -1,4 +1,10 @@
-import { ladeVerlauf, ladeZuordnungsKandidaten, type VerlaufEintrag } from '@vermieteros/db'
+import {
+  ladeVerlauf,
+  ladeZuordnungsKandidaten,
+  listeDokumente,
+  type VerlaufEintrag,
+} from '@vermieteros/db'
+import { DokumentListe } from '@/components/dokument-liste'
 import { Mail, Paperclip, Phone, PhoneIncoming, PhoneOutgoing } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -141,10 +147,12 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
   const { id } = await params
   if (!(await darf({ post: ['lesen'] }))) redirect('/')
   const notieren = await darf({ post: ['notieren'] })
-  const { kopf, verlauf } = await mitMandant(async (tx) => ({
+  const { kopf, verlauf, dokumente } = await mitMandant(async (tx) => ({
     kopf: (await ladeZuordnungsKandidaten(tx)).find((k) => k.mietverhaeltnisId === id),
     verlauf: await ladeVerlauf(tx, id),
+    dokumente: await listeDokumente(tx, { mietverhaeltnisId: id }),
   }))
+  const schreiben = await darf({ stammdaten: ['schreiben'] })
   if (!kopf) notFound()
 
   return (
@@ -166,6 +174,22 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
             {kopf.mieterEmails.length ? ` · ${kopf.mieterEmails.join(', ')}` : ''}
           </p>
         </div>
+      </div>
+
+      <div className="karte" data-testid="mv-dokumente">
+        <div className="zeile">
+          <h2>Dokumente</h2>
+          {schreiben ? (
+            <Link
+              className="knopf zweit"
+              href={`/dokumente/neu?mietverhaeltnis=${id}`}
+              data-testid="mv-dokument-neu"
+            >
+              Dokument hochladen
+            </Link>
+          ) : null}
+        </div>
+        <DokumentListe dokumente={dokumente} />
       </div>
 
       {notieren ? (

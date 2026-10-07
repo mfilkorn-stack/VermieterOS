@@ -1093,3 +1093,29 @@ label.haken {
   font-weight: 400;
   font-size: 0.95rem;
 }
+
+/* Vergleich Vertrag ↔ Stammdaten (WP 1.7) */
+.vergleich {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.vergleich th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--leise);
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--linie);
+}
+.vergleich td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--linie-2);
+  vertical-align: top;
+}
+.datei {
+  flex-wrap: wrap;
+}
+.datei .ablegen {
+  flex-basis: 100%;
+}

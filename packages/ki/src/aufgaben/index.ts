@@ -1,5 +1,6 @@
 import type { Aufgabe } from '../aufgabe'
 import { ANTWORTVORSCHLAG } from './antwortvorschlag'
+import { MIETVERTRAG_EXTRAKTION } from './mietvertrag'
 import { SORTIERUNG } from './sortierung'
 
 /**
@@ -7,4 +8,8 @@ import { SORTIERUNG } from './sortierung'
  * deren Ordner `golden/<name>/` Fälle enthält.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Register über verschiedene Aufgaben
-export const AUFGABEN: Array<Aufgabe<any, any>> = [SORTIERUNG, ANTWORTVORSCHLAG]
+export const AUFGABEN: Array<Aufgabe<any, any>> = [
+  SORTIERUNG,
+  ANTWORTVORSCHLAG,
+  MIETVERTRAG_EXTRAKTION,
+]

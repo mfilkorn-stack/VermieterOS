@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path'
 import nodemailer from 'nodemailer'
 import { konto, registrieren, workerEinmal } from '../e2e/hilfen'
 import { E2E } from '../e2e/umgebung'
+import { musterMietvertrag } from '../../../packages/ki/src/testpdf'
 import { schreibeGalerie, type Bild } from './galerie'
 
 /**
@@ -290,6 +291,24 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     page,
     'Verlauf des Mietverhältnisses',
     'Mails und Telefonnotizen in einer Zeitleiste; Notizen lassen sich nachvollziehbar korrigieren.',
+  )
+
+  bereich = 'Dokumente'
+  await page.getByTestId('mv-dokument-neu').click()
+  const up = page.getByTestId('dokument-hochladen')
+  await up.getByLabel(/Datei/).setInputFiles({
+    name: 'mietvertrag.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(musterMietvertrag()),
+  })
+  await up.getByLabel('Titel').fill('Mietvertrag Wohnung Nr. 1')
+  await up.getByRole('button', { name: 'Hochladen' }).click()
+  await page.getByTestId('vertrag-auslesen').getByRole('button').click()
+  await expect(page.getByTestId('vertrag-werte')).toBeVisible()
+  await bild(
+    page,
+    'Mietvertrag ausgelesen',
+    'Die KI liest Eckdaten mit Seitenangabe; die Software prüft jedes Zitat am PDF. Nur belegte Werte lassen sich übernehmen, mit Herkunft „Dokument, Seite“. Die erfundene Kaution der Attrappe fällt auf.',
   )
 
   bereich = 'Handwerker und Tickets'

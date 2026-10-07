@@ -10,6 +10,11 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { AntwortKarte, EinschaetzungKarte } from '@/components/ki-karten'
 import { TicketStatusBadge } from '@/components/ticket-badges'
+import { Auswahl, Feld } from '@/components/felder'
+import { Formular } from '@/components/formular'
+import { DOKUMENT_TYP_TEXT, ERLAUBTE_TYPEN as ABLEGBAR } from '@/lib/dokument-text'
+import { DOKUMENT_TYPEN } from '@vermieteros/schema'
+import { anhangAlsDokument } from '../../dokumente/aktionen'
 import { Status } from '@/components/status'
 import { ZuordnenFormular } from '@/components/zuordnen-formular'
 import { zeitpunktAnzeige } from '@/lib/format'
@@ -171,6 +176,32 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
                     </span>
                   </span>
                   <Download size={16} color="var(--dezent)" aria-hidden />
+                  {schreiben && mv && ABLEGBAR.has(a.mimeTyp) ? (
+                    <details className="ablegen">
+                      <summary>Als Dokument ablegen</summary>
+                      <Formular
+                        aktion={anhangAlsDokument}
+                        knopf="Ablegen"
+                        testId={`ablegen-${a.dateiname}`}
+                      >
+                        <input type="hidden" name="anhangId" value={a.id} />
+                        <input
+                          type="hidden"
+                          name="mietverhaeltnisId"
+                          value={mv.mietverhaeltnisId}
+                        />
+                        <Auswahl
+                          label="Art"
+                          name="typ"
+                          optionen={DOKUMENT_TYPEN.map((t) => [t, DOKUMENT_TYP_TEXT[t]] as const)}
+                          defaultValue={
+                            a.mimeTyp === 'application/pdf' ? 'mietvertrag' : 'sonstiges'
+                          }
+                        />
+                        <Feld label="Titel" name="titel" defaultValue={a.dateiname} />
+                      </Formular>
+                    </details>
+                  ) : null}
                 </li>
               ))}
               <li className="datei">

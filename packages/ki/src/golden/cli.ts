@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { AUFGABEN } from '../aufgaben/index'
 import { kiClientAusUmgebung, kiModell } from '../client'
+import { seitenTexte } from '../pdf'
 import { GoldenFall, laufeGoldenSet } from './lauf'
 
 /**

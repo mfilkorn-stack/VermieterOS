@@ -9,6 +9,8 @@ export const GoldenFall = z.object({
   /** true für ausgedachte Fälle; echte, geschwärzte Fälle haben Vorrang */
   synthetisch: z.boolean().default(false),
   daten: z.unknown(),
+  /** Datei neben dem Fall (z. B. geschwärzter Vertrag als PDF), wird als `daten.datei` geladen */
+  datei: z.string().optional(),
   platzhalter: z.record(z.string(), z.string()).default({}),
   /** Felder der Ausgabe, die genau so stimmen müssen (Teilmenge, rekursiv) */
   erwartet: z.record(z.string(), z.unknown()).default({}),
@@ -59,8 +61,10 @@ export async function laufeGoldenSet<D, A>(
         modell,
         system: aufgabe.system,
         nachricht: aufgabe.nachricht(fall.daten as D, katalog),
+        ...(aufgabe.dateien ? { dateien: aufgabe.dateien(fall.daten as D) } : {}),
         schema: aufgabe.ausgabe,
         maxTokens: aufgabe.maxTokens ?? 16_000,
+        ...(aufgabe.aufwand ? { aufwand: aufgabe.aufwand } : {}),
       })
       const a = aufgabe.ausgabe.safeParse(r.ausgabe)
       if (!a.success) {

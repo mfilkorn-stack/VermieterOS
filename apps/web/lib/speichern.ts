@@ -32,6 +32,8 @@ export async function speichere<E extends EntitaetName>(
     daten: VersionsDaten<E>
     gueltigAb?: string | null
     begruendung?: string | null
+    /** Herkunft je Feld, sonst „manuell“ (z. B. Dokument mit Seite bei Übernahme aus einem Vertrag) */
+    herkunft?: Herkunft
   } & ({ identId: string } | { identitaet: IdentitaetsDaten<E> }),
 ): Promise<SpeicherErgebnis> {
   const akteur = { art: 'nutzer' as const, id: k.nutzerId }
@@ -44,7 +46,7 @@ export async function speichere<E extends EntitaetName>(
       akteur,
       gueltigAb: p.gueltigAb,
       identitaet: p.identitaet,
-      herkunft: herkunftFuer(Object.keys(sauber(p.daten))),
+      herkunft: herkunftFuer(Object.keys(sauber(p.daten)), p.herkunft),
       daten: p.daten,
     } as Parameters<typeof neueVersion<E>>[1])
     return { identId: r.identId, geschrieben: true }
@@ -83,14 +85,14 @@ export async function speichere<E extends EntitaetName>(
     gueltigAb,
     identId: p.identId,
     begruendung,
-    herkunft: herkunftFuer(geaendert),
+    herkunft: herkunftFuer(geaendert, p.herkunft),
     daten: { ...alt, ...neu } as VersionsDaten<E>,
   } as Parameters<typeof neueVersion<E>>[1])
   return { identId: p.identId, geschrieben: true }
 }
 
-function herkunftFuer(felder: string[]): Herkunft {
-  return Object.fromEntries(felder.map((f) => [f, { quelle: 'manuell' as const }]))
+function herkunftFuer(felder: string[], vorgabe?: Herkunft): Herkunft {
+  return Object.fromEntries(felder.map((f) => [f, vorgabe?.[f] ?? { quelle: 'manuell' as const }]))
 }
 
 function sauber(d: unknown): Record<string, unknown> {

@@ -169,6 +169,19 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(page.getByTestId('ticket-titel')).toHaveText('Die Heizung ist ausgefallen.')
   await page.getByRole('link', { name: 'Ursprüngliche Mail' }).click()
   await expect(page.getByTestId('nachricht-tickets')).toContainText('Die Heizung ist ausgefallen.')
+
+  // WP 1.7: Anhang als Dokument am Mietverhältnis ablegen, ohne zweiten Upload
+  const nachrichtUrl = page.url()
+  await page.getByText('Als Dokument ablegen').click()
+  const ablage = page.getByTestId('ablegen-thermostat.jpg')
+  await ablage.getByLabel('Art').selectOption('sonstiges')
+  await ablage.getByRole('button', { name: 'Ablegen' }).click()
+  await expect(page.getByTestId('dokument-titel')).toHaveText('thermostat.jpg')
+  const bild = await page.request.get(
+    (await page.getByTestId('dokument-download').getAttribute('href'))!,
+  )
+  expect(bild.headers()['content-type']).toBe('image/jpeg')
+  await page.goto(nachrichtUrl)
   const [anhang] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('link', { name: 'thermostat.jpg' }).click(),

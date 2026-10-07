@@ -44,6 +44,7 @@ export const ANTWORTVORSCHLAG: Aufgabe<NachrichtDaten, Antwortvorschlag> = {
   name: 'antwortvorschlag',
   version: 2,
   maxTokens: 8_000,
+  aufwand: 'medium',
   system: [
     'Du entwirfst Antworten privater Vermieter auf E-Mails ihrer Mieter, Handwerker und Behörden.',
     'Du erhältst die eingegangene E-Mail als JSON und eine Liste erlaubter Platzhalter mit Beschreibung.',

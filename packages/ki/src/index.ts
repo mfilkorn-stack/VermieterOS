@@ -7,7 +7,9 @@ export {
   STANDARD_MODELL,
   type KiAnfrage,
   type KiAntwort,
+  type KiAufwand,
   type KiClient,
+  type KiDatei,
 } from './client'
 export { FakeKiClient } from './fake'
 export { Referenzen, type Kontext } from './kontext/kontext'
@@ -24,6 +26,7 @@ export {
 export { erstelleStempel, pruefeStempel, Versionsstempel } from './stempel'
 export {
   bestaetigeVorschlag,
+  bestaetigeVorschlagInTx,
   EntwurfAbgelehnt,
   erzeugeVorschlag,
   pruefeVorschlag,
@@ -42,3 +45,17 @@ export {
   type Kategorie,
 } from './aufgaben/sortierung'
 export { sortiereNeueNachrichten } from './sortierlauf'
+export {
+  centAus,
+  datumAus,
+  MIETVERTRAG_EXTRAKTION,
+  MIETVERTRAG_FELDER,
+  MietvertragAuszug,
+  monateAus,
+  werteMietvertragAus,
+  type Auswertung,
+  type MietvertragFeld,
+} from './aufgaben/mietvertrag'
+export { fuerDokument, type DateiQuelle, type DokumentKontextDaten } from './kontext/dokument'
+export { seitenTexte } from './pdf'
+export { musterMietvertrag, musterPdf } from './testpdf'
