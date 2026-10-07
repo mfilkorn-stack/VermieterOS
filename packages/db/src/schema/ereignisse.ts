@@ -14,6 +14,7 @@ export const EREIGNIS_TYPEN = [
   'postfach_geaendert',
   'nachricht_eingegangen',
   'nachricht_zugeordnet',
+  'telefonnotiz_erfasst',
 ] as const
 export type EreignisTyp = (typeof EREIGNIS_TYPEN)[number]
 

@@ -1,5 +1,5 @@
 import type { AkteurArt } from './ereignisse'
-import type { ZuordnungArt } from '@vermieteros/schema'
+import type { GespraechRichtung, ZuordnungArt } from '@vermieteros/schema'
 import {
   bigint,
   boolean,
@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core'
 
 /**
@@ -109,4 +110,33 @@ export const nachrichtZuordnungen = pgTable(
       .defaultNow(),
   },
   (t) => [index('nachricht_zuordnungen_nachricht_idx').on(t.nachrichtId, t.erfasstAm)],
+)
+
+/**
+ * Telefonnotizen (WP 1.2), append-only. Eine Korrektur ist eine neue Notiz mit `ersetzt_id`;
+ * die ersetzte fällt aus dem Verlauf (Sicht `telefonnotizen_aktuell`), bleibt aber nachvollziehbar.
+ */
+export const telefonnotizen = pgTable(
+  'telefonnotizen',
+  {
+    id: uuid('id').primaryKey(),
+    mandantId: uuid('mandant_id').notNull(),
+    mietverhaeltnisId: uuid('mietverhaeltnis_id').notNull(),
+    zeitpunkt: timestamp('zeitpunkt', { withTimezone: true, mode: 'string' }).notNull(),
+    richtung: text('richtung').$type<GespraechRichtung>().notNull(),
+    gespraechspartner: text('gespraechspartner').notNull(),
+    betreff: text('betreff').notNull(),
+    inhalt: text('inhalt').notNull(),
+    ersetztId: uuid('ersetzt_id').references((): AnyPgColumn => telefonnotizen.id),
+    akteurArt: text('akteur_art').$type<AkteurArt>().notNull(),
+    akteurId: text('akteur_id').notNull(),
+    erfasstAm: timestamp('erfasst_am', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index('telefonnotizen_mv_zeitpunkt_idx').on(t.mietverhaeltnisId, t.zeitpunkt),
+    // Eine Notiz wird höchstens einmal ersetzt: Korrekturen bilden eine Kette, keinen Baum.
+    uniqueIndex('telefonnotizen_ersetzt_uq').on(t.ersetztId),
+  ],
 )

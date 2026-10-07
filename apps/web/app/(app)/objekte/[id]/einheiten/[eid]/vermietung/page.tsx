@@ -97,6 +97,11 @@ export default async function VermietungSeite({
             {m.mieter.join(', ')} · seit {datumAnzeige(m.v.beginn)}
             {m.v.ende ? ` bis ${datumAnzeige(m.v.ende)}` : ''}
           </h2>
+          <p>
+            <Link href={`/mietverhaeltnisse/${m.id}`} data-testid="verlauf-link">
+              Verlauf: Mails und Telefonnotizen
+            </Link>
+          </p>
           {m.kondition ? (
             <p>
               Kaltmiete {euroAnzeige(m.kondition.v.kaltmieteCent)} · Vorauszahlungen{' '}

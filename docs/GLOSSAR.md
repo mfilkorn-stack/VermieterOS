@@ -51,3 +51,5 @@ Bezeichner im Code, in der Datenbank und in Prompts verwenden genau diese Formen
 | Nachricht                           | `nachricht`           | Eingegangene Mail; Rohfassung und Anhänge mit Prüfsumme im Object Storage                  |
 | Zuordnung                           | `zuordnung`           | Verknüpfung Nachricht → Mietverhältnis; append-only, die jüngste gilt                      |
 | Posteingang                         | `posteingang`         | Nachrichten eines Mandanten; „offen“ = ohne aktuelle Zuordnung                             |
+| Telefonnotiz                        | `telefonnotiz`        | Gesprächsnotiz zu einem Mietverhältnis; append-only, Korrektur ersetzt die alte Fassung    |
+| Verlauf                             | `verlauf`             | Mails und Telefonnotizen eines Mietverhältnisses in einer Zeitleiste                       |

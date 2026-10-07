@@ -241,3 +241,30 @@ legend {
   max-height: 24rem;
   overflow: auto;
 }
+
+.kopfdaten {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+  margin: 0 0 16px;
+}
+.kopfdaten dt {
+  color: var(--leise);
+}
+.kopfdaten dd {
+  margin: 0;
+  word-break: break-word;
+}
+.suche input {
+  min-width: 16rem;
+}
+.verlauf-notiz {
+  border-left: 3px solid var(--akzent);
+}
+.auszug {
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
