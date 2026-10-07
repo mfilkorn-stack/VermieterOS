@@ -1,6 +1,6 @@
 # ADR 0011 · Betriebskosten: Monate, eine Rundung je Zeile, Leerstand als Rest
 
-Status: angenommen · 07.10.2026 · WP 2.1, ändert PLAN 2.1 („tagesgenaue Zeitanteile“)
+Status: angenommen · 07.10.2026 · WP 2.1 und 2.2, ändert PLAN 2.1 („tagesgenaue Zeitanteile“) und 2.2 (eigene HeizKV-Rechnung)
 
 ## Entscheidung
 
@@ -14,6 +14,8 @@ Status: angenommen · 07.10.2026 · WP 2.1, ändert PLAN 2.1 („tagesgenaue Zei
 
 **Schlüssel:** Wohnfläche (§ 556a Abs. 1 BGB), Einheiten, Miteigentumsanteile (nur wenn vereinbart), Personenmonate, direkt (Grundsteuerbescheid, Messdienst). Bei Eigentumswohnungen kommen Gesamtkosten und Gesamtfläche aus der Hausgeldabrechnung der WEG, nicht aus dem Journal.
 
+**Heizkosten vom Messdienst (WP 2.2).** Die Software rechnet die HeizKV-Verteilung nicht selbst nach. Sie übernimmt den Betrag des Messdienstes je Einheit oder, bei Zwischenablesung, je Mietverhältnis. Sie rechnet den CO2-Kostenanteil nach dem Stufenmodell des CO2KostAufG nach und zieht den Vermieteranteil als eigene Zeile ab. Den Lohnanteil § 35a weist sie dem Mieter aus. Eine eigene Verteilung nach HeizKV (Grund- und Verbrauchskosten, Schätzung bei Geräteausfall) kommt erst, wenn ein Haus ohne Messdienst abgerechnet werden muss.
+
 ## Begründung
 
 Sollwert ist eine echte Abrechnung 2022 (Eigentumswohnung, Mieter ab Februar). Ihre Kostenzeilen rechnet der Kern auf höchstens einen Cent genau nach. Die Unterschiede liegen alle an Stellen, an denen das Original Mieter angreifbar macht:
@@ -24,6 +26,8 @@ Sollwert ist eine echte Abrechnung 2022 (Eigentumswohnung, Mieter ab Februar). I
 Monate statt Tage, weil Miete monatlich gezahlt wird und Mieter das ohne Kalender nachrechnen können.
 
 Zweiter Sollwert ist die Einzelabrechnung 2024 der WEG für dieselbe Einheit: alle Zeilen auf den Cent, ohne Abweichung.
+
+Der Messdienst liest ab, verteilt und haftet für seine Abrechnung. Eine zweite Verteilung in der Software würde nur andere Cent-Beträge erzeugen. Was in der Praxis fehlt, ist der CO2-Abzug: Der Messdienst weist ihn aus, zieht ihn aber nicht ab („Vermieteranteil noch enthalten“). Unterbleibt der Abzug, darf der Mieter seinen Heizkostenanteil um 3 % kürzen.
 
 ## Konsequenzen
 

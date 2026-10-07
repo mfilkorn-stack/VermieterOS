@@ -66,3 +66,12 @@ export {
   type Zeile,
   type Zeitraum,
 } from './nebenkosten'
+
+export {
+  co2Aufteilung,
+  co2Vermieterprozent,
+  messdienstUebernehmen,
+  type Co2Aufteilung,
+  type Messdienstabrechnung,
+  type Messdienstuebernahme,
+} from './heizkosten'
