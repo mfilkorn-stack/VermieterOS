@@ -20,13 +20,14 @@ import {
 import { DokumentDaten, type Herkunft } from '@vermieteros/schema'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
+import { DATEI_FEHLER, ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
 import { datum, Eingabefehler, pflicht, text, zodText } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
 import { kiUmgebung } from '@/lib/ki'
 import { mitMandant, verlange, type MandantKontext } from '@/lib/sitzung'
 import { speichere } from '@/lib/speichern'
 import { objektSpeicher } from '@/lib/speicher'
+import { heicZuJpeg, mimeErmitteln, mitEndung, uploadVorbereiten } from '@/lib/upload'
 import { aktuelleVertragsdaten, dokumentSeiten } from '@/lib/vertrag'
 import { heuteBerlin } from '@/lib/zeit'
 
@@ -109,20 +110,22 @@ export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<For
     if (!(datei instanceof File) || datei.size === 0)
       throw new Eingabefehler('Bitte eine Datei wählen.')
     if (datei.size > MAX_GROESSE) throw new Eingabefehler('Die Datei ist größer als 20 MB.')
-    if (!ERLAUBTE_TYPEN.has(datei.type)) {
-      throw new Eingabefehler('Erlaubt sind PDF, JPG, PNG und WebP.')
-    }
-    const inhalt = Buffer.from(await datei.arrayBuffer())
+    const upload = await uploadVorbereiten(datei, ERLAUBTE_TYPEN, DATEI_FEHLER)
     const objektId = text(d, 'objektId')
     const mietverhaeltnisId = text(d, 'mietverhaeltnisId')
     if (!objektId && !mietverhaeltnisId)
       throw new Eingabefehler('Objekt oder Mietverhältnis fehlt.')
-    const dokumentDaten = daten(d, datei.name)
+    const dokumentDaten = daten(d, upload.dateiname)
     id = await mitMandant(async (tx, k) => {
-      const abgelegt = await objektSpeicher().ablegen(k.mandantId, 'dokument', inhalt, datei.type)
+      const abgelegt = await objektSpeicher().ablegen(
+        k.mandantId,
+        'dokument',
+        upload.inhalt,
+        upload.mime,
+      )
       return ablegen(tx, k, {
         bezug: { objektId, mietverhaeltnisId },
-        datei: { ...abgelegt, dateiname: datei.name, mime: datei.type },
+        datei: { ...abgelegt, dateiname: upload.dateiname, mime: upload.mime },
         daten: dokumentDaten,
         ersetztId: text(d, 'ersetztId'),
       })
@@ -142,18 +145,26 @@ export async function anhangAlsDokument(_: FormStatus, d: FormData): Promise<For
     id = await mitMandant(async (tx, k) => {
       const a = await anhangFuerDokument(tx, pflicht(d, 'anhangId', 'Anhang'))
       if (!a) throw new Eingabefehler('Anhang nicht gefunden.')
-      if (!ERLAUBTE_TYPEN.has(a.mimeTyp))
+      const mime = mimeErmitteln(a.mimeTyp, a.dateiname, new Uint8Array())
+      let datei = {
+        schluessel: a.schluessel,
+        sha256: a.sha256,
+        dateiname: a.dateiname,
+        mime,
+        groesse: a.groesse,
+      }
+      if (mime === 'image/heic') {
+        // iPhone-Foto aus der Mail: als JPEG ablegen, das Original bleibt am Anhang.
+        const jpeg = await heicZuJpeg(await objektSpeicher().holen(a.schluessel))
+        const abgelegt = await objektSpeicher().ablegen(k.mandantId, 'dokument', jpeg, 'image/jpeg')
+        datei = { ...abgelegt, dateiname: mitEndung(a.dateiname, 'jpg'), mime: 'image/jpeg' }
+      } else if (!ERLAUBTE_TYPEN.has(mime)) {
         throw new Eingabefehler('Diese Dateiart wird nicht abgelegt.')
+      }
       return ablegen(tx, k, {
         bezug: { objektId: null, mietverhaeltnisId },
-        datei: {
-          schluessel: a.schluessel,
-          sha256: a.sha256,
-          dateiname: a.dateiname,
-          mime: a.mimeTyp,
-          groesse: a.groesse,
-        },
-        daten: daten(d, a.dateiname),
+        datei,
+        daten: daten(d, datei.dateiname),
         ersetztId: null,
       })
     })

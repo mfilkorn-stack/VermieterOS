@@ -70,16 +70,41 @@ export const ZaehlerstandQuelle = z.enum(ZAEHLERSTAND_QUELLEN)
 export type ZaehlerstandQuelle = z.infer<typeof ZaehlerstandQuelle>
 
 export const DOKUMENT_TYPEN = [
+  // Mietverhältnis
   'mietvertrag',
   'nachtrag',
   'uebergabeprotokoll',
   'kautionsnachweis',
-  'versicherung',
-  'grundbuch',
+  'wohnungsgeberbestaetigung',
+  // Kauf
+  'expose',
+  'reservierung',
   'kaufvertrag',
+  'notarschreiben',
+  'vollmacht',
+  'grunderwerbsteuerbescheid',
+  // Grundstück und Gebäude
+  'grundbuch',
+  'grundbuchmitteilung',
+  'flurkarte',
+  'bodenrichtwert',
+  'grundriss',
+  'energieausweis',
+  'objektfoto',
+  // Finanzierung
   'kreditvertrag',
+  'grundschuldbestellung',
+  'finanzierung',
+  // WEG und Haus
   'teilungserklaerung',
+  'verwaltervertrag',
+  'wirtschaftsplan',
   'hausgeldabrechnung',
+  'weg_protokoll',
+  'hausordnung',
+  // Laufend
+  'grundsteuer',
+  'versicherung',
   'beleg',
   'mietspiegel',
   'bescheinigung',
