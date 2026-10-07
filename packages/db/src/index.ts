@@ -24,5 +24,7 @@ export {
   type Kettenpruefung,
 } from './ledger'
 export * as schema from './schema/index'
+export type { Akteur, AkteurArt, EreignisTyp, KiEntscheidung, KiStatus } from './schema/index'
 export { datenqualitaet, ladeReferenzdaten } from './qualitaet'
 export * from './post'
+export * from './ki'

@@ -4,41 +4,18 @@ import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from './client'
 import {
   anhaenge,
-  ereignisse,
   nachrichten,
   nachrichtZuordnungen,
   postfaecher,
   telefonnotizen,
 } from './schema/index'
-import type { Akteur, EreignisTyp } from './schema/index'
+import type { Akteur } from './schema/index'
+import { ereignis } from './ereignis'
 
 /**
  * Mail-Eingang (WP 1.1): Postfächer, Nachrichten, Anhänge, Zuordnungen.
  * Alle Funktionen mit `tx` laufen im Mandantenkontext (`withMandant`), RLS greift.
  */
-
-async function ereignis(
-  tx: Tx,
-  p: {
-    mandantId: string
-    typ: EreignisTyp
-    entitaet: string
-    entitaetId: string
-    akteur: Akteur
-    payload: Record<string, unknown>
-  },
-): Promise<void> {
-  await tx.insert(ereignisse).values({
-    id: uuidv7(),
-    mandantId: p.mandantId,
-    typ: p.typ,
-    entitaet: p.entitaet,
-    entitaetId: p.entitaetId,
-    akteurArt: p.akteur.art,
-    akteurId: p.akteur.id,
-    payload: p.payload,
-  })
-}
 
 // ---------------------------------------------------------------------------
 // Postfächer

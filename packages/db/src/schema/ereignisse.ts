@@ -8,6 +8,7 @@ export const EREIGNIS_TYPEN = [
   'festschreibung',
   'dokument_abgelegt',
   'ki_vorschlag',
+  'ki_vorschlag_entschieden',
   'ki_aufruf',
   'integritaet_geprueft',
   'postfach_angelegt',

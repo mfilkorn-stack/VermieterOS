@@ -12,4 +12,6 @@ Alle KI-Aufrufe laufen über `packages/ki`. Ein Kontext-Builder liest ausschlie�
 
 ## Konsequenzen
 
-Kein KI-Chatverlauf als Faktenquelle, kein eigener Speicher. Jeder Aufruf kostet den vollen Kontext; Prompt-Caching für den stabilen Teil (Hausinfos, Vorlagen) hält die Kosten im Rahmen. Wer die KI direkt aus `apps/` aufruft, verletzt die Architektur; ein Lint-Regel verbietet den Import des SDK außerhalb von `packages/ki`.
+Kein KI-Chatverlauf als Faktenquelle, kein eigener Speicher. Jeder Aufruf kostet den vollen Kontext; Prompt-Caching für den stabilen Teil (Hausinfos, Vorlagen) hält die Kosten im Rahmen. Wer die KI direkt aus `apps/` aufruft, verletzt die Architektur; ein Test in `packages/ki` (`architektur.test.ts`) verbietet den Import des SDK außerhalb des Pakets. Das Repository hat kein ESLint, der Test ersetzt die ursprünglich geplante Lint-Regel.
+
+**Umsetzung (WP 1.4):** Vorschläge und Entscheidungen sind zwei append-only Tabellen; der Status ergibt sich aus der Entscheidung oder dem Ablauf (Sicht `ki_vorschlaege_aktuell`). Ein überholter Stempel wird beim Prüfen als Entscheidung `veraltet` festgehalten. Bestätigen darf nur ein Mensch (Check-Constraint). Der Modellaufruf läuft außerhalb jeder Datenbanktransaktion; Kontext und Stempel werden in einer Transaktion gelesen, der Vorschlag in einer zweiten geschrieben. Das Modell sieht nur den Platzhalter-Katalog, nie die Werte.

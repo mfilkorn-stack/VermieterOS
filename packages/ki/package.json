@@ -1,0 +1,30 @@
+{
+  "name": "@vermieteros/ki",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "KI-Anbindung: Kontext-Builder, Versionsstempel, Vorschläge, Platzhalter, Golden-Set. Einziger Ort, der das Anthropic-SDK importiert.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit",
+    "golden": "tsx src/golden/cli.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@vermieteros/db": "workspace:*",
+    "@vermieteros/schema": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "uuid": "^14.0.2",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

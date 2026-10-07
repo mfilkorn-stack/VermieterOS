@@ -1,0 +1,35 @@
+name: KI Golden-Set
+
+# PLAN 4.5: wöchentlich und vor jedem Prompt- oder Modellwechsel (manuell starten).
+# Braucht das Repository-Secret ANTHROPIC_API_KEY; ohne Secret wird übersprungen.
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      aufgabe:
+        description: 'Nur diese Aufgabe (leer = alle)'
+        required: false
+      modell:
+        description: 'Modell (leer = Standard)'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  golden:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      KI_MODELL: ${{ inputs.modell }}
+      AUFGABE: ${{ inputs.aufgabe }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @vermieteros/ki golden "$AUFGABE"
