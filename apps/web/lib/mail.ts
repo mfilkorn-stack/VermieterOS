@@ -70,3 +70,19 @@ export async function sendeMail(m: {
     return false
   }
 }
+
+/**
+ * Prüft Verbindung und Anmeldung am SMTP-Server, ohne etwas zu verschicken. Läuft beim Start
+ * (instrumentation.ts), damit ein Tippfehler in Host, Port oder Zugang sofort im Log steht und
+ * nicht erst beim ersten Versand auffällt.
+ */
+export async function pruefeMailVersand(): Promise<{ ok: boolean; meldung: string }> {
+  if (!mailEingerichtet()) return { ok: false, meldung: 'nicht eingerichtet (SMTP_HOST fehlt)' }
+  const ziel = `${process.env['SMTP_HOST']}:${process.env['SMTP_PORT'] ?? 587}`
+  try {
+    await smtp().verify()
+    return { ok: true, meldung: `bereit (${ziel})` }
+  } catch (e) {
+    return { ok: false, meldung: `${ziel} nicht erreichbar: ${e instanceof Error ? e.message : e}` }
+  }
+}

@@ -95,6 +95,14 @@ Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten un
 
 Für jeden Anbieter SPF und DKIM für die Absender-Domain setzen, sonst landen Anmeldelinks im Spam. Ohne `SMTP_HOST` wird nichts verschickt: Einladungslinks fürs Portal erscheinen dann in der App zum persönlichen Weitergeben, Bestätigungsmails fehlen. Fehler beim Versand stehen im Log von `web`, ohne Inhalt.
 
+Beim Start prüft `web` Verbindung und Anmeldung am SMTP-Server, ohne etwas zu verschicken. Nach jedem Deployment oder jeder Änderung an der `.env`:
+
+```sh
+docker compose logs web | grep '\[mail\]'
+```
+
+`[mail] SMTP bereit (smtp.ionos.de:587)` ist richtig. `nicht erreichbar: getaddrinfo ENOTFOUND` heißt Tippfehler im Host, `Invalid login` oder `535` falscher Benutzer oder falsches Passwort.
+
 ### Registrierung
 
 In Produktion legt nicht jeder ein Konto an, der die Domain kennt. Erlaubt sind die Adressen in `REGISTRIERUNG_ERLAUBT` (kommagetrennt, typischerweise nur die eigene) und Adressen mit offener Einladung in einen Mandanten. Alle anderen bekommen „Registrierung nur mit Einladung“. Mieter brauchen kein Konto, sie nutzen das Portal. `REGISTRIERUNG=offen` hebt die Sperre auf (Tests, lokale Entwicklung; dort ist sie ohnehin aus).
