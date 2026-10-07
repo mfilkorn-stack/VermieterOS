@@ -99,6 +99,8 @@ Für jeden Anbieter SPF und DKIM für die Absender-Domain setzen, sonst landen A
 
 In Produktion legt nicht jeder ein Konto an, der die Domain kennt. Erlaubt sind die Adressen in `REGISTRIERUNG_ERLAUBT` (kommagetrennt, typischerweise nur die eigene) und Adressen mit offener Einladung in einen Mandanten. Alle anderen bekommen „Registrierung nur mit Einladung“. Mieter brauchen kein Konto, sie nutzen das Portal. `REGISTRIERUNG=offen` hebt die Sperre auf (Tests, lokale Entwicklung; dort ist sie ohnehin aus).
 
+**Passwort vergessen:** Link auf der Anmeldeseite, Mail mit Einmal-Link (gilt eine Stunde), danach enden alle Sitzungen des Kontos; die Zwei-Faktor-Pflicht bleibt. Ohne Mailversand gibt es keinen Weg zurück ins Konto. Passwörter stehen nirgends im Klartext, weder in Logs noch in der Datenbank (nur Hash).
+
 ### Mieterportal
 
 Erreichbar unter `https://www.vermieteros.app/portal`. Mieter werden am Mietverhältnis (Verlauf, Karte „Mieterportal“) eingeladen und dort auch gesperrt. Anmeldelinks gelten 15 Minuten, Einladungen 7 Tage, jeweils einmal; die Sitzung hält 30 Tage. In der Datenbank stehen nur Prüfsummen der Links und Sitzungen (ADR 0010). Mängelmeldungen erscheinen als Ticket „gemeldet“, Nachrichten im Verlauf; Eigentümer, Miteigentümer und Mitverwalter bekommen dazu eine Mail.

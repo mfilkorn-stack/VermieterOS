@@ -47,6 +47,36 @@ export async function registrieren(_: FormStatus, daten: FormData): Promise<Form
   redirect(`/sicherheit?weiter=${encodeURIComponent(weiter)}`)
 }
 
+/** Antwortet immer gleich, damit sich nicht erkennen lässt, ob es zu einer Adresse ein Konto gibt. */
+export async function passwortVergessen(_: FormStatus, daten: FormData): Promise<FormStatus> {
+  try {
+    await auth.api.requestPasswordReset({
+      body: { email: feld(daten, 'email') },
+      headers: await headers(),
+    })
+  } catch (e) {
+    return { fehler: fehlertext(e) }
+  }
+  return {
+    hinweis:
+      'Wenn es zu dieser Adresse ein Konto gibt, ist ein Link unterwegs. Er gilt eine Stunde.',
+  }
+}
+
+export async function passwortNeu(_: FormStatus, daten: FormData): Promise<FormStatus> {
+  const passwort = feld(daten, 'passwort')
+  if (passwort !== feld(daten, 'passwort2')) return { fehler: 'Die Passwörter sind verschieden.' }
+  try {
+    await auth.api.resetPassword({
+      body: { newPassword: passwort, token: feld(daten, 'token') },
+      headers: await headers(),
+    })
+  } catch (e) {
+    return { fehler: fehlertext(e) }
+  }
+  redirect('/login?zurueckgesetzt=1')
+}
+
 export async function abmelden(): Promise<void> {
   await auth.api.signOut({ headers: await headers() })
   redirect('/login')

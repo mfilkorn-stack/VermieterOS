@@ -8,6 +8,7 @@ const MELDUNGEN: Record<string, string> = {
   USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: 'Zu dieser E-Mail gibt es schon ein Konto.',
   PASSWORD_TOO_SHORT: 'Das Passwort ist zu kurz (mindestens 12 Zeichen).',
   INVALID_PASSWORD: 'Das Passwort ist falsch.',
+  INVALID_TOKEN: 'Der Link ist ungültig oder abgelaufen. Bitte einen neuen anfordern.',
   INVALID_CODE: 'Der Code stimmt nicht.',
   INVALID_TWO_FACTOR_COOKIE: 'Die Anmeldung ist abgelaufen. Bitte neu anmelden.',
   USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'Die Person ist schon Mitglied.',

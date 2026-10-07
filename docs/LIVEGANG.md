@@ -98,6 +98,7 @@ Mit Musterdaten, noch ohne echte Mieter:
 - [ ] Registrieren mit der freigegebenen Adresse, Bestätigungsmail kommt an und ist nicht im Spam (Header: `spf=pass`, `dkim=pass`)
 - [ ] Registrieren mit einer anderen Adresse wird abgewiesen
 - [ ] Zwei-Faktor einrichten, ab- und wieder anmelden
+- [ ] „Passwort vergessen?“: Mail kommt an, neues Passwort setzen, Anmeldung verlangt weiter den zweiten Faktor
 - [ ] Mandant und Musterobjekt anlegen, Dokument hochladen und wieder herunterladen (Object Storage)
 - [ ] Mieterportal-Einladung an eine eigene Zweitadresse, Mail kommt an, Anmeldung per Link klappt
 - [ ] Backup von Hand: `docker compose run --rm ops backup`, dann `docker compose run --rm ops integritaet`; im Backup-Bucket liegt eine `.age`-Datei

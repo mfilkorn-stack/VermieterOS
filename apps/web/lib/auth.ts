@@ -47,6 +47,23 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 12,
+    // Passwort vergessen: Einmal-Link auf die eigene Seite, alte Sitzungen enden, 2FA bleibt Pflicht.
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    async sendResetPassword({ user, token }) {
+      await sendeMail({
+        art: 'passwort',
+        an: user.email,
+        betreff: 'Vermieter.OS: Passwort zurücksetzen',
+        text: [
+          'Hier kannst du ein neues Passwort setzen:',
+          '',
+          `${BASIS_URL}/passwort-neu?token=${encodeURIComponent(token)}`,
+          '',
+          'Der Link gilt eine Stunde. Wenn du das nicht angefordert hast, ignoriere diese Mail; dein Passwort bleibt unverändert.',
+        ].join('\n'),
+      })
+    },
   },
   // Einladungen gelten nur für bestätigte Adressen (Better-Auth-Standard, bleibt an).
   emailVerification: {
