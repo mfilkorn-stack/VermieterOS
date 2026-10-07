@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     '@vermieteros/db',
     '@vermieteros/ki',
+    '@vermieteros/pdf',
     '@vermieteros/post',
     '@vermieteros/rechenkern',
     '@vermieteros/schema',

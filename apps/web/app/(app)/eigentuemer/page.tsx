@@ -91,6 +91,13 @@ export default async function EigentuemerSeite() {
               <Feld label="Nachname" name="nachname" required />
             </div>
             <div className="zeile">
+              <Feld label="Straße" name="strasse" />
+              <Feld label="Hausnummer" name="hausnummer" />
+              <Feld label="PLZ" name="plz" inputMode="numeric" />
+              <Feld label="Ort" name="ort" />
+            </div>
+            <p className="leise">Die Anschrift steht als Vermieter auf Bescheinigungen.</p>
+            <div className="zeile">
               <Feld label="Anteil Zähler" name="zaehler" placeholder="1" required />
               <Feld label="Nenner" name="nenner" placeholder="2" required />
             </div>

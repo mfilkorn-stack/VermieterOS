@@ -1,0 +1,25 @@
+{
+  "name": "@vermieteros/pdf",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "PDF-Vorlagen: Standardschreiben, später Abrechnungen. Reine Funktionen, keine IO.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vermieteros/rechenkern": "workspace:*",
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3",
+    "unpdf": "^1.8.1",
+    "vitest": "^4.0.0"
+  }
+}

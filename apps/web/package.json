@@ -17,6 +17,7 @@
     "@fontsource/ibm-plex-sans": "^5.3.0",
     "@vermieteros/db": "workspace:*",
     "@vermieteros/ki": "workspace:*",
+    "@vermieteros/pdf": "workspace:*",
     "@vermieteros/post": "workspace:*",
     "@vermieteros/rechenkern": "workspace:*",
     "@vermieteros/schema": "workspace:*",
@@ -41,6 +42,7 @@
     "@types/react-dom": "^19.3.0",
     "nodemailer": "^10.0.15",
     "typescript": "^5.9.3",
+    "unpdf": "^1.8.1",
     "vitest": "^4.0.0"
   }
 }
