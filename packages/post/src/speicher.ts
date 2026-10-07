@@ -16,7 +16,7 @@ export type Speicher = {
   /** Legt den Inhalt ab, falls noch nicht vorhanden. Liefert Schlüssel, Prüfsumme, Größe. */
   ablegen(
     mandantId: string,
-    art: 'roh' | 'anhang',
+    art: 'roh' | 'anhang' | 'dokument',
     inhalt: Buffer,
     mimeTyp: string,
   ): Promise<{ schluessel: string; sha256: string; groesse: number }>

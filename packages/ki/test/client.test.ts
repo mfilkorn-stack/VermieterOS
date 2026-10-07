@@ -21,7 +21,7 @@ beforeAll(async () => {
     let body = ''
     req.on('data', (c) => (body += c))
     req.on('end', () => {
-      letzte = { pfad: req.url, ...JSON.parse(body) }
+      letzte = { pfad: req.url, beta: req.headers['anthropic-beta'], ...JSON.parse(body) }
       res.writeHead(200, { 'content-type': 'application/json', 'request-id': 'req_test_1' })
       res.end(
         JSON.stringify({
@@ -57,20 +57,35 @@ describe('Anthropic-Client', () => {
       modell: STANDARD_MODELL,
       system: 'Regeln',
       nachricht: 'Mail: Heizung kalt',
+      dateien: [{ mime: 'application/pdf', daten: new TextEncoder().encode('%PDF-1.4') }],
       schema: Schema,
       maxTokens: 1000,
+      aufwand: 'low',
     })
     expect(r.ausgabe).toEqual({ kategorie: 'heizung', dringend: true })
     expect(r.anfrageId).toBe('req_test_1')
     expect(r.nutzung).toEqual({ eingabe: 120, ausgabe: 30, cacheGelesen: 100, cacheGeschrieben: 0 })
     expect(letzte).toMatchObject({
-      pfad: '/v1/messages',
+      pfad: '/v1/messages?beta=true',
+      beta: 'server-side-fallback-2026-07-01',
+      fallbacks: 'default',
       model: 'claude-opus-5-5',
       max_tokens: 1000,
       thinking: { type: 'adaptive' },
       system: [{ type: 'text', text: 'Regeln', cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: 'Mail: Heizung kalt' }],
-      output_config: { format: { type: 'json_schema' } },
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: 'JVBERi0xLjQ=' },
+            },
+            { type: 'text', text: 'Mail: Heizung kalt' },
+          ],
+        },
+      ],
+      output_config: { format: { type: 'json_schema' }, effort: 'low' },
     })
   })
 

@@ -1,9 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk'
+import type { BetaContentBlockParam } from '@anthropic-ai/sdk/resources/beta/messages/messages'
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import type { z } from 'zod'
 
 /** Standardmodell (PLAN 4.4). Ein günstigeres nur, wenn es das Golden-Set gleich gut besteht. */
 export const STANDARD_MODELL = 'claude-opus-5-5'
+
+export type KiAufwand = 'low' | 'medium' | 'high'
+
+/** Datei für das Modell, z. B. ein Vertrag als PDF (Dokumentblock) oder ein Foto (Bildblock). */
+export type KiDatei = { mime: string; daten: Uint8Array }
 
 export type KiAnfrage<T> = {
   modell: string
@@ -11,8 +17,12 @@ export type KiAnfrage<T> = {
   system: string
   /** Veränderlicher Teil: der Kontext dieses Aufrufs. */
   nachricht: string
+  /** Dateien vor dem Text der Nachricht */
+  dateien?: KiDatei[]
   schema: z.ZodType<T>
   maxTokens: number
+  /** Denktiefe; Standard des Modells, wenn leer */
+  aufwand?: KiAufwand
 }
 
 export type KiNutzung = {
@@ -55,15 +65,25 @@ export function anthropicClient(o: { apiKey: string; basisUrl?: string | undefin
   })
   return {
     async erzeuge<T>(a: KiAnfrage<T>): Promise<KiAntwort<T>> {
+      const inhalt: BetaContentBlockParam[] = [
+        ...(a.dateien ?? []).map(dateiBlock),
+        { type: 'text', text: a.nachricht },
+      ]
       // create statt parse: Ablehnung und Abbruch erst erkennen, dann selbst parsen und prüfen.
-      const { data: m, request_id } = await c.messages
+      // Bei einer Ablehnung durch die Sicherheitsfilter übernimmt serverseitig ein anderes Modell.
+      const { data: m, request_id } = await c.beta.messages
         .create({
           model: a.modell,
           max_tokens: a.maxTokens,
           thinking: { type: 'adaptive', display: 'omitted' },
           system: [{ type: 'text', text: a.system, cache_control: { type: 'ephemeral' } }],
-          messages: [{ role: 'user', content: a.nachricht }],
-          output_config: { format: zodOutputFormat(a.schema as z.ZodType) },
+          messages: [{ role: 'user', content: inhalt }],
+          output_config: {
+            format: zodOutputFormat(a.schema as z.ZodType),
+            ...(a.aufwand ? { effort: a.aufwand } : {}),
+          },
+          betas: ['server-side-fallback-2026-07-01'],
+          fallbacks: 'default',
         })
         .withResponse()
       if (m.stop_reason === 'refusal') throw new KiFehler('Das Modell hat abgelehnt.', 'verweigert')
@@ -94,6 +114,22 @@ export function anthropicClient(o: { apiKey: string; basisUrl?: string | undefin
       }
     },
   }
+}
+
+function dateiBlock(d: KiDatei): BetaContentBlockParam {
+  const data = Buffer.from(d.daten).toString('base64')
+  if (d.mime === 'application/pdf') {
+    return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data } }
+  }
+  if (
+    d.mime === 'image/jpeg' ||
+    d.mime === 'image/png' ||
+    d.mime === 'image/webp' ||
+    d.mime === 'image/gif'
+  ) {
+    return { type: 'image', source: { type: 'base64', media_type: d.mime, data } }
+  }
+  throw new KiFehler(`Dateityp ${d.mime} kann die KI nicht lesen.`, 'ungueltig')
 }
 
 /** Client aus der Umgebung (`ANTHROPIC_API_KEY`). Ohne Schlüssel ist die KI aus, nicht kaputt. */

@@ -61,6 +61,7 @@ export const SORTIERUNG: Aufgabe<NachrichtDaten, Sortierung> = {
   name: 'sortierung',
   version: 1,
   maxTokens: 4_000,
+  aufwand: 'low',
   // Kategorie und Dringlichkeit sind Ermessen; einzelne Abweichungen im Golden-Set sind zulässig.
   goldenSchwelle: 0.9,
   // Einschätzungen veralten schneller als Entwürfe: nach einer Woche neu sortieren lassen.

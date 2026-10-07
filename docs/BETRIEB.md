@@ -75,6 +75,10 @@ Der Wert kommt als `POSTFACH_SCHLUESSEL` in die `.env` und zusätzlich in den Pa
 
 `ANTHROPIC_API_KEY` in der `.env` schaltet die KI ein (Web und Worker). Ohne Schlüssel läuft alles außer den KI-Vorschlägen. Bevor echte Mieterdaten an die API gehen: Auftragsverarbeitungsvertrag mit Anthropic abschließen, Commercial Terms (kein Training mit unseren Daten) bestätigen, im Account prüfen, ob EU-Inferenz und verkürzte Aufbewahrung verfügbar sind (PLAN 4.4). Was an die KI geht, steht pro Aufruf als Ereignis `ki_aufruf` im Ledger, ohne Inhalt. `KI_MODELL` nur ändern, wenn das Golden-Set mit dem neuen Modell besteht (Workflow „KI Golden-Set“, manuell starten mit Modell). Mit Schlüssel sortiert der Worker neue Mails der letzten drei Tage automatisch, höchstens `KI_SORTIERUNG_LIMIT` (Standard 20) pro Durchlauf; nach zwei gescheiterten Versuchen bleibt eine Mail unsortiert. `KI_SORTIERUNG=aus` schaltet das ab, Einschätzungen und Entwürfe auf Knopfdruck bleiben. Für CI liegt derselbe Schlüssel als Repository-Secret `ANTHROPIC_API_KEY`; ohne Secret überspringt der wöchentliche Lauf.
 
+### Dokumente
+
+Dokumente liegen wie Mails im Object Storage (`mandanten/<id>/dokument/…`), unveränderlich und mit Prüfsumme; das Backup nimmt sie mit. Uploads gehen bis 20 MB (`serverActions.bodySizeLimit` in `next.config.ts`); Caddy begrenzt davor nicht. Bei Ablehnungen durch die Sicherheitsfilter beantwortet serverseitig ein anderes Claude-Modell die Anfrage (`fallbacks: "default"`); der Auftragsverarbeitungsvertrag muss das abdecken.
+
 ### Monitoring
 
 Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `.env` eintragen:

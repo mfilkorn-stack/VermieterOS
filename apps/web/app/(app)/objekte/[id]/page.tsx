@@ -27,7 +27,8 @@ import {
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AmpelStatus, MODUL_ICON, MODUL_TEXT } from '@/components/status'
-import { ladeNotfallkarte, listeTickets, listeWissen } from '@vermieteros/db'
+import { ladeNotfallkarte, listeDokumente, listeTickets, listeWissen } from '@vermieteros/db'
+import { DokumentListe } from '@/components/dokument-liste'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { ladeAkte, type Akte } from '@/lib/akte'
 import { NOTFALL_TEXT, WISSEN_TEXT } from '@/lib/betrieb-text'
@@ -124,10 +125,11 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
       notfall: await ladeNotfallkarte(tx, id),
       wissen: await listeWissen(tx, id),
       tickets: await listeTickets(tx, { offen: true, objektId: id }),
+      dokumente: await listeDokumente(tx, { objektId: id }),
     }
   })
   if (!daten) notFound()
-  const { akte, notfall, wissen, tickets } = daten
+  const { akte, notfall, wissen, tickets, dokumente } = daten
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const o = akte.objekt
   const q = akte.qualitaet
@@ -420,6 +422,19 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
           </li>
         ))}
       </ul>
+
+      <Abschnitt titel="Dokumente">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/dokumente/neu?objekt=${id}`}
+            text="Dokument hochladen"
+            testId="objekt-dokument-neu"
+          />
+        ) : null}
+      </Abschnitt>
+      <div className="karte">
+        <DokumentListe dokumente={dokumente} />
+      </div>
 
       <Abschnitt titel="Notfallkarte">
         {schreiben ? (

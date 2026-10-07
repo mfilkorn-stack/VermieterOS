@@ -1,4 +1,5 @@
 import type { z } from 'zod'
+import type { KiAufwand, KiDatei } from './client'
 import type { PlatzhalterKatalog } from './platzhalter'
 
 /**
@@ -18,6 +19,10 @@ export type Aufgabe<D, A> = {
   /** Fachliche Prüfung der Ausgabe gegen den Kontext; jeder Befund lehnt die Ausgabe ab */
   pruefe?: (a: A, daten: D) => string[]
   maxTokens?: number
+  /** Denktiefe: Sortieren braucht wenig, Verträge lesen viel */
+  aufwand?: KiAufwand
+  /** Dateien zum Kontext, z. B. der Vertrag als PDF */
+  dateien?: (daten: D) => KiDatei[]
   /** Gültigkeit eines Vorschlags in Tagen (PLAN 4.2: Standard 14) */
   ablaufTage?: number
   /** Anteil der Golden-Set-Fälle, die bestehen müssen (Standard 1, Extraktion 0,95) */

@@ -1,6 +1,13 @@
 'use client'
 
-import { startTransition, useActionState, type FormEvent, type ReactNode } from 'react'
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import type { FormStatus } from '@/lib/form-status'
 
 /**
@@ -22,6 +29,9 @@ export function Formular({
   zweit?: boolean
 }) {
   const [status, formAktion, laeuft] = useActionState(aktion, {})
+  // Vor der Hydrierung gäbe es nur den nativen Submit (GET auf dieselbe Seite, Eingaben weg).
+  const [bereit, setBereit] = useState(false)
+  useEffect(() => setBereit(true), [])
   function absenden(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const daten = new FormData(e.currentTarget)
@@ -36,7 +46,7 @@ export function Formular({
         </p>
       ) : null}
       {status.hinweis ? <p className="leise">{status.hinweis}</p> : null}
-      <button type="submit" disabled={laeuft} className={zweit ? 'zweit' : undefined}>
+      <button type="submit" disabled={laeuft || !bereit} className={zweit ? 'zweit' : undefined}>
         {knopf}
       </button>
     </form>

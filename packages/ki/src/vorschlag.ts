@@ -80,8 +80,10 @@ export async function erzeugeVorschlag<D, A extends Record<string, unknown>>(
       modell,
       system: aufgabe.system,
       nachricht: aufgabe.nachricht(kontext.daten, kontext.platzhalter),
+      ...(aufgabe.dateien ? { dateien: aufgabe.dateien(kontext.daten) } : {}),
       schema: aufgabe.ausgabe,
       maxTokens: aufgabe.maxTokens ?? 16_000,
+      ...(aufgabe.aufwand ? { aufwand: aufgabe.aufwand } : {}),
     })
   } catch (e) {
     await protokoll({ modell, ok: false, fehler: e instanceof KiFehler ? e.art : 'aufruf' })
@@ -175,17 +177,27 @@ export function bestaetigeVorschlag(
   u: Pick<KiUmgebung, 'db' | 'mandantId' | 'akteur'>,
   id: string,
 ): Promise<Pruefung> {
-  return withMandant(u.db, u.mandantId, async (tx) => {
-    const p = await pruefeInTx(tx, u.mandantId, id)
-    if (p.status !== 'offen') return p
-    await entscheideKiVorschlag(tx, {
-      mandantId: u.mandantId,
-      vorschlagId: id,
-      status: 'bestaetigt',
-      akteur: u.akteur,
-    })
-    return { status: 'bestaetigt', vorschlag: { ...p.vorschlag, status: 'bestaetigt' } }
+  return withMandant(u.db, u.mandantId, (tx) => bestaetigeVorschlagInTx(tx, u, id))
+}
+
+/**
+ * Wie `bestaetigeVorschlag`, aber in einer bestehenden Transaktion: Bestätigung und die daraus
+ * geschriebenen Versionen gelingen gemeinsam oder gar nicht (Übernahme in Stammdaten).
+ */
+export async function bestaetigeVorschlagInTx(
+  tx: Tx,
+  u: Pick<KiUmgebung, 'mandantId' | 'akteur'>,
+  id: string,
+): Promise<Pruefung> {
+  const p = await pruefeInTx(tx, u.mandantId, id)
+  if (p.status !== 'offen') return p
+  await entscheideKiVorschlag(tx, {
+    mandantId: u.mandantId,
+    vorschlagId: id,
+    status: 'bestaetigt',
+    akteur: u.akteur,
   })
+  return { status: 'bestaetigt', vorschlag: { ...p.vorschlag, status: 'bestaetigt' } }
 }
 
 export function verwirfVorschlag(

@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   ],
   serverExternalPackages: ['postgres', 'imapflow', 'mailparser', '@aws-sdk/client-s3'],
   output: 'standalone',
+  // Dokumente bis 20 MB über Server Actions (WP 1.7); Caddy begrenzt davor nicht.
+  experimental: { serverActions: { bodySizeLimit: '21mb' } },
 }
 
 export default nextConfig

@@ -99,7 +99,7 @@ export default async function VermietungSeite({
           </h2>
           <p>
             <Link href={`/mietverhaeltnisse/${m.id}`} data-testid="verlauf-link">
-              Verlauf: Mails und Telefonnotizen
+              Verlauf und Dokumente
             </Link>
           </p>
           {m.kondition ? (
