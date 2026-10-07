@@ -1,7 +1,8 @@
 import { legeMandantAn, schema, withMandant } from '@vermieteros/db'
 import { EigentuemerschaftArt } from '@vermieteros/schema'
 import { betterAuth } from 'better-auth'
-import { and, asc, desc, eq, isNotNull } from 'drizzle-orm'
+import { APIError } from 'better-auth/api'
+import { and, asc, desc, eq, gt, isNotNull, sql } from 'drizzle-orm'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
 import { magicLink, organization, twoFactor } from 'better-auth/plugins'
@@ -9,8 +10,26 @@ import { v7 as uuidv7 } from 'uuid'
 import { db } from './db'
 import { sendeMail } from './mail'
 import { ac, roles } from './rechte'
+import { erlaubteAdressen, registrierungErlaubt, registrierungsModus } from './registrierung'
 
 const BASIS_URL = process.env['BETTER_AUTH_URL'] ?? 'http://localhost:3000'
+const REGISTRIERUNG = registrierungsModus(process.env)
+const ERLAUBT = erlaubteAdressen(process.env['REGISTRIERUNG_ERLAUBT'])
+
+async function offeneEinladung(email: string): Promise<boolean> {
+  const [e] = await db
+    .select({ id: schema.auth.invitation.id })
+    .from(schema.auth.invitation)
+    .where(
+      and(
+        sql`lower(${schema.auth.invitation.email}) = ${email.trim().toLowerCase()}`,
+        eq(schema.auth.invitation.status, 'pending'),
+        gt(schema.auth.invitation.expiresAt, new Date()),
+      ),
+    )
+    .limit(1)
+  return e != null
+}
 
 /**
  * Better Auth (ADR 0004). Eine Organization ist ein Mandant (ADR 0002) und trägt dieselbe ID.
@@ -44,6 +63,22 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    user: {
+      create: {
+        // Kein offenes Anlegen von Konten in Produktion (lib/registrierung.ts).
+        async before(nutzer) {
+          const erlaubt = registrierungErlaubt(nutzer.email, {
+            modus: REGISTRIERUNG,
+            erlaubt: ERLAUBT,
+            eingeladen: REGISTRIERUNG === 'offen' ? false : await offeneEinladung(nutzer.email),
+          })
+          if (!erlaubt)
+            throw new APIError('FORBIDDEN', {
+              message: 'Registrierung nur mit Einladung. Bitte beim Eigentümer melden.',
+            })
+        },
+      },
+    },
     session: {
       create: {
         // Neue Sitzung startet im zuletzt genutzten Mandanten, sonst im ältesten.

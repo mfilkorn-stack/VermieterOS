@@ -28,6 +28,8 @@ export default defineConfig({
       BETTER_AUTH_URL: basisUrl,
       BETTER_AUTH_SECRET: 'e2e-geheimnis-nur-fuer-tests-0123456789',
       AUTH_RATE_LIMIT: 'aus',
+      // Tests legen beliebige Konten an; in Produktion nur mit Einladung (lib/registrierung.ts)
+      REGISTRIERUNG: 'offen',
       POSTFACH_SCHLUESSEL: E2E.postfachSchluessel,
       S3_ENDPOINT: E2E.s3.endpoint,
       S3_BUCKET: E2E.s3.bucket,
