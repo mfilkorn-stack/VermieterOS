@@ -1,5 +1,5 @@
 import type { AkteurArt } from './ereignisse'
-import type { GespraechRichtung, ZuordnungArt } from '@vermieteros/schema'
+import type { GespraechRichtung, PostfachZweck, ZuordnungArt } from '@vermieteros/schema'
 import {
   bigint,
   boolean,
@@ -34,6 +34,8 @@ export const postfaecher = pgTable('postfaecher', {
   /** Beim ersten Abruf nur Nachrichten ab diesem Datum, damit kein Altbestand einläuft. */
   abrufAb: date('abruf_ab', { mode: 'string' }).notNull(),
   aktiv: boolean('aktiv').notNull().default(true),
+  /** `belege`: eigene Adresse für Rechnungen; Anhänge landen im Belegeingang, nicht im Posteingang. */
+  zweck: text('zweck').$type<PostfachZweck>().notNull().default('post'),
   uidValidity: bigint('uid_validity', { mode: 'number' }),
   letzteUid: bigint('letzte_uid', { mode: 'number' }).notNull().default(0),
   letzterAbruf: timestamp('letzter_abruf', { withTimezone: true, mode: 'string' }),

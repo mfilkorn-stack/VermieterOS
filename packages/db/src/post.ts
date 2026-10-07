@@ -1,4 +1,4 @@
-import type { GespraechRichtung, ZuordnungArt } from '@vermieteros/schema'
+import type { GespraechRichtung, PostfachZweck, ZuordnungArt } from '@vermieteros/schema'
 import { eq, sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from './client'
@@ -29,6 +29,7 @@ export type PostfachEinstellungen = {
   benutzer: string
   ordner: string
   abrufAb: string
+  zweck?: PostfachZweck
 }
 
 /** Spalten, die die App-Rolle lesen darf (ohne `passwort_chiffre`). */
@@ -42,6 +43,7 @@ const postfachSpalten = {
   benutzer: postfaecher.benutzer,
   ordner: postfaecher.ordner,
   abrufAb: postfaecher.abrufAb,
+  zweck: postfaecher.zweck,
   aktiv: postfaecher.aktiv,
   letzterAbruf: postfaecher.letzterAbruf,
   letzterFehler: postfaecher.letzterFehler,
@@ -66,6 +68,7 @@ export async function legePostfachAn(
     passwortChiffre: p.passwortChiffre,
     ordner: p.ordner,
     abrufAb: p.abrufAb,
+    zweck: p.zweck ?? 'post',
   })
   await ereignis(tx, {
     mandantId: p.mandantId,
@@ -73,7 +76,13 @@ export async function legePostfachAn(
     entitaet: 'postfach',
     entitaetId: id,
     akteur: p.akteur,
-    payload: { bezeichnung: p.bezeichnung, host: p.host, benutzer: p.benutzer, ordner: p.ordner },
+    payload: {
+      bezeichnung: p.bezeichnung,
+      host: p.host,
+      benutzer: p.benutzer,
+      ordner: p.ordner,
+      zweck: p.zweck ?? 'post',
+    },
   })
   return id
 }
@@ -349,12 +358,13 @@ export type PosteingangEintrag = {
   } | null
 }
 
-/** Posteingang des Mandanten, jüngste zuerst. `nurOffen`: ohne aktuelle Zuordnung. */
+/** Posteingang des Mandanten (ohne Beleg-Postfächer), jüngste zuerst. `nurOffen`: ohne aktuelle Zuordnung. */
 export async function ladePosteingang(
   tx: Tx,
   optionen: { nurOffen?: boolean; suche?: string | null; limit?: number } = {},
 ): Promise<PosteingangEintrag[]> {
-  const bedingungen = []
+  // Mails an die Beleg-Adresse landen im Belegeingang, nicht im Posteingang (WP 1.8).
+  const bedingungen = [sql`pf.zweck = 'post'`]
   if (optionen.nurOffen) bedingungen.push(sql`za.mietverhaeltnis_id IS NULL`)
   const suche = optionen.suche?.trim()
   if (suche) {
@@ -387,7 +397,7 @@ export async function ladePosteingang(
     FROM nachrichten n
     JOIN postfaecher pf ON pf.id = n.postfach_id
     LEFT JOIN ${z} za ON za.nachricht_id = n.id
-    ${bedingungen.length ? sql`WHERE ${sql.join(bedingungen, sql` AND `)}` : sql``}
+    WHERE ${sql.join(bedingungen, sql` AND `)}
     ORDER BY coalesce(n.gesendet_am, n.empfangen_am) DESC, n.id DESC
     LIMIT ${optionen.limit ?? 100}`)
   return rows.map((r) => ({
@@ -410,6 +420,7 @@ export async function ladePosteingang(
 export async function offeneNachrichten(tx: Tx): Promise<number> {
   const rows = await tx.execute<{ n: number }>(sql`
     SELECT count(*)::int AS n FROM nachrichten n
+    JOIN postfaecher pf ON pf.id = n.postfach_id AND pf.zweck = 'post'
     LEFT JOIN nachrichten_zuordnung_aktuell za ON za.nachricht_id = n.id
     WHERE za.mietverhaeltnis_id IS NULL`)
   return rows[0]?.n ?? 0

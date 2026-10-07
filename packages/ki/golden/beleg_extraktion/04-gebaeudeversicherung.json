@@ -1,0 +1,33 @@
+{
+  "beschreibung": "Wohngebäudeversicherung, Jahresbeitrag, umlagefähig",
+  "synthetisch": true,
+  "datei": "04-gebaeudeversicherung.pdf",
+  "daten": {
+    "titel": "Beleg",
+    "dateiname": "04-gebaeudeversicherung.pdf",
+    "objekte": [
+      {
+        "id": "o1",
+        "bezeichnung": "Musterweg 1",
+        "anschrift": "Musterweg 1, 99999 Musterstadt",
+        "einheiten": []
+      },
+      {
+        "id": "o2",
+        "bezeichnung": "Beispielstraße 7",
+        "anschrift": "Beispielstraße 7, 99999 Musterstadt",
+        "einheiten": []
+      }
+    ],
+    "objektId": null,
+    "ticket": null
+  },
+  "erwartet": {
+    "einordnung": {
+      "objekt_id": "o1",
+      "steuerkategorie": "betriebskosten",
+      "kostenart": "versicherung",
+      "umlagefaehig": true
+    }
+  }
+}

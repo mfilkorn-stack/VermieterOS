@@ -1,6 +1,7 @@
 import {
   ladePostfachFuerAbruf,
   ladeZuordnungsKandidaten,
+  legeBelegeAusNachrichtAn,
   legeNachrichtAn,
   ordneNachrichtZu,
   setzeAbrufstand,
@@ -17,11 +18,18 @@ import { bestimmeZuordnung } from './zuordnung'
 
 const WORKER = { art: 'system', id: 'mail-abruf' } as const
 
+/** Kalendertag in Berlin (YYYY-MM-DD), unabhängig von der Zeitzone des Servers. */
+function heuteBerlin(): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin' }).format(new Date())
+}
+
 export type AbrufErgebnis = {
   postfachId: string
   neu: number
   doppelt: number
   zugeordnet: number
+  /** Nur Beleg-Postfächer: als Beleg abgelegte Anhänge */
+  belege: number
   fehler: string | null
 }
 
@@ -48,6 +56,7 @@ export async function rufePostfachAb(
     neu: 0,
     doppelt: 0,
     zugeordnet: 0,
+    belege: 0,
     fehler: null,
   }
   const pf = await withMandant(ctx.db, postfach.mandantId, (tx) =>
@@ -79,9 +88,11 @@ export async function rufePostfachAb(
     // `n:*` liefert auch die letzte vorhandene UID, wenn sie kleiner als n ist.
     const uids = (gefunden || []).filter((u) => u > ab).sort((x, y) => x - y)
 
-    const kandidaten = uids.length
-      ? await withMandant(ctx.db, pf.mandantId, (tx) => ladeZuordnungsKandidaten(tx))
-      : []
+    const belegPostfach = pf.zweck === 'belege'
+    const kandidaten =
+      uids.length && !belegPostfach
+        ? await withMandant(ctx.db, pf.mandantId, (tx) => ladeZuordnungsKandidaten(tx))
+        : []
 
     for (const uid of uids) {
       const msg = await client.fetchOne(String(uid), { source: true }, { uid: true })
@@ -125,6 +136,15 @@ export async function rufePostfachAb(
         )
         if (id === null) {
           ergebnis.doppelt++
+        } else if (belegPostfach) {
+          // Beleg-Adresse: Anhänge in den Belegeingang, keine Zuordnung zu einem Mietverhältnis.
+          ergebnis.neu++
+          ergebnis.belege += await legeBelegeAusNachrichtAn(tx, {
+            mandantId: pf.mandantId,
+            nachrichtId: id,
+            akteur: WORKER,
+            heute: heuteBerlin(),
+          })
         } else {
           ergebnis.neu++
           const verlauf = await zuordnungImVerlauf(
@@ -164,7 +184,8 @@ export async function rufePostfachAb(
     await client.logout().catch(() => client.close())
   }
   log(
-    `${pf.bezeichnung}: ${ergebnis.neu} neu, ${ergebnis.zugeordnet} zugeordnet, ${ergebnis.doppelt} doppelt` +
+    `${pf.bezeichnung}: ${ergebnis.neu} neu, ${ergebnis.zugeordnet} zugeordnet, ` +
+      `${ergebnis.belege} Belege, ${ergebnis.doppelt} doppelt` +
       (ergebnis.fehler ? `, Fehler: ${ergebnis.fehler}` : ''),
   )
   return ergebnis

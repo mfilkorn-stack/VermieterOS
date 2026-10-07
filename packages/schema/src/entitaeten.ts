@@ -222,8 +222,14 @@ export const DokumentIdentitaet = z
     dateiname: z.string().min(1).max(255),
     mime: z.string().min(1).max(100),
     groesseBytes: z.number().int().nonnegative(),
+    /** Beleg im Belegeingang (WP 1.8): darf ohne Objekt eingehen, die Aufteilung entsteht beim Buchen. */
+    beleg: z.boolean().default(false),
+    /** Rechnung zu einem Ticket */
+    ticketId: Uuid.nullish(),
+    /** Aus einem Mail-Anhang abgelegt */
+    anhangId: Uuid.nullish(),
   })
-  .refine((d) => d.objektId || d.mietverhaeltnisId, {
+  .refine((d) => d.objektId || d.mietverhaeltnisId || d.beleg, {
     message: 'Dokument hängt am Objekt oder am Mietverhältnis',
   })
 export type DokumentIdentitaet = z.infer<typeof DokumentIdentitaet>

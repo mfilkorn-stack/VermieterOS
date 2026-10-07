@@ -246,6 +246,7 @@ export async function nachrichtenOhneVorschlag(
 ): Promise<string[]> {
   const rows = await tx.execute<{ id: string }>(sql`
     SELECT n.id FROM nachrichten n
+    JOIN postfaecher pf ON pf.id = n.postfach_id AND pf.zweck = 'post'
     WHERE n.empfangen_am > now() - make_interval(days => ${o.seitTagen})
       AND NOT EXISTS (
         SELECT 1 FROM ki_vorschlaege v

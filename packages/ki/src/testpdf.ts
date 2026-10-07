@@ -56,3 +56,34 @@ export function musterMietvertrag(): Uint8Array {
     ],
   ])
 }
+
+/** Muster-Rechnung ohne echte Daten (Wasser, umlagefähig), für Tests und die Vorschau. */
+export function musterRechnung(): Uint8Array {
+  return musterPdf([
+    [
+      'Stadtwerke Musterstadt GmbH',
+      'Jahresrechnung Trinkwasser Nr. W-2026-0815',
+      'Rechnungsdatum: 05.01.2026',
+      'Verbrauchsstelle: Musterweg 1, 99999 Musterstadt',
+      'Abrechnungszeitraum: 01.01.2025 bis 31.12.2025',
+      'Nettobetrag: 450,00 €',
+      'Umsatzsteuer 7 %: 31,50 €',
+      'Rechnungsbetrag: 481,50 €',
+      'Der Betrag wird am 15.01.2026 von Ihrem Konto abgebucht.',
+    ],
+  ])
+}
+
+/** Muster-Rechnung Steuerberatung für alle Objekte (Verwaltungskosten, aufzuteilen). */
+export function musterSteuerberatung(): Uint8Array {
+  return musterPdf([
+    [
+      'Steuerkanzlei Muster',
+      'Rechnung Nr. SB-26-031 vom 20.03.2026',
+      'Erstellung Anlage V für das Jahr 2025, alle Objekte',
+      'Honorar netto: 600,00 €',
+      'Umsatzsteuer 19 %: 114,00 €',
+      'Rechnungsbetrag: 714,00 €',
+    ],
+  ])
+}

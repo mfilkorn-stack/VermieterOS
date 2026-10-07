@@ -30,10 +30,12 @@ export async function postfachAnlegen(_: FormStatus, d: FormData): Promise<FormS
     const fehler = await pruefeVerbindung({ ...e, passwort })
     if (fehler) throw new Eingabefehler(`Verbindung fehlgeschlagen: ${fehler}`)
     const passwortChiffre = verschluessele(passwort, schluesselAusUmgebung())
+    const zweck = text(d, 'zweck') === 'belege' ? 'belege' : 'post'
     await mitMandant((tx, k) =>
       legePostfachAn(tx, {
         ...e,
         abrufAb,
+        zweck,
         passwortChiffre,
         mandantId: k.mandantId,
         akteur: { art: 'nutzer', id: k.nutzerId },

@@ -59,3 +59,15 @@ export {
 export { fuerDokument, type DateiQuelle, type DokumentKontextDaten } from './kontext/dokument'
 export { seitenTexte } from './pdf'
 export { musterMietvertrag, musterPdf } from './testpdf'
+export {
+  BELEG_EXTRAKTION,
+  BELEG_FELDER,
+  BelegAuszug,
+  werteBelegAus,
+  type BelegAuswertung,
+  type BelegFeld,
+} from './aufgaben/beleg'
+export { fuerBeleg, type BelegKontextDaten } from './kontext/beleg'
+export { pruefeFundstelle, type Pruefergebnis } from './fundstelle'
+export { belegeAuslesen } from './beleglauf'
+export { musterRechnung, musterSteuerberatung } from './testpdf'

@@ -1,6 +1,8 @@
 import {
   createDb,
+  ladeBeleg,
   ladePosteingang,
+  listeBelege,
   legeMandantAn,
   legePostfachAn,
   neueVersion,
@@ -131,7 +133,14 @@ beforeAll(async () => {
 describe('Abruf', () => {
   it('legt Nachrichten an, ordnet über Absender und Verlauf zu, lässt Unbekanntes offen', async () => {
     const [r] = (await rufeAlleAb(ctx)).filter((x) => x.postfachId === postfach)
-    expect(r).toEqual({ postfachId: postfach, neu: 3, doppelt: 0, zugeordnet: 2, fehler: null })
+    expect(r).toEqual({
+      postfachId: postfach,
+      neu: 3,
+      doppelt: 0,
+      zugeordnet: 2,
+      belege: 0,
+      fehler: null,
+    })
 
     const eingang = await withMandant(app.db, mandant, (tx) => ladePosteingang(tx))
     const nach = (betreff: string) => eingang.find((e) => e.betreff === betreff)
@@ -204,5 +213,77 @@ describe('Abruf', () => {
     await owner.db.execute(sql`update postfaecher set port = ${IMAP.port} where id = ${postfach}`)
     const ok = await rufePostfachAb(ctx, { id: postfach, mandantId: mandant })
     expect(ok.fehler).toBeNull()
+  })
+})
+
+describe('Beleg-Adresse (WP 1.8)', () => {
+  it('legt PDF- und Bild-Anhänge als Belege ab, ohne Zuordnung und ohne Posteingang', async () => {
+    const belegAdresse = `belege-${Date.now()}@example.org`
+    const pf = await withMandant(app.db, mandant, (tx) =>
+      legePostfachAn(tx, {
+        mandantId: mandant,
+        bezeichnung: 'Belege',
+        host: IMAP.host,
+        port: IMAP.port,
+        tls: false,
+        benutzer: belegAdresse,
+        passwortChiffre: verschluessele('beliebig', schluessel),
+        ordner: 'INBOX',
+        abrufAb: '2020-01-01',
+        zweck: 'belege',
+        akteur: nutzer,
+      }),
+    )
+    const pdf = Buffer.from('%PDF-1.4 Rechnung Muster')
+    await smtp.sendMail({
+      // Absender ist die Mieterin: im Posteingang würde die Mail zugeordnet, hier nicht.
+      from: 'Mieterin <mieterin@example.org>',
+      to: belegAdresse,
+      subject: 'Rechnung Wasser',
+      text: 'Anbei die Rechnung.',
+      attachments: [
+        { filename: 'rechnung.pdf', content: pdf, contentType: 'application/pdf' },
+        { filename: 'foto.jpg', content: Buffer.from('foto'), contentType: 'image/jpeg' },
+        { filename: 'kontakt.vcf', content: Buffer.from('BEGIN:VCARD'), contentType: 'text/vcard' },
+      ],
+    })
+    await smtp.sendMail({
+      from: 'Stadtwerke <rechnung@stadtwerke.example>',
+      to: belegAdresse,
+      subject: 'Dieselbe Rechnung nochmal',
+      text: 'Erinnerung',
+      attachments: [{ filename: 'kopie.pdf', content: pdf, contentType: 'application/pdf' }],
+    })
+
+    const r = await rufePostfachAb(ctx, { id: pf, mandantId: mandant })
+    expect(r).toMatchObject({ neu: 2, zugeordnet: 0, belege: 2, fehler: null })
+
+    const offen = await withMandant(app.db, mandant, (tx) => listeBelege(tx, { status: 'offen' }))
+    expect(offen.map((b) => b.dateiname).sort()).toEqual(['foto.jpg', 'rechnung.pdf'])
+    const b = await withMandant(app.db, mandant, (tx) =>
+      ladeBeleg(tx, offen.find((x) => x.dateiname === 'rechnung.pdf')!.id),
+    )
+    expect(b).toMatchObject({ titel: 'Rechnung Wasser', objektId: null, buchung: null })
+    expect(b?.nachrichtId).toBeTruthy()
+    expect(
+      sha256(
+        await speicher.holen(
+          (
+            await withMandant(app.db, mandant, (tx) =>
+              tx.execute<{ s: string }>(
+                sql`select speicher_schluessel as s from dokumente where id = ${b!.id}`,
+              ),
+            )
+          )[0]!.s,
+        ),
+      ),
+    ).toBe(b?.dateiHash)
+
+    const eingang = await withMandant(app.db, mandant, (tx) => ladePosteingang(tx))
+    expect(eingang.map((e) => e.betreff)).not.toContain('Rechnung Wasser')
+
+    // Ein zweiter Lauf legt nichts doppelt ab.
+    const nochmal = await rufePostfachAb(ctx, { id: pf, mandantId: mandant })
+    expect(nochmal).toMatchObject({ neu: 0, belege: 0 })
   })
 })

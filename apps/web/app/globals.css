@@ -1119,3 +1119,73 @@ label.haken {
 .datei .ablegen {
   flex-basis: 100%;
 }
+
+/* Belegeingang und Journal (WP 1.8) */
+.feldreihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: start;
+}
+.feldreihe > label.inline,
+.feldreihe > button {
+  align-self: end;
+  min-height: 42px;
+}
+.feldreihe > label,
+.feldreihe > .feld {
+  flex: 1 1 160px;
+}
+label.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-weight: 400;
+  font-size: 0.95rem;
+}
+fieldset.wahl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+button.symbol {
+  padding: 9px 11px;
+}
+.vergleich .betrag {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.vergleich tr.storniert td {
+  color: var(--dezent);
+  text-decoration: line-through;
+}
+.vergleich tfoot td {
+  font-weight: 600;
+  border-bottom: 0;
+}
+.tabelle-scroll {
+  overflow-x: auto;
+}
+.vorschau {
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  background: var(--fl);
+}
+img.vorschau {
+  height: auto;
+  min-height: 0;
+  object-fit: contain;
+}
+.import-liste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+}

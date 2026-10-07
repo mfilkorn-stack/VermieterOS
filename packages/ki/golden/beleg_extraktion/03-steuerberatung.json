@@ -1,0 +1,33 @@
+{
+  "beschreibung": "Steuerberatung für alle Objekte, Verwaltungskosten ohne Objekt",
+  "synthetisch": true,
+  "datei": "03-steuerberatung.pdf",
+  "daten": {
+    "titel": "Beleg",
+    "dateiname": "03-steuerberatung.pdf",
+    "objekte": [
+      {
+        "id": "o1",
+        "bezeichnung": "Musterweg 1",
+        "anschrift": "Musterweg 1, 99999 Musterstadt",
+        "einheiten": []
+      },
+      {
+        "id": "o2",
+        "bezeichnung": "Beispielstraße 7",
+        "anschrift": "Beispielstraße 7, 99999 Musterstadt",
+        "einheiten": []
+      }
+    ],
+    "objektId": null,
+    "ticket": null
+  },
+  "erwartet": {
+    "einordnung": {
+      "objekt_id": null,
+      "steuerkategorie": "verwaltungskosten",
+      "kostenart": null,
+      "umlagefaehig": false
+    }
+  }
+}

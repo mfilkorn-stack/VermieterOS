@@ -1,5 +1,5 @@
 import { aktivePostfaecherAllerMandanten, createDb } from '@vermieteros/db'
-import { kiClientAusUmgebung, sortiereNeueNachrichten } from '@vermieteros/ki'
+import { belegeAuslesen, kiClientAusUmgebung, sortiereNeueNachrichten } from '@vermieteros/ki'
 import {
   rufeAlleAb,
   s3Speicher,
@@ -12,7 +12,8 @@ import {
  *   node worker.mjs           Dauerbetrieb, Intervall ABRUF_INTERVALL_SEKUNDEN (Standard 300)
  *   node worker.mjs --einmal  ein Durchlauf, Exit-Code 1 bei Absturz (Tests, Fehlersuche)
  * Mit ANTHROPIC_API_KEY sortiert er danach neue Mails (WP 1.5), höchstens KI_SORTIERUNG_LIMIT
- * pro Durchlauf (Standard 20); KI_SORTIERUNG=aus schaltet das ab.
+ * pro Durchlauf (Standard 20); KI_SORTIERUNG=aus schaltet das ab. Danach liest er neue Belege
+ * aus (WP 1.8), höchstens KI_BELEGE_LIMIT pro Durchlauf (Standard 10).
  * Fehler einzelner Postfächer (falsches Passwort, Server weg) stehen am Postfach und in der App;
  * der Totmannschalter HEALTHCHECK_ABRUF meldet nur, ob der Worker selbst läuft.
  */
@@ -38,6 +39,7 @@ const speicher = s3Speicher(speicherKonfigAusUmgebung())
 const ctx = { db, speicher, schluessel: schluesselAusUmgebung(), log }
 const ki = process.env['KI_SORTIERUNG'] === 'aus' ? null : kiClientAusUmgebung()
 const kiLimit = Number(process.env['KI_SORTIERUNG_LIMIT'] ?? 20)
+const belegLimit = Number(process.env['KI_BELEGE_LIMIT'] ?? 10)
 
 let laeuft = true
 let wecken: (() => void) | null = null
@@ -58,6 +60,15 @@ async function durchlauf(): Promise<void> {
   const mandantIds = (await aktivePostfaecherAllerMandanten(db)).map((p) => p.mandantId)
   const s = await sortiereNeueNachrichten({ db, client: ki, mandantIds, limit: kiLimit, log })
   if (s.sortiert || s.fehler) log(`Sortierung: ${s.sortiert} sortiert, ${s.fehler} gescheitert`)
+  const b = await belegeAuslesen({
+    db,
+    client: ki,
+    quelle: speicher,
+    mandantIds,
+    limit: belegLimit,
+    log,
+  })
+  if (b.gelesen || b.fehler) log(`Belege: ${b.gelesen} ausgelesen, ${b.fehler} gescheitert`)
 }
 
 try {

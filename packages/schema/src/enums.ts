@@ -224,3 +224,56 @@ export type TicketStatus = z.infer<typeof TicketStatus>
 export const PRIORITAETEN = ['notfall', 'hoch', 'normal', 'niedrig'] as const
 export const Prioritaet = z.enum(PRIORITAETEN)
 export type Prioritaet = z.infer<typeof Prioritaet>
+
+/** Zweck eines Postfachs (WP 1.8): Post an den Vermieter oder eigene Adresse für Belege. */
+export const POSTFACH_ZWECKE = ['post', 'belege'] as const
+export const PostfachZweck = z.enum(POSTFACH_ZWECKE)
+export type PostfachZweck = z.infer<typeof PostfachZweck>
+
+/** Journal (WP 1.8): Richtung einer Buchung. */
+export const JOURNAL_RICHTUNGEN = ['ausgabe', 'einnahme'] as const
+export const JournalRichtung = z.enum(JOURNAL_RICHTUNGEN)
+export type JournalRichtung = z.infer<typeof JournalRichtung>
+
+/**
+ * Steuerkategorien, angelehnt an die Anlage V. Bewusst ohne Zeilennummern: die ändern sich mit
+ * jedem Formularjahr; die Zuordnung Kategorie → Zeile gehört zum Steuerpaket (WP 2.6).
+ */
+export const STEUERKATEGORIEN_EINNAHME = ['mieteinnahmen', 'umlagen', 'sonstige_einnahmen'] as const
+export const STEUERKATEGORIEN_AUSGABE = [
+  'erhaltungsaufwand',
+  'betriebskosten',
+  'verwaltungskosten',
+  'schuldzinsen',
+  'geldbeschaffungskosten',
+  'sonstige_werbungskosten',
+  'herstellungskosten',
+  'anschaffungskosten',
+  'nicht_abziehbar',
+] as const
+export const STEUERKATEGORIEN = [...STEUERKATEGORIEN_EINNAHME, ...STEUERKATEGORIEN_AUSGABE] as const
+export const Steuerkategorie = z.enum(STEUERKATEGORIEN)
+export type Steuerkategorie = z.infer<typeof Steuerkategorie>
+
+/** Kostenarten nach § 2 BetrKV, Nr. 1 bis 17. */
+export const BETRKV_KOSTENARTEN = [
+  'grundsteuer',
+  'wasserversorgung',
+  'entwaesserung',
+  'heizung',
+  'warmwasser',
+  'verbundene_anlagen',
+  'aufzug',
+  'strassenreinigung_muell',
+  'gebaeudereinigung',
+  'gartenpflege',
+  'beleuchtung',
+  'schornsteinreinigung',
+  'versicherung',
+  'hauswart',
+  'antenne_kabel',
+  'waeschepflege',
+  'sonstige_betriebskosten',
+] as const
+export const BetrkvKostenart = z.enum(BETRKV_KOSTENARTEN)
+export type BetrkvKostenart = z.infer<typeof BetrkvKostenart>

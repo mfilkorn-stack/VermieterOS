@@ -1,0 +1,37 @@
+{
+  "beschreibung": "Jahresrechnung Trinkwasser für ein Objekt, umlagefähig",
+  "synthetisch": true,
+  "datei": "01-wasser.pdf",
+  "daten": {
+    "titel": "Beleg",
+    "dateiname": "01-wasser.pdf",
+    "objekte": [
+      {
+        "id": "o1",
+        "bezeichnung": "Musterweg 1",
+        "anschrift": "Musterweg 1, 99999 Musterstadt",
+        "einheiten": []
+      },
+      {
+        "id": "o2",
+        "bezeichnung": "Beispielstraße 7",
+        "anschrift": "Beispielstraße 7, 99999 Musterstadt",
+        "einheiten": []
+      }
+    ],
+    "objektId": null,
+    "ticket": null
+  },
+  "erwartet": {
+    "betrag_brutto": {
+      "wert": "481,50 €",
+      "seite": 1
+    },
+    "einordnung": {
+      "objekt_id": "o1",
+      "steuerkategorie": "betriebskosten",
+      "kostenart": "wasserversorgung",
+      "umlagefaehig": true
+    }
+  }
+}

@@ -22,7 +22,9 @@ Bezeichner im Code, in der Datenbank und in Prompts verwenden genau diese Formen
 | Beleg                               | `beleg`               | Rechnung, Bescheid, Quittung als Datei mit Prüfsumme                                       |
 | Journal                             | `journal`             | Alle Einnahmen und Ausgaben pro Objekt und Jahr                                            |
 | Journaleintrag                      | `journaleintrag`      | Eine Buchung, unveränderlich, Storno statt Löschen                                         |
-| Steuerkategorie                     | `steuerkategorie`     | Zeile der Anlage V                                                                         |
+| Belegnummer                         | `belegnummer`         | Jahr der Zahlung und laufende Nummer je Mandant (2026-0042)                                |
+| Anteil                              | `anteil`              | Teil eines Journaleintrags, der auf ein Objekt (ggf. Einheit) entfällt                     |
+| Steuerkategorie                     | `steuerkategorie`     | Gruppe der Anlage V; die Zeilennummer je Formularjahr kommt mit dem Steuerpaket            |
 | Erhaltungsaufwand                   | `erhaltungsaufwand`   | Sofort abziehbare Reparaturkosten                                                          |
 | Herstellungskosten                  | `herstellungskosten`  | Aktivierungspflichtig, über AfA                                                            |
 | Anschaffungsnahe Herstellungskosten | `anschaffungsnahe_hk` | 15-%-Grenze in drei Jahren nach Kauf                                                       |

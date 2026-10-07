@@ -1,5 +1,11 @@
 import 'server-only'
-import { gemeldeteTickets, offeneNachrichten, schema, withMandant } from '@vermieteros/db'
+import {
+  gemeldeteTickets,
+  offeneBelege,
+  offeneNachrichten,
+  schema,
+  withMandant,
+} from '@vermieteros/db'
 import { sql } from 'drizzle-orm'
 import type { NavEintrag } from '@/components/navigation'
 import { db } from './db'
@@ -15,6 +21,7 @@ export type Navigation = {
 
 const MEHR_BEREICHE = [
   '/mehr',
+  '/journal',
   '/handwerker',
   '/eigentuemer',
   '/mitglieder',
@@ -25,7 +32,7 @@ const MEHR_BEREICHE = [
 
 /**
  * Menü des aktiven Mandanten mit Zählern. Zähler nur, wo sie etwas aussagen:
- * offene Mails (Handlung, Amber) und Anzahl Objekte (Menge, Grau).
+ * offene Mails, neue Tickets und offene Belege (Handlung, Amber), Anzahl Objekte (Menge, Grau).
  */
 export async function ladeNavigation(): Promise<Navigation> {
   const k = await mandantOderNull()
@@ -49,6 +56,7 @@ export async function ladeNavigation(): Promise<Navigation> {
       objekte: o?.n ?? 0,
       offen: post ? await offeneNachrichten(tx) : 0,
       tickets: await gemeldeteTickets(tx),
+      belege: await offeneBelege(tx),
     }
   })
 
@@ -75,6 +83,13 @@ export async function ladeNavigation(): Promise<Navigation> {
     icon: 'tickets',
     zaehler: { n: daten.tickets, art: 'handlung', text: 'neu gemeldet' },
   }
+  const belege: NavEintrag = {
+    href: '/belege',
+    label: 'Belege',
+    icon: 'belege',
+    zaehler: { n: daten.belege, art: 'handlung', text: 'offen' },
+  }
+  const journal: NavEintrag = { href: '/journal', label: 'Journal', icon: 'journal' }
   const verwaltung: NavEintrag[] = [
     { href: '/handwerker', label: 'Handwerker', icon: 'handwerker' },
     { href: '/eigentuemer', label: 'Eigentümer', icon: 'eigentuemer' },
@@ -86,12 +101,13 @@ export async function ladeNavigation(): Promise<Navigation> {
   ]
   return {
     mandant: { name: daten.name, rolle: ROLLEN_TEXT[k.rolle].split(' (')[0]! },
-    haupt: [objekte, ...posteingang, tickets],
+    haupt: [objekte, ...posteingang, tickets, belege, journal],
     verwaltung,
     tabs: [
       objekte,
       ...posteingang,
       tickets,
+      belege,
       { href: '/mehr', label: 'Mehr', icon: 'mehr', bereiche: MEHR_BEREICHE },
     ],
   }
