@@ -329,6 +329,18 @@ WP 2.6 steht (ADR 0013). Unter „Steuer“ steht je Objekt das Vorjahr und das 
 
 Korrekturen sind Mietausfall, Hausgeld nach BFH (gezahlt minus Zuführung zur Erhaltungsrücklage plus Entnahmen), Zinsen laut Bescheinigung und weitere Werbungskosten. Der 15-%-Wächter zeigt den Erhaltungsaufwand netto seit Anschaffung gegen die Grenze; über der Grenze ist Festschreiben nur mit Bestätigung möglich. Ergebnis und Aufteilung auf die Miteigentümer gehen auf den Cent auf. Festschreiben legt ein ZIP am Objekt ab: Übersicht (PDF), Journal (CSV für Excel), Belege nach Belegnummer, Prüfprotokoll, `manifest.sha256`. Danach sperrt die Datenbank, Korrektur per Storno mit Grund. Der Steuerberater liest und lädt herunter. Der E2E-Test rechnet ein Jahr mit Korrekturen nach, schreibt fest, prüft jede Prüfsumme im heruntergeladenen ZIP und hebt die Festschreibung wieder auf.
 
+WP 2.7 steht. „Jahresabschluss“ zeigt je Objekt eine Checkliste für das Vorjahr. Geprüft wird:
+
+- Belege gebucht (am Objekt und noch ohne Objekt)
+- Buchungen im Journal vorhanden
+- Grundsteuerbescheid gültig im Jahr
+- bei WEG: Hausgeldabrechnung für das Jahr
+- bei Darlehen (Kreditvertrag oder gebuchte Zinsen): Zinsbescheinigung
+- Betriebskostenabrechnung je vermieteter Einheit festgeschrieben und versendet
+- Steuerpaket festgeschrieben
+
+Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist dann mit der passenden Dokumentart vorbelegt (neu: „Zinsbescheinigung“). Im laufenden Jahr ist dieselbe Seite der Vollständigkeits-Wächter: Was erst nach Jahresende kommt, steht auf „nach Jahresende“; offen ist, was jetzt schon fehlt, etwa Belege, ein fehlender Grundsteuerbescheid oder 90 Tage ohne Buchung. Offene Punkte beider Jahre zählt das Menü.
+
 ### Phase 3 · Mieterhöhung (Wo 13–15)
 
 | WP  | Inhalt                                                                                                                                                                 |

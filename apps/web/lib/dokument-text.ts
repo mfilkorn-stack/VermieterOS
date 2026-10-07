@@ -22,6 +22,7 @@ export const DOKUMENT_TYP_TEXT: Record<DokumentTyp, string> = {
   kreditvertrag: 'Kreditvertrag',
   grundschuldbestellung: 'Grundschuldbestellung',
   finanzierung: 'Finanzierungsunterlagen (Selbstauskunft, Angebot)',
+  zinsbescheinigung: 'Zinsbescheinigung (Bank, Jahr)',
   teilungserklaerung: 'Teilungserklärung',
   verwaltervertrag: 'Verwaltervertrag',
   wirtschaftsplan: 'Wirtschaftsplan',
@@ -76,7 +77,7 @@ export const DOKUMENT_GRUPPEN: ReadonlyArray<readonly [string, readonly Dokument
       'objektfoto',
     ],
   ],
-  ['Finanzierung', ['kreditvertrag', 'grundschuldbestellung', 'finanzierung']],
+  ['Finanzierung', ['kreditvertrag', 'grundschuldbestellung', 'finanzierung', 'zinsbescheinigung']],
   [
     'WEG und Haus',
     [

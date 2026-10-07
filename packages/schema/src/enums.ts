@@ -95,6 +95,7 @@ export const DOKUMENT_TYPEN = [
   'kreditvertrag',
   'grundschuldbestellung',
   'finanzierung',
+  'zinsbescheinigung',
   // WEG und Haus
   'teilungserklaerung',
   'verwaltervertrag',

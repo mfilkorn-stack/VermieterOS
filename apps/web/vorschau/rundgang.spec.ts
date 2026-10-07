@@ -538,6 +538,15 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Einkünfte aus Vermietung je Objekt und Jahr: Sollmiete, Journal nach Zahlungstag, AfA, Korrekturen wie Hausgeld nach BFH und Zinsbescheinigung, Aufteilung auf die Miteigentümer. Festschreiben erzeugt das ZIP für den Steuerberater.',
   )
 
+  bereich = 'Jahresabschluss'
+  await page.goto('/jahresabschluss')
+  await expect(page.getByTestId('abschluss-objekt').first()).toBeVisible()
+  await bild(
+    page,
+    'Jahresabschluss',
+    'Checkliste je Objekt für das Vorjahr: Belege gebucht, Grundsteuerbescheid, Hausgeld- und Zinsbescheinigung, Betriebskostenabrechnung versendet, Steuerpaket festgeschrieben. Jeder offene Punkt führt zum Erledigen; im laufenden Jahr derselbe Blick als Wächter.',
+  )
+
   bereich = 'Auf dem Handy'
   const handy = await browser.newContext({
     viewport: { width: 390, height: 844 },
