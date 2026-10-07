@@ -48,24 +48,15 @@ done
 - [ ] Keine Weiterleitung beim Registrar einrichten: `.app` erzwingt HTTPS (HSTS-Preload), das Zertifikat für beide Namen holt Caddy
 - [ ] Prüfpunkt: `dig +short www.vermieteros.app` und `dig +short vermieteros.app` liefern die Server-IP. Erst dann deployen, sonst scheitert das Zertifikat
 
-## 6 · Mailversand: im MVP ausgelassen
+## 6 · Mailversand (IONOS)
 
-Der erste Livegang läuft ohne Mailversand: `SMTP_HOST` bleibt leer. Was das bedeutet:
+Absender ist das IONOS-Postfach `noreply@vermieteros.app`. Ohne Mailversand lassen sich Einladungen in den Mandanten nicht annehmen, weil dafür eine bestätigte Adresse nötig ist.
 
-| Funktion                            | ohne Mailversand                                                                                             |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Registrieren, Anmelden, 2FA         | geht; die E-Mail-Adresse bleibt unbestätigt                                                                  |
-| Objekte, Belege, Abrechnung, Steuer | geht vollständig                                                                                             |
-| Einladungen in den Mandanten        | gehen nicht: Annehmen verlangt eine bestätigte Adresse. Miteigentümer und Steuerberater erst mit Mailversand |
-| Mieterportal                        | Einladungslink erscheint in der App zum persönlichen Weitergeben                                             |
-| BK-Abrechnung an Mieter             | PDF herunterladen und per Post oder eigener Mail schicken, Versand in der App vermerken                      |
-
-Nachholen, sobald es gebraucht wird (geplant über IONOS):
-
-- [ ] Postfach `noreply@vermieteros.app` im IONOS-Kundenbereich anlegen (E-Mail → E-Mail-Adresse erstellen), Weiterleitung an die eigene Adresse, damit Antworten von Mietern ankommen
+- [x] Postfach `noreply@vermieteros.app` im IONOS-Kundenbereich angelegt
+- [ ] Weiterleitung vom Postfach an die eigene Adresse, damit Antworten von Mietern ankommen
 - [ ] DNS bei IONOS: MX (setzt IONOS selbst), genau ein SPF-Eintrag mit IONOS-Include, DKIM in den E-Mail-Einstellungen aktivieren, DMARC `v=DMARC1; p=none; rua=mailto:noreply@vermieteros.app` auf `_dmarc`
-- [ ] `.env`: `SMTP_HOST=smtp.ionos.de`, `SMTP_PORT=587`, `SMTP_BENUTZER=noreply@vermieteros.app`, `SMTP_PASSWORT=<Postfach-Passwort>`, dann `docker compose up -d web`
-- [ ] Prüfpunkt: unter „Sicherheit“ die eigene Adresse bestätigen; die Mail kommt an, Header zeigt `spf=pass` und `dkim=pass`
+- [ ] Werte für die `.env` (Schritt 8): `SMTP_HOST=smtp.ionos.de`, `SMTP_PORT=587`, `SMTP_BENUTZER=noreply@vermieteros.app`, `SMTP_PASSWORT=<Postfach-Passwort>`
+- [ ] Prüfpunkt: Testmail aus dem IONOS-Webmail an eine Gmail-Adresse, „Original anzeigen“ zeigt `SPF: PASS` und `DKIM: PASS`
 
 ## 7 · Monitoring
 
@@ -86,7 +77,7 @@ sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
 docker login ghcr.io -u <github-nutzer>       # Token (classic) nur mit read:packages
 ```
 
-`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` und `SMTP_HOST` bleiben leer.
+`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP aus Schritt 6, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` bleibt leer.
 
 - [ ] Prüfpunkt: `docker compose config -q` ohne Fehler (meldet fehlende Pflichtwerte)
 
@@ -104,11 +95,11 @@ docker compose logs --tail 50 web worker ops caddy
 
 Mit Musterdaten, noch ohne echte Mieter:
 
-- [ ] Registrieren mit der freigegebenen Adresse (ohne Mailversand bleibt sie unbestätigt, das ist im MVP so gewollt)
+- [ ] Registrieren mit der freigegebenen Adresse, Bestätigungsmail kommt an und ist nicht im Spam (Header: `spf=pass`, `dkim=pass`)
 - [ ] Registrieren mit einer anderen Adresse wird abgewiesen
 - [ ] Zwei-Faktor einrichten, ab- und wieder anmelden
 - [ ] Mandant und Musterobjekt anlegen, Dokument hochladen und wieder herunterladen (Object Storage)
-- [ ] Mieterportal-Einladung an eine eigene Zweitadresse: Link aus der App kopieren, im privaten Fenster öffnen, Anmeldung klappt
+- [ ] Mieterportal-Einladung an eine eigene Zweitadresse, Mail kommt an, Anmeldung per Link klappt
 - [ ] Backup von Hand: `docker compose run --rm ops backup`, dann `docker compose run --rm ops integritaet`; im Backup-Bucket liegt eine `.age`-Datei
 - [ ] Restore-Test einmal von Hand (BETRIEB „Von Hand sichern und prüfen“)
 - [ ] Alle Healthchecks grün; einen absichtlich ausbleiben lassen und den Alarm prüfen
@@ -117,7 +108,7 @@ Mit Musterdaten, noch ohne echte Mieter:
 ## 11 · Danach
 
 - Musterdaten-Mandant behalten oder stehen lassen; echte Daten in einem neuen Mandanten
-- Mailversand nachholen (Schritt 6), danach Miteigentümer und Steuerberater einladen (Mitglieder), Rollen prüfen
+- Miteigentümer und Steuerberater einladen (Mitglieder), Rollen prüfen
 - Postfach für den Posteingang und eine Beleg-Adresse verbinden (ohne KI läuft alles bis auf die Vorschläge)
 - KI einschalten erst nach Auftragsverarbeitungsvertrag; vorher `KI_MODELL` nur mit bestandenem Golden-Set
 - Updates: `./deploy.sh sha-<neu>` (sichert vorher automatisch)
