@@ -56,7 +56,7 @@ export type Zeile = {
 }
 
 export type Hinweis = {
-  code: 'heizkosten_zeitanteilig' | 'ohne_kosten'
+  code: 'heizkosten_zeitanteilig' | 'kabel_nebenkostenprivileg' | 'ohne_kosten'
   text: string
 }
 
@@ -87,6 +87,9 @@ const HEIZKOSTEN: ReadonlySet<BetrkvKostenart> = new Set([
   'warmwasser',
   'verbundene_anlagen',
 ])
+
+/** Letzter Tag, bis zu dem Kabel-TV-Gebühren umlagefähig waren (TKG-Novelle 2021, Übergangsfrist) */
+const KABEL_STICHTAG = '2024-06-30'
 
 function teile(iso: string): [number, number, number] {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
@@ -231,6 +234,15 @@ export function betriebskostenabrechnung(eingabe: {
       hinweise.push({
         code: 'heizkosten_zeitanteilig',
         text: 'Heizkosten bei Nutzerwechsel: Zwischenablesung oder Aufteilung nach Gradtagzahlen (§ 9b HeizKV), nicht nur nach Monaten.',
+      })
+    }
+    if (
+      n.zeitraum.bis > KABEL_STICHTAG &&
+      positionen.some((p) => p.kostenart === 'antenne_kabel' && p.gesamtCent > 0)
+    ) {
+      hinweise.push({
+        code: 'kabel_nebenkostenprivileg',
+        text: 'Kabel-TV-Anschluss ist seit 01.07.2024 nicht mehr umlagefähig (Ende des Nebenkostenprivilegs); umlegen nur noch Betriebskosten einer Gemeinschaftsantenne oder Kosten bis 30.06.2024.',
       })
     }
     if (positionen.length === 0)
