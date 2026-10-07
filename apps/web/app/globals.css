@@ -1061,3 +1061,20 @@ body > main {
   margin: 0 auto;
   padding: 40px 16px 64px;
 }
+
+/* KI-Vorschläge (WP 1.5) */
+.entwurf {
+  padding: 14px 16px;
+  margin: 12px 0;
+  background: var(--fl-2);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-klein);
+}
+.ki-hinweis ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--gelb-text);
+}
+.karte .aktionen form {
+  display: inline-grid;
+}

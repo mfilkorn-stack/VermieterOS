@@ -24,4 +24,6 @@ export const E2E = {
   imap: { host: '127.0.0.1', port: 3143 },
   smtp: { host: '127.0.0.1', port: 3025 },
   port: Number(process.env['E2E_PORT'] ?? 3100),
+  /** KI-Attrappe statt Anthropic-API (e2e/ki-attrappe.ts) */
+  ki: { port: 3198, url: 'http://127.0.0.1:3198', schluessel: 'e2e-attrappe' },
 }

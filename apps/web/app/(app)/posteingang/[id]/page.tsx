@@ -1,7 +1,9 @@
-import { ladeNachricht, ladeZuordnungsKandidaten } from '@vermieteros/db'
+import { juengsterKiVorschlag, ladeNachricht, ladeZuordnungsKandidaten } from '@vermieteros/db'
+import { nachrichtFakten } from '@vermieteros/ki'
 import { CircleDot, Download, FileText, Link2, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { AntwortKarte, EinschaetzungKarte } from '@/components/ki-karten'
 import { Status } from '@/components/status'
 import { ZuordnenFormular } from '@/components/zuordnen-formular'
 import { zeitpunktAnzeige } from '@/lib/format'
@@ -12,11 +14,20 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
   const { id } = await params
   if (!(await darf({ post: ['lesen'] }))) redirect('/')
   const zuordnen = await darf({ post: ['zuordnen'] })
-  const { n, kandidaten } = await mitMandant(async (tx) => ({
-    n: await ladeNachricht(tx, id),
-    kandidaten: await ladeZuordnungsKandidaten(tx),
-  }))
-  if (!n) notFound()
+  const daten = await mitMandant(async (tx) => {
+    const n = await ladeNachricht(tx, id)
+    if (!n) return null
+    const bezug = { entitaet: 'nachricht', id }
+    return {
+      n,
+      kandidaten: await ladeZuordnungsKandidaten(tx),
+      sortierung: await juengsterKiVorschlag(tx, 'sortierung', bezug),
+      antwort: await juengsterKiVorschlag(tx, 'antwortvorschlag', bezug),
+      fakten: await nachrichtFakten(tx, id),
+    }
+  })
+  if (!daten) notFound()
+  const { n, kandidaten, sortierung, antwort, fakten } = daten
   const kandidatNach = new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k]))
   const aktuell = n.zuordnungen.at(-1)
   const mv = aktuell?.mietverhaeltnisId ? kandidatNach.get(aktuell.mietverhaeltnisId) : undefined
@@ -99,12 +110,22 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
           </div>
         </div>
         <div>
+          <EinschaetzungKarte nachrichtId={n.id} v={sortierung} darf={zuordnen} />
           <div className="karte">
             <h2>Text</h2>
             <pre className="mailtext" data-testid="nachricht-text">
               {n.text || '(kein Textteil; die vollständige Mail steht in der .eml)'}
             </pre>
           </div>
+
+          <AntwortKarte
+            nachrichtId={n.id}
+            v={antwort}
+            fakten={fakten}
+            darf={zuordnen}
+            an={n.vonAdresse}
+            betreff={n.betreff}
+          />
 
           <div className="karte">
             <h2>Dateien</h2>

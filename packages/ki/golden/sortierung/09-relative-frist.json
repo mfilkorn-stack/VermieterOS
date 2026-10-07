@@ -1,0 +1,22 @@
+{
+  "beschreibung": "Relative Frist muss in ein Datum umgerechnet werden",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Schlüssel für Ablesung",
+    "text": "Hallo, der Ableser kommt nächste Woche. Bitte geben Sie mir bis Freitag Bescheid, ob Sie einen Schlüssel hinterlegen.",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "schluessel_zugang",
+    "frist": {
+      "datum": "2026-11-06"
+    }
+  }
+}

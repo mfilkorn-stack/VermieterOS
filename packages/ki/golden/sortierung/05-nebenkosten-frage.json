@@ -1,0 +1,21 @@
+{
+  "beschreibung": "Rückfrage zur Abrechnung",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Frage zur Betriebskostenabrechnung",
+    "text": "Hallo, in der Abrechnung ist die Position Gartenpflege viel höher als letztes Jahr. Können Sie mir die Belege zeigen?",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "nebenkosten",
+    "dringlichkeit": "normal",
+    "frist": null
+  }
+}

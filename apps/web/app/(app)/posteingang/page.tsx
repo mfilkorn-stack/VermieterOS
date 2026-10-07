@@ -1,7 +1,13 @@
-import { ladePosteingang, ladeZuordnungsKandidaten, offeneNachrichten } from '@vermieteros/db'
+import {
+  geltendeKiVorschlaege,
+  ladePosteingang,
+  ladeZuordnungsKandidaten,
+  offeneNachrichten,
+} from '@vermieteros/db'
 import { CircleDot, Link2, Mail, Paperclip, Search, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { SortierBadges, sortierungAus } from '@/components/ki-sortierung'
 import { Status } from '@/components/status'
 import { ZuordnenFormular } from '@/components/zuordnen-formular'
 import { zeitpunktAnzeige } from '@/lib/format'
@@ -20,11 +26,19 @@ export default async function PosteingangSeite({
   const alle = sp.alle === '1' || suche !== ''
   const zuordnen = await darf({ post: ['zuordnen'] })
   const postfaecher = await darf({ post: ['postfaecher'] })
-  const { eintraege, kandidaten, offen } = await mitMandant(async (tx) => ({
-    eintraege: await ladePosteingang(tx, { nurOffen: !alle, suche }),
-    kandidaten: await ladeZuordnungsKandidaten(tx),
-    offen: await offeneNachrichten(tx),
-  }))
+  const { eintraege, kandidaten, offen, sortierungen } = await mitMandant(async (tx) => {
+    const eintraege = await ladePosteingang(tx, { nurOffen: !alle, suche })
+    return {
+      eintraege,
+      kandidaten: await ladeZuordnungsKandidaten(tx),
+      offen: await offeneNachrichten(tx),
+      sortierungen: await geltendeKiVorschlaege(
+        tx,
+        'sortierung',
+        eintraege.map((n) => n.id),
+      ),
+    }
+  })
   const kandidatNach = new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k]))
   const zurueck = suche
     ? `/posteingang?q=${encodeURIComponent(suche)}`
@@ -113,6 +127,9 @@ export default async function PosteingangSeite({
                   </span>
                 ) : null}
               </p>
+              {sortierungen.has(n.id) ? (
+                <SortierBadges s={sortierungAus(sortierungen.get(n.id))!} />
+              ) : null}
               <p className="meta" data-testid="zuordnung">
                 {mv && z ? (
                   <>

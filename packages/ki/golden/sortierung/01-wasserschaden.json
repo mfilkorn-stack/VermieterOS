@@ -1,0 +1,21 @@
+{
+  "beschreibung": "Wasser tritt aus der Decke im Bad aus",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Wasser kommt durch die Decke!!",
+    "text": "Hallo, im Bad tropft seit einer Stunde Wasser aus der Decke, es wird immer mehr. Bitte melden Sie sich sofort.",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "heizung_wasser",
+    "dringlichkeit": "notfall",
+    "frist": null
+  }
+}

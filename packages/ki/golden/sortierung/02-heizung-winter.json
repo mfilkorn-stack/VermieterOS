@@ -1,0 +1,20 @@
+{
+  "beschreibung": "Heizung im November ausgefallen",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Heizung kalt",
+    "text": "Guten Tag, seit gestern Abend sind alle Heizkörper kalt, draußen hat es nachts Frost. Können Sie jemanden schicken?",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "heizung_wasser",
+    "dringlichkeit": "notfall"
+  }
+}

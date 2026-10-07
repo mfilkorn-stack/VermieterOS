@@ -102,6 +102,12 @@ export async function erzeugeVorschlag<D, A extends Record<string, unknown>>(
     throw new EntwurfAbgelehnt(befunde)
   }
 
+  const fachlich = aufgabe.pruefe?.(geprueft.data, kontext.daten) ?? []
+  if (fachlich.length) {
+    await protokoll({ ...aufruf, ok: false, fehler: 'pruefung' })
+    throw new KiFehler(`Ausgabe abgelehnt: ${fachlich.join('; ')}`, 'abgelehnt')
+  }
+
   const tage = aufgabe.ablaufTage ?? STANDARD_ABLAUF_TAGE
   const id = await withMandant(u.db, u.mandantId, async (tx) => {
     await protokolliereKiAufruf(tx, {

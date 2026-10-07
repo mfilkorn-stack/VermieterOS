@@ -1,0 +1,21 @@
+{
+  "beschreibung": "Schimmel im Schlafzimmer, keine Eile genannt",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Schimmel",
+    "text": "Hallo, in der Ecke im Schlafzimmer bildet sich Schimmel. Fotos hänge ich an.",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": ["ecke.jpg"],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "schaden",
+    "dringlichkeit": "hoch",
+    "frist": null
+  }
+}

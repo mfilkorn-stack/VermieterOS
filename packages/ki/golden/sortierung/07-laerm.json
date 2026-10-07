@@ -1,0 +1,20 @@
+{
+  "beschreibung": "Beschwerde über Nachbarn",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Lärm über uns",
+    "text": "Hallo, die Nachbarn im zweiten Stock feiern jedes Wochenende bis spät in die Nacht. Können Sie bitte mit ihnen sprechen?",
+    "absender": "Mieterin A.",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": [],
+    "zuordnung": {
+      "einheit": "Wohnung EG links",
+      "objekt": "Haus am Park"
+    }
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "nachbarn_hausordnung",
+    "dringlichkeit": "normal"
+  }
+}

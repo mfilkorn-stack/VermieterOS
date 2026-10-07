@@ -1,0 +1,19 @@
+{
+  "beschreibung": "Angebot eines Handwerkers",
+  "synthetisch": true,
+  "daten": {
+    "betreff": "Angebot Fenstertausch",
+    "text": "Sehr geehrte Damen und Herren, anbei unser Angebot für den Austausch der Fenster. Das Angebot gilt bis zum 30.11.2026.",
+    "absender": "Fensterbau GmbH",
+    "eingegangen": "2026-11-03T08:15:00Z",
+    "anhaenge": ["angebot.pdf"],
+    "zuordnung": null
+  },
+  "platzhalter": {},
+  "erwartet": {
+    "kategorie": "handwerker_termin",
+    "frist": {
+      "datum": "2026-11-30"
+    }
+  }
+}

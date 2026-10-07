@@ -150,20 +150,20 @@ export type KiVorschlag = {
   entscheidungGrund: string | null
 }
 
-export async function ladeKiVorschlag(tx: Tx, id: string): Promise<KiVorschlag | null> {
-  const [r] = await tx.execute<{
-    id: string
-    aufgabe: string
-    bezug_entitaet: string
-    bezug_id: string
-    stempel: Record<string, unknown>
-    ausgabe: Record<string, unknown>
-    ablauf_am: string
-    erfasst_am: string
-    status: KiStatus
-    entscheidung_grund: string | null
-  }>(sql`SELECT * FROM ki_vorschlaege_aktuell WHERE id = ${id}`)
-  if (!r) return null
+type VorschlagZeile = {
+  id: string
+  aufgabe: string
+  bezug_entitaet: string
+  bezug_id: string
+  stempel: Record<string, unknown>
+  ausgabe: Record<string, unknown>
+  ablauf_am: string
+  erfasst_am: string
+  status: KiStatus
+  entscheidung_grund: string | null
+}
+
+function alsVorschlag(r: VorschlagZeile): KiVorschlag {
   return {
     id: r.id,
     aufgabe: r.aufgabe,
@@ -175,6 +175,13 @@ export async function ladeKiVorschlag(tx: Tx, id: string): Promise<KiVorschlag |
     status: r.status,
     entscheidungGrund: r.entscheidung_grund,
   }
+}
+
+export async function ladeKiVorschlag(tx: Tx, id: string): Promise<KiVorschlag | null> {
+  const [r] = await tx.execute<VorschlagZeile>(
+    sql`SELECT * FROM ki_vorschlaege_aktuell WHERE id = ${id}`,
+  )
+  return r ? alsVorschlag(r) : null
 }
 
 /** Jüngster Vorschlag einer Aufgabe zu einem Bezug, z. B. der Antwortvorschlag zu einer Mail. */
@@ -225,4 +232,48 @@ export async function entscheideKiVorschlag(
     akteur: e.akteur,
     payload: { status: e.status, grund: e.grund ?? null },
   })
+}
+
+/**
+ * Nachrichten der letzten Tage ohne Vorschlag dieser Aufgabe, für die automatische Sortierung
+ * im Worker. Nach `maxFehlversuche` gescheiterten Aufrufen bleibt eine Nachricht liegen,
+ * statt bei jedem Durchlauf erneut Kosten zu verursachen.
+ */
+export async function nachrichtenOhneVorschlag(
+  tx: Tx,
+  aufgabe: string,
+  o: { seitTagen: number; limit: number; maxFehlversuche: number },
+): Promise<string[]> {
+  const rows = await tx.execute<{ id: string }>(sql`
+    SELECT n.id FROM nachrichten n
+    WHERE n.empfangen_am > now() - make_interval(days => ${o.seitTagen})
+      AND NOT EXISTS (
+        SELECT 1 FROM ki_vorschlaege v
+        WHERE v.aufgabe = ${aufgabe} AND v.bezug_entitaet = 'nachricht' AND v.bezug_id = n.id)
+      AND (SELECT count(*) FROM ereignisse e
+           WHERE e.typ = 'ki_aufruf'
+             AND e.payload->'bezug'->>'id' = n.id::text
+             AND e.payload->>'promptVersion' LIKE ${`${aufgabe}@%`}
+             AND e.payload->>'ok' = 'false') < ${o.maxFehlversuche}
+    ORDER BY n.empfangen_am, n.id
+    LIMIT ${o.limit}`)
+  return rows.map((r) => r.id)
+}
+
+/** Jüngster offener oder bestätigter Vorschlag einer Aufgabe je Bezug, z. B. für eine Liste. */
+export async function geltendeKiVorschlaege(
+  tx: Tx,
+  aufgabe: string,
+  bezugIds: string[],
+): Promise<Map<string, KiVorschlag>> {
+  if (bezugIds.length === 0) return new Map()
+  const rows = await tx.execute<VorschlagZeile>(sql`
+    SELECT DISTINCT ON (bezug_id) * FROM ki_vorschlaege_aktuell
+    WHERE aufgabe = ${aufgabe} AND status IN ('offen', 'bestaetigt')
+      AND bezug_id IN (${sql.join(
+        bezugIds.map((i) => sql`${i}::uuid`),
+        sql`, `,
+      )})
+    ORDER BY bezug_id, erfasst_am DESC, id DESC`)
+  return new Map(rows.map((r) => [r.bezug_id, alsVorschlag(r)]))
 }

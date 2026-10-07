@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import postgres from 'postgres'
+import { starteKiAttrappe } from './ki-attrappe'
 import { E2E } from './umgebung'
 
 /**
@@ -46,4 +47,7 @@ export default async function globalSetup() {
   } finally {
     await o2.end()
   }
+
+  const ki = await starteKiAttrappe(E2E.ki.port)
+  return () => new Promise<void>((r) => ki.close(() => r()))
 }

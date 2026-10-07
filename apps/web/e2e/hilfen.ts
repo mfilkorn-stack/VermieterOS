@@ -64,6 +64,8 @@ export function workerEinmal() {
       S3_BUCKET: E2E.s3.bucket,
       S3_ACCESS_KEY: E2E.s3.accessKey,
       S3_SECRET_KEY: E2E.s3.secretKey,
+      ANTHROPIC_API_KEY: E2E.ki.schluessel,
+      ANTHROPIC_BASE_URL: E2E.ki.url,
     },
     stdio: 'inherit',
   })
