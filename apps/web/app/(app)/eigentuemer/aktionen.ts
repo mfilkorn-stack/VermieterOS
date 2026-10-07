@@ -24,6 +24,10 @@ export async function eigentuemerAnlegen(_: FormStatus, d: FormData): Promise<Fo
       rolle: 'miteigentuemer',
       vorname: text(d, 'vorname'),
       nachname: pflicht(d, 'nachname', 'Nachname'),
+      strasse: text(d, 'strasse'),
+      hausnummer: text(d, 'hausnummer'),
+      plz: text(d, 'plz'),
+      ort: text(d, 'ort'),
     })
     if (!person.success) throw new Eingabefehler(zodText(person.error))
     const anteil = anteilAus(d)

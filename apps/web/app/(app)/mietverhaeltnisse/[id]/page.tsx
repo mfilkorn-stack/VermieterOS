@@ -180,13 +180,22 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
         <div className="zeile">
           <h2>Dokumente</h2>
           {schreiben ? (
-            <Link
-              className="knopf zweit"
-              href={`/dokumente/neu?mietverhaeltnis=${id}`}
-              data-testid="mv-dokument-neu"
-            >
-              Dokument hochladen
-            </Link>
+            <span className="aktionen">
+              <Link
+                className="knopf zweit"
+                href={`/mietverhaeltnisse/${id}/schreiben`}
+                data-testid="mv-schreiben"
+              >
+                Schreiben erstellen
+              </Link>
+              <Link
+                className="knopf zweit"
+                href={`/dokumente/neu?mietverhaeltnis=${id}`}
+                data-testid="mv-dokument-neu"
+              >
+                Dokument hochladen
+              </Link>
+            </span>
           ) : null}
         </div>
         <DokumentListe dokumente={dokumente} />

@@ -82,6 +82,7 @@ export const DOKUMENT_TYPEN = [
   'hausgeldabrechnung',
   'beleg',
   'mietspiegel',
+  'bescheinigung',
   'sonstiges',
 ] as const
 export const DokumentTyp = z.enum(DOKUMENT_TYPEN)

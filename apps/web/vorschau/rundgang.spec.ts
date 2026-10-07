@@ -297,6 +297,16 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Mails und Telefonnotizen in einer Zeitleiste; Notizen lassen sich nachvollziehbar korrigieren.',
   )
 
+  const verlaufUrl = page.url()
+  await page.getByTestId('mv-schreiben').click()
+  await expect(page.getByTestId('schreiben-wohnungsgeber')).toBeVisible()
+  await bild(
+    page,
+    'Standardschreiben',
+    'Wohnungsgeberbestätigung, Mietschuldenfreiheit und Vermieterbescheinigung, vorbelegt aus den Stammdaten. Das PDF liegt danach mit Prüfsumme am Mietverhältnis.',
+  )
+  await page.goto(verlaufUrl)
+
   bereich = 'Dokumente'
   await page.getByTestId('mv-dokument-neu').click()
   const up = page.getByTestId('dokument-hochladen')

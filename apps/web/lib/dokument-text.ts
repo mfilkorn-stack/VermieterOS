@@ -13,6 +13,7 @@ export const DOKUMENT_TYP_TEXT: Record<DokumentTyp, string> = {
   hausgeldabrechnung: 'Hausgeldabrechnung',
   beleg: 'Beleg',
   mietspiegel: 'Mietspiegel',
+  bescheinigung: 'Bescheinigung (ausgestellt)',
   sonstiges: 'Sonstiges',
 }
 
