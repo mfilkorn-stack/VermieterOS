@@ -79,6 +79,10 @@ Der Wert kommt als `POSTFACH_SCHLUESSEL` in die `.env` und zusätzlich in den Pa
 
 Dokumente liegen wie Mails im Object Storage (`mandanten/<id>/dokument/…`), unveränderlich und mit Prüfsumme; das Backup nimmt sie mit. Uploads gehen bis 20 MB (`serverActions.bodySizeLimit` in `next.config.ts`); Caddy begrenzt davor nicht. Bei Ablehnungen durch die Sicherheitsfilter beantwortet serverseitig ein anderes Claude-Modell die Anfrage (`fallbacks: "default"`); der Auftragsverarbeitungsvertrag muss das abdecken.
 
+### Belege
+
+Eine eigene Beleg-Adresse ist ein Postfach mit Zweck „Belege“ (eigene Adresse oder eigener Ordner per Regel im Mailprogramm). Ihre Mails erscheinen nicht im Posteingang; jeder PDF- oder Bild-Anhang wird ein Beleg, dieselbe Datei nur einmal. Mit KI-Schlüssel liest der Worker neue Belege der letzten 30 Tage aus, höchstens `KI_BELEGE_LIMIT` (Standard 10) pro Durchlauf, nach zwei Fehlversuchen nicht mehr automatisch. Belege sind steuerlich aufbewahrungspflichtig (mindestens zehn Jahre); sie liegen unveränderlich im Object Storage und werden nie gelöscht, auch nicht nach „Aus dem Eingang nehmen“.
+
 ### Monitoring
 
 Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `.env` eintragen:

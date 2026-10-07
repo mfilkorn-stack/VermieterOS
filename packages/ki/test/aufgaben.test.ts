@@ -26,11 +26,17 @@ describe('Prompt-Register und Golden-Set', () => {
       d.isDirectory(),
     )) {
       expect(namen).toContain(ordner.name)
-      for (const f of readdirSync(join(GOLDEN, ordner.name))) {
+      const dateien = readdirSync(join(GOLDEN, ordner.name))
+      for (const f of dateien.filter((x) => x.endsWith('.json'))) {
         const fall = GoldenFall.parse(
           JSON.parse(readFileSync(join(GOLDEN, ordner.name, f), 'utf8')),
         )
-        expect(fall.daten, `${ordner.name}/${f}`).toMatchObject({ betreff: expect.any(String) })
+        if (fall.datei) {
+          // Fälle mit Datei (Belege, Verträge): die Datei liegt daneben.
+          expect(dateien, `${ordner.name}/${f}`).toContain(fall.datei)
+        } else {
+          expect(fall.daten, `${ordner.name}/${f}`).toMatchObject({ betreff: expect.any(String) })
+        }
       }
     }
   })

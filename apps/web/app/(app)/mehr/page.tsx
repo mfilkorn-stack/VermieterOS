@@ -7,6 +7,11 @@ import { abmelden } from '../../(oeffentlich)/aktionen'
 /** Zweitrangige Bereiche für die Tab-Leiste auf dem Handy. */
 export default async function MehrSeite() {
   const nav = await ladeNavigation()
+  // Hauptbereiche ohne eigenen Tab (Journal) stehen hier vor der Verwaltung.
+  const eintraege = [
+    ...nav.haupt.filter((e) => !nav.tabs.some((t) => t.href === e.href)),
+    ...nav.verwaltung,
+  ]
   return (
     <>
       <div className="seitenkopf">
@@ -20,7 +25,7 @@ export default async function MehrSeite() {
         </div>
       </div>
       <ul className="mehr-liste">
-        {nav.verwaltung.map((e) => (
+        {eintraege.map((e) => (
           <li key={e.href}>
             <Link href={e.href}>
               <NavIcon name={e.icon} size={20} />

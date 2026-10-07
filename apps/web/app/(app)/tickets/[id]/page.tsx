@@ -1,15 +1,18 @@
-import { ladeTicket, listeHandwerker, ticketVerlauf } from '@vermieteros/db'
+import { belegeZuTicket, ladeTicket, listeHandwerker, ticketVerlauf } from '@vermieteros/db'
 import { TICKET_STATUS } from '@vermieteros/schema'
-import { Mail, MapPin } from 'lucide-react'
+import { Mail, MapPin, ReceiptText } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { BelegImport } from '@/components/beleg-import'
 import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { optionen, PRIORITAET_TEXT, TICKET_STATUS_TEXT } from '@/lib/betrieb-text'
-import { zeitpunktAnzeige } from '@/lib/format'
+import { euroAnzeige, zeitpunktAnzeige } from '@/lib/format'
+import { kiEingerichtet } from '@/lib/ki'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { isoZuBerlin } from '@/lib/zeit'
+import { belegAuslesenDirekt, belegHochladen } from '../../belege/aktionen'
 import { ticketAktualisieren } from '../aktionen'
 
 export default async function TicketSeite({ params }: { params: Promise<{ id: string }> }) {
@@ -20,13 +23,14 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
     return {
       t,
       verlauf: await ticketVerlauf(tx, id),
+      rechnungen: await belegeZuTicket(tx, id),
       handwerker: (await listeHandwerker(tx)).filter(
         (h) => h.objektIds.length === 0 || h.objektIds.includes(t.objektId),
       ),
     }
   })
   if (!d) notFound()
-  const { t, verlauf, handwerker } = d
+  const { t, verlauf, handwerker, rechnungen } = d
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const auftragnehmer = handwerker.find((h) => h.id === t.auftragnehmerId)
   const ort = t.einheit ? `${t.objekt} · ${t.einheit}` : t.objekt
@@ -136,11 +140,45 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
                   </a>
                 </p>
               ) : null}
-              <p className="leise">
-                Die Rechnung kommt mit dem Belegeingang (WP 1.8) direkt als Beleg ins Journal.
-              </p>
             </div>
           ) : null}
+          <div className="karte" data-testid="ticket-rechnungen">
+            <h2>
+              <ReceiptText
+                size={18}
+                aria-hidden
+                style={{ verticalAlign: '-3px', marginRight: 6 }}
+              />
+              Rechnung
+            </h2>
+            {rechnungen.length > 0 ? (
+              <ul className="import-liste">
+                {rechnungen.map((r) => (
+                  <li key={r.id}>
+                    <Link href={`/belege/${r.id}`}>{r.titel}</Link>{' '}
+                    <span className="leise">
+                      {r.buchung
+                        ? `gebucht als ${r.buchung.belegnummer}, ${euroAnzeige(r.buchung.bruttoCent)}`
+                        : 'noch nicht gebucht'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="leise">
+                Die Rechnung des Handwerkers hier ablegen: Sie landet als Beleg im Belegeingang, mit
+                Objekt und Handwerker aus dem Ticket.
+              </p>
+            )}
+            {schreiben ? (
+              <BelegImport
+                hochladen={belegHochladen}
+                auslesen={belegAuslesenDirekt}
+                ki={kiEingerichtet()}
+                ticketId={t.id}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </>

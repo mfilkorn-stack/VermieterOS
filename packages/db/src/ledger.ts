@@ -14,6 +14,7 @@ import {
   ereignisse,
   handwerker,
   handwerkerVersionen,
+  journalEintraege,
   mandanten,
   mietkonditionen,
   mietkonditionVersionen,
@@ -265,7 +266,7 @@ export async function legeMandantAn(
 }
 
 export type StornoParams = {
-  entitaet: EntitaetName | 'zaehlerstand'
+  entitaet: EntitaetName | 'zaehlerstand' | 'journaleintrag'
   mandantId: string
   versionId: string
   akteur: Akteur
@@ -282,7 +283,9 @@ export async function storniereVersion(
 
   const tabelle = (params.entitaet === 'zaehlerstand'
     ? zaehlerstaende
-    : ENTITAETEN[params.entitaet].versionen) as unknown as typeof objektVersionen
+    : params.entitaet === 'journaleintrag'
+      ? journalEintraege
+      : ENTITAETEN[params.entitaet].versionen) as unknown as typeof objektVersionen
   const [v] = await tx
     .select({ id: tabelle.id })
     .from(tabelle)

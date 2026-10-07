@@ -4,7 +4,11 @@ import { join, resolve } from 'node:path'
 import nodemailer from 'nodemailer'
 import { konto, registrieren, workerEinmal } from '../e2e/hilfen'
 import { E2E } from '../e2e/umgebung'
-import { musterMietvertrag } from '../../../packages/ki/src/testpdf'
+import {
+  musterMietvertrag,
+  musterRechnung,
+  musterSteuerberatung,
+} from '../../../packages/ki/src/testpdf'
 import { schreibeGalerie, type Bild } from './galerie'
 
 /**
@@ -364,6 +368,61 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     'Ticket',
     'Aus der Mail angelegt, vorbefüllt aus Zuordnung und Einschätzung. Jeder Statuswechsel steht im Verlauf; der Auftrag geht per Mail an den Handwerker.',
   )
+  bereich = 'Belege und Journal'
+  const ticketUrl = page.url()
+  const rechnung = page.getByTestId('ticket-rechnungen').getByTestId('beleg-import')
+  await rechnung.getByLabel(/Dateien/).setInputFiles({
+    name: 'Rechnung Stadtwerke.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(musterRechnung()),
+  })
+  await rechnung.getByRole('button', { name: 'Hochladen und auslesen' }).click()
+  await expect(rechnung.locator('li[data-stand="fertig"]')).toHaveCount(1)
+  await page.goto('/belege')
+  const sammel = page.getByTestId('beleg-import')
+  await sammel.getByLabel(/Dateien/).setInputFiles({
+    name: 'Steuerberatung 2025.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(musterSteuerberatung()),
+  })
+  await sammel.getByRole('button', { name: 'Hochladen und auslesen' }).click()
+  await expect(sammel.locator('li[data-stand="fertig"]')).toHaveCount(1)
+  await expect(page.getByTestId('belege-offen').getByTestId('beleg')).toHaveCount(2)
+  await bild(
+    page,
+    'Belegeingang',
+    'Rechnungen per Upload, Sammel-Import, Beleg-Adresse oder direkt am Ticket. Die KI liest beim Eingang mit; doppelte Dateien erkennt die Prüfsumme.',
+  )
+  await page.getByTestId('belege-offen').getByRole('link', { name: 'Rechnung Stadtwerke' }).click()
+  await expect(page.getByTestId('beleg-werte')).toBeVisible()
+  await bild(
+    page,
+    'Beleg auslesen und buchen',
+    'Vorschau links, rechts die ausgelesenen Werte mit Fundstelle. Vorbelegt ist nur, was wörtlich im PDF steht; Objekt kommt aus dem Ticket, die Kategorie als Vorschlag. Ein Klick bucht und öffnet den nächsten Beleg.',
+  )
+  await page
+    .getByTestId('beleg-buchen')
+    .getByRole('button', { name: 'Bestätigen und buchen' })
+    .click()
+  await expect(page.getByTestId('beleg-titel')).toHaveText('Steuerberatung 2025')
+  const zweiter = page.getByTestId('beleg-buchen')
+  await zweiter.getByLabel('Zahlungsdatum').fill('2026-03-25')
+  await zweiter
+    .getByTestId('anteil')
+    .first()
+    .locator('select[name="anteilObjekt"]')
+    .selectOption({ index: 1 })
+  await zweiter.getByRole('button', { name: 'Bestätigen und buchen' }).click()
+  await expect(page.getByTestId('belege-fertig')).toBeVisible()
+  await page.goto('/journal?jahr=2026')
+  await expect(page.getByTestId('journal-eintrag')).toHaveCount(2)
+  await bild(
+    page,
+    'Journal',
+    'Alle Einnahmen und Ausgaben nach Zahlungsdatum, mit Belegnummer und Summen je Kategorie. Einträge sind unveränderlich; Fehler werden storniert und neu gebucht.',
+  )
+  await page.goto(ticketUrl)
+
   await page.goto(akte)
   await bild(
     page,

@@ -12,6 +12,19 @@ import { GoldenFall, laufeGoldenSet } from './lauf'
  */
 const ORDNER = resolve(import.meta.dirname, '../../golden')
 
+/** Lädt die Datei eines Falls als `daten.datei`, bei PDFs mit Text je Seite (`daten.seiten`). */
+async function mitDatei(daten: unknown, pfad: string): Promise<unknown> {
+  const datei = new Uint8Array(readFileSync(pfad))
+  const pdf = pfad.endsWith('.pdf')
+  const mime = pdf ? 'application/pdf' : pfad.endsWith('.png') ? 'image/png' : 'image/jpeg'
+  return {
+    ...(daten as Record<string, unknown>),
+    datei,
+    mime,
+    seiten: pdf ? await seitenTexte(datei) : [],
+  }
+}
+
 async function main(): Promise<number> {
   const client = kiClientAusUmgebung()
   if (!client) {
@@ -29,13 +42,14 @@ async function main(): Promise<number> {
       console.log(`${aufgabe.name}: kein Ordner golden/${aufgabe.name}, übersprungen`)
       continue
     }
-    const faelle = readdirSync(dir)
-      .filter((f) => f.endsWith('.json'))
-      .sort()
-      .map((f) => ({
-        name: f,
-        fall: GoldenFall.parse(JSON.parse(readFileSync(join(dir, f), 'utf8'))),
-      }))
+    const faelle = []
+    for (const f of readdirSync(dir)
+      .filter((x) => x.endsWith('.json'))
+      .sort()) {
+      const fall = GoldenFall.parse(JSON.parse(readFileSync(join(dir, f), 'utf8')))
+      if (fall.datei) fall.daten = await mitDatei(fall.daten, join(dir, fall.datei))
+      faelle.push({ name: f, fall })
+    }
     const r = await laufeGoldenSet(aufgabe, faelle, client, modell)
     gelaufen++
     ok &&= r.ok

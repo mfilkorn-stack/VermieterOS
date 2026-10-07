@@ -1,5 +1,16 @@
 import type { DokumentStatus, DokumentTyp } from '@vermieteros/schema'
-import { bigint, date, integer, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import {
+  bigint,
+  boolean,
+  date,
+  integer,
+  pgTable,
+  text,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
+import { tickets } from './betrieb'
+import { anhaenge } from './post'
 import { mietverhaeltnisse } from './mietverhaeltnisse'
 import { objekte } from './objekte'
 import { identitaetsSpalten, versionsSpalten } from './versionierung'
@@ -7,7 +18,8 @@ import { identitaetsSpalten, versionsSpalten } from './versionierung'
 /**
  * Die Datei ist Teil der Identität: unveränderlich, mit Prüfsumme, im Object Storage.
  * Versioniert wird der fachliche Status (gültig, ersetzt, abgelaufen) und die Einordnung.
- * Check-Constraint (Migration): objekt_id oder mietverhaeltnis_id muss gesetzt sein.
+ * Check-Constraint (Migration): objekt_id oder mietverhaeltnis_id muss gesetzt sein, außer bei
+ * Belegen im Belegeingang (WP 1.8); deren Zuordnung entsteht beim Buchen über die Anteile.
  */
 export const dokumente = pgTable('dokumente', {
   ...identitaetsSpalten,
@@ -18,6 +30,9 @@ export const dokumente = pgTable('dokumente', {
   dateiname: text('dateiname').notNull(),
   mime: text('mime').notNull(),
   groesseBytes: bigint('groesse_bytes', { mode: 'number' }).notNull(),
+  beleg: boolean('beleg').notNull().default(false),
+  ticketId: uuid('ticket_id').references(() => tickets.id),
+  anhangId: uuid('anhang_id').references(() => anhaenge.id),
 })
 
 export const dokumentVersionen = pgTable(

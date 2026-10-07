@@ -15,6 +15,9 @@ export type DokumentZeile = {
   dateiname: string
   mime: string
   groesseBytes: number
+  beleg: boolean
+  ticketId: string | null
+  anhangId: string | null
   typ: DokumentTyp
   status: DokumentStatus
   titel: string
@@ -30,6 +33,7 @@ const SELECT = sql`
   SELECT d.id, d.objekt_id AS "objektId", d.mietverhaeltnis_id AS "mietverhaeltnisId",
          d.datei_hash AS "dateiHash", d.speicher_schluessel AS "speicherSchluessel",
          d.dateiname, d.mime, d.groesse_bytes::int AS "groesseBytes",
+         d.beleg, d.ticket_id AS "ticketId", d.anhang_id AS "anhangId",
          a.typ, a.status, a.titel, a.dokumentdatum::text AS dokumentdatum,
          a.gueltig_bis::text AS "gueltigBis", a.ersetzt_durch AS "ersetztDurch", a.notizen,
          a.gueltig_ab::text AS "gueltigAb", d.erstellt_am AS "erstelltAm"

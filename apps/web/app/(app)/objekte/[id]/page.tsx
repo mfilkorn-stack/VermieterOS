@@ -27,12 +27,19 @@ import {
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AmpelStatus, MODUL_ICON, MODUL_TEXT } from '@/components/status'
-import { ladeNotfallkarte, listeDokumente, listeTickets, listeWissen } from '@vermieteros/db'
+import {
+  journalSummen,
+  ladeNotfallkarte,
+  listeDokumente,
+  listeTickets,
+  listeWissen,
+} from '@vermieteros/db'
 import { DokumentListe } from '@/components/dokument-liste'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { ladeAkte, type Akte } from '@/lib/akte'
 import { NOTFALL_TEXT, WISSEN_TEXT } from '@/lib/betrieb-text'
 import { datumAnzeige, dezimalText, euroAnzeige } from '@/lib/format'
+import { heuteBerlin } from '@/lib/zeit'
 import { darf, mitMandant } from '@/lib/sitzung'
 
 const TYP_TEXT: Record<string, string> = {
@@ -126,10 +133,11 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
       wissen: await listeWissen(tx, id),
       tickets: await listeTickets(tx, { offen: true, objektId: id }),
       dokumente: await listeDokumente(tx, { objektId: id }),
+      journal: await journalSummen(tx, { jahr: Number(heuteBerlin().slice(0, 4)), objektId: id }),
     }
   })
   if (!daten) notFound()
-  const { akte, notfall, wissen, tickets, dokumente } = daten
+  const { akte, notfall, wissen, tickets, dokumente, journal } = daten
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const o = akte.objekt
   const q = akte.qualitaet
@@ -422,6 +430,34 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
           </li>
         ))}
       </ul>
+
+      <Abschnitt titel={`Journal ${heuteBerlin().slice(0, 4)}`}>
+        <Bearbeiten href={`/journal?objekt=${id}`} text="Journal öffnen" testId="objekt-journal" />
+      </Abschnitt>
+      <div className="karte" data-testid="objekt-journal-summen">
+        {journal.length === 0 ? (
+          <p className="leise">Noch keine Buchungen in diesem Jahr.</p>
+        ) : (
+          <dl className="kopfdaten">
+            <dt>Einnahmen</dt>
+            <dd className="ziffern">
+              {euroAnzeige(
+                journal
+                  .filter((j) => j.richtung === 'einnahme')
+                  .reduce((a, j) => a + j.summeCent, 0),
+              )}
+            </dd>
+            <dt>Ausgaben</dt>
+            <dd className="ziffern">
+              {euroAnzeige(
+                journal
+                  .filter((j) => j.richtung === 'ausgabe')
+                  .reduce((a, j) => a + j.summeCent, 0),
+              )}
+            </dd>
+          </dl>
+        )}
+      </div>
 
       <Abschnitt titel="Dokumente">
         {schreiben ? (

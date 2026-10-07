@@ -1,0 +1,37 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 424 >>
+stream
+BT /F1 11 Tf 56 780 Td (Beispiel Versicherung AG) Tj ET
+BT /F1 11 Tf 56 764 Td (Beitragsrechnung Wohngebäudeversicherung) Tj ET
+BT /F1 11 Tf 56 748 Td (Versicherungsort: Musterweg 1, 99999 Musterstadt) Tj ET
+BT /F1 11 Tf 56 732 Td (Versicherungszeitraum: 01.01.2026 bis 31.12.2026) Tj ET
+BT /F1 11 Tf 56 716 Td (Jahresbeitrag inkl. 19 % Versicherungsteuer: 892,40 €) Tj ET
+BT /F1 11 Tf 56 700 Td (Fällig am 01.01.2026) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000687 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+813
+%%EOF

@@ -1,17 +1,73 @@
 import { createServer, type Server } from 'node:http'
 
 /**
- * Ersatz für die Anthropic-API in E2E-Tests und der Vorschau: beantwortet Sortierung und
- * Antwortentwurf mit festen, regelkonformen Ausgaben. So läuft der echte Client-Pfad
+ * Ersatz für die Anthropic-API in E2E-Tests und der Vorschau: beantwortet Sortierung,
+ * Antwortentwurf, Mietvertrag und Belege mit festen, regelkonformen Ausgaben. So läuft der echte Client-Pfad
  * (SDK, Schema, Stempel, Speicherung) ohne Netz und ohne Kosten.
  */
 type Anfrage = {
   system: Array<{ text: string }>
-  messages: Array<{ content: Array<{ type: string; text?: string }> }>
+  messages: Array<{
+    content: Array<{ type: string; text?: string; source?: { data?: string } }>
+  }>
+}
+
+/** Belege: Muster-Rechnung (Wasser) oder Muster-Steuerberatung, erkannt am PDF-Text. */
+function beleg(a: Anfrage): unknown {
+  const inhalt = a.messages[0]!.content
+  const pdf = Buffer.from(
+    inhalt.find((b) => b.type === 'document')?.source?.data ?? '',
+    'base64',
+  ).toString('latin1')
+  const kontext = JSON.parse(inhalt.find((b) => b.type === 'text')?.text ?? '{}') as {
+    objekte: Array<{ id: string; bezeichnung: string }>
+  }
+  const f = (wert: string, zitat: string) => ({ wert, seite: 1, zitat })
+  if (pdf.includes('Steuerkanzlei')) {
+    return {
+      lieferant: f('Steuerkanzlei Muster', 'Steuerkanzlei Muster'),
+      rechnungsnummer: f('SB-26-031', 'Rechnung Nr. SB-26-031'),
+      rechnungsdatum: f('20.03.2026', 'vom 20.03.2026'),
+      betrag_brutto: f('714,00 €', 'Rechnungsbetrag: 714,00 €'),
+      umsatzsteuer: f('114,00 €', 'Umsatzsteuer 19 %: 114,00 €'),
+      leistung_von: null,
+      leistung_bis: null,
+      zahlungsdatum: null,
+      einordnung: {
+        objekt_id: null,
+        steuerkategorie: 'verwaltungskosten',
+        kostenart: null,
+        umlagefaehig: false,
+        begruendung: 'Steuerberatung für alle Objekte',
+      },
+      hinweise: [],
+    }
+  }
+  const objekt = kontext.objekte.find((o) => o.bezeichnung.includes('Musterweg'))
+  return {
+    lieferant: f('Stadtwerke Musterstadt GmbH', 'Stadtwerke Musterstadt GmbH'),
+    // absichtlich falsch: darf nicht als belegt gelten
+    rechnungsnummer: f('W-2026-0816', 'Nr. W-2026-0816'),
+    rechnungsdatum: f('05.01.2026', 'Rechnungsdatum: 05.01.2026'),
+    betrag_brutto: f('481,50 €', 'Rechnungsbetrag: 481,50 €'),
+    umsatzsteuer: f('31,50 €', 'Umsatzsteuer 7 %: 31,50 €'),
+    leistung_von: f('01.01.2025', 'Abrechnungszeitraum: 01.01.2025'),
+    leistung_bis: f('31.12.2025', 'bis 31.12.2025'),
+    zahlungsdatum: f('15.01.2026', 'am 15.01.2026 von Ihrem Konto abgebucht'),
+    einordnung: {
+      objekt_id: objekt?.id ?? null,
+      steuerkategorie: 'betriebskosten',
+      kostenart: 'wasserversorgung',
+      umlagefaehig: true,
+      begruendung: 'Trinkwasser, umlegbar nach § 2 Nr. 2 BetrKV',
+    },
+    hinweise: [],
+  }
 }
 
 function antwort(a: Anfrage): unknown {
   const system = a.system.map((s) => s.text).join('\n')
+  if (system.includes('Rechnungen und Bescheide')) return beleg(a)
   if (system.includes('Wohnraummietverträge')) {
     // Passt zu musterMietvertrag(); die Kaution ist absichtlich falsch und darf nicht belegt sein.
     const f = (wert: string, zitat: string) => ({ wert, seite: 2, zitat })

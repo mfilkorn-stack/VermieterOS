@@ -1,6 +1,6 @@
 import { listePostfaecher } from '@vermieteros/db'
 import { redirect } from 'next/navigation'
-import { Feld } from '@/components/felder'
+import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { datumAnzeige, zeitpunktAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
@@ -23,7 +23,10 @@ export default async function PostfaecherSeite() {
         {postfaecher.map((p) => (
           <li key={p.id} className="karte" data-testid={`postfach-${p.bezeichnung}`}>
             <div className="zeile">
-              <strong>{p.bezeichnung}</strong>
+              <strong>
+                {p.bezeichnung}
+                {p.zweck === 'belege' ? <span className="leise"> · Beleg-Adresse</span> : null}
+              </strong>
               <span
                 className={`ampel ampel-${!p.aktiv ? 'gelb' : p.letzterFehler ? 'rot' : 'gruen'}`}
               >
@@ -80,6 +83,14 @@ export default async function PostfaecherSeite() {
           testId="postfach"
         >
           <Feld label="Bezeichnung" name="bezeichnung" defaultValue="Vermietung" required />
+          <Auswahl
+            label="Zweck"
+            name="zweck"
+            optionen={[
+              ['post', 'Post von Mietern und Handwerkern (Posteingang)'],
+              ['belege', 'Beleg-Adresse: Anhänge landen im Belegeingang'],
+            ]}
+          />
           <div className="zeile">
             <Feld
               label="IMAP-Server"

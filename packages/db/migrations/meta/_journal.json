@@ -148,6 +148,20 @@
       "when": 1791338182150,
       "tag": "0020_handwerker_tickets_regeln",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791340263738,
+      "tag": "0021_belege_journal",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791340301491,
+      "tag": "0022_belege_journal_regeln",
+      "breakpoints": true
     }
   ]
 }
