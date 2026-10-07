@@ -9,7 +9,8 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "vorschau": "playwright test -c playwright.vorschau.config.ts"
   },
   "dependencies": {
     "@vermieteros/db": "workspace:*",

@@ -5,6 +5,7 @@ Eine eigene Verwaltungssoftware für private Vermieter. Kommunikation, Nebenkost
 - **Architekturplan** (das _Was_ und _Warum_): `docs/architektur/Vermieter.OS-Architektur_v1.1.pdf`
 - **Umsetzungsplan** (das _Wie_ und _Wann_): [`docs/PLAN.md`](docs/PLAN.md)
 - **Entscheidungen:** [`docs/adr/`](docs/adr/) · **Fachbegriffe:** [`docs/GLOSSAR.md`](docs/GLOSSAR.md)
+- **Vorschau** (Rundgang mit Musterdaten, nach jedem Merge auf `main` neu): https://mfilkorn-stack.github.io/VermieterOS/
 
 ## Stand
 
@@ -35,6 +36,14 @@ End-to-End-Tests (Playwright, baut und startet die App auf Port 3100 gegen eine 
 pnpm --filter @vermieteros/web exec playwright install chromium   # einmalig
 E2E_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/vermieteros_e2e \
   pnpm --filter @vermieteros/web e2e
+```
+
+Vorschau-Rundgang lokal (Bilder und `index.html` in `apps/web/vorschau-ausgabe/`):
+
+```bash
+ops/testdienste.sh
+E2E_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/vermieteros_e2e \
+  pnpm --filter @vermieteros/web vorschau
 ```
 
 Erster Start: `/registrieren`, dann 2FA einrichten, dann Mandant anlegen. Mail-Links (Bestätigung, Einladung) stehen bis Phase 1 im Server-Log.

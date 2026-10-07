@@ -12,3 +12,4 @@ coverage/
 .turbo/
 test-results/
 playwright-report/
+vorschau-ausgabe/
