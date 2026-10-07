@@ -47,7 +47,7 @@ Für den monatlichen Restore-Test auf dem Server liegt eine Kopie unter `/srv/ve
 1. **Object Storage:** zwei Buckets anlegen, je mit eigenem Zugangsschlüssel. `vermieteros-dokumente` nimmt Mails und Anhänge auf (Worker schreibt, Web-App lädt für Downloads), `vermieteros-backup` nur Backups. Endpoint und Region notieren (z. B. `https://fsn1.your-objectstorage.com`, `fsn1`).
 2. **Firewall** im Cloud-Projekt: eingehend nur 22 (am besten nur von der eigenen IP), 80 und 443 (TCP, 443 auch UDP). Docker veröffentlicht Ports an `ufw` vorbei, die Cloud-Firewall greift davor.
 3. **Server:** Ubuntu 24.04, x86 (die Images sind amd64), 4 GB RAM reichen für Phase 0 und 1. Standort Falkenstein oder Nürnberg. Unter „Cloud config“ den Inhalt von `ops/cloud-init.yml` einfügen, vorher den eigenen SSH-Public-Key darin eintragen. Backups des Servers bei Hetzner zusätzlich einschalten.
-4. **DNS:** A- und AAAA-Eintrag der Domain auf den Server.
+4. **DNS:** A- und AAAA-Eintrag der Domain auf den Server (`www.vermieteros.app`), ebenso für den Namen in `DOMAIN_UMLEITUNG` (`vermieteros.app`), den Caddy dauerhaft auf `DOMAIN` umleitet.
 
 ### Server
 
@@ -101,7 +101,7 @@ In Produktion legt nicht jeder ein Konto an, der die Domain kennt. Erlaubt sind 
 
 ### Mieterportal
 
-Erreichbar unter `https://<domain>/portal`. Mieter werden am Mietverhältnis (Verlauf, Karte „Mieterportal“) eingeladen und dort auch gesperrt. Anmeldelinks gelten 15 Minuten, Einladungen 7 Tage, jeweils einmal; die Sitzung hält 30 Tage. In der Datenbank stehen nur Prüfsummen der Links und Sitzungen (ADR 0010). Mängelmeldungen erscheinen als Ticket „gemeldet“, Nachrichten im Verlauf; Eigentümer, Miteigentümer und Mitverwalter bekommen dazu eine Mail.
+Erreichbar unter `https://www.vermieteros.app/portal`. Mieter werden am Mietverhältnis (Verlauf, Karte „Mieterportal“) eingeladen und dort auch gesperrt. Anmeldelinks gelten 15 Minuten, Einladungen 7 Tage, jeweils einmal; die Sitzung hält 30 Tage. In der Datenbank stehen nur Prüfsummen der Links und Sitzungen (ADR 0010). Mängelmeldungen erscheinen als Ticket „gemeldet“, Nachrichten im Verlauf; Eigentümer, Miteigentümer und Mitverwalter bekommen dazu eine Mail.
 
 ### Monitoring
 
@@ -113,7 +113,7 @@ Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `
 | `HEALTHCHECK_INTEGRITAET` | täglich   | 2 h    |
 | `HEALTHCHECK_RESTORE`     | monatlich | 1 Tag  |
 
-Dazu ein externer Uptime-Check auf `https://<domain>/api/gesund`. Er antwortet mit 200, wenn die App läuft und die Datenbank erreicht.
+Dazu ein externer Uptime-Check auf `https://www.vermieteros.app/api/gesund`. Er antwortet mit 200, wenn die App läuft und die Datenbank erreicht.
 
 ### Erstes Deployment
 

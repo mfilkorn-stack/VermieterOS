@@ -15,3 +15,9 @@
 		format json
 	}
 }
+
+# Zweiter Name (die Domain ohne www) leitet dauerhaft auf DOMAIN um, mit eigenem Zertifikat.
+# Ohne DOMAIN_UMLEITUNG steht hier localhost (compose.yml): kein öffentliches Zertifikat, keine Wirkung.
+{$DOMAIN_UMLEITUNG} {
+	redir https://{$DOMAIN}{uri} permanent
+}
