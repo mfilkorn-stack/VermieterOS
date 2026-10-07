@@ -93,7 +93,12 @@ export default async function PosteingangSeite({
               </p>
               <details>
                 <summary>
-                  Text{n.anhaenge.length ? ` und ${n.anhaenge.length} Anhang/Anhänge` : ''}
+                  Text
+                  {n.anhaenge.length === 1
+                    ? ' und 1 Anhang'
+                    : n.anhaenge.length > 1
+                      ? ` und ${n.anhaenge.length} Anhänge`
+                      : ''}
                 </summary>
                 <pre className="mailtext">{n.text || '(kein Textteil)'}</pre>
                 {n.anhaenge.length ? (
