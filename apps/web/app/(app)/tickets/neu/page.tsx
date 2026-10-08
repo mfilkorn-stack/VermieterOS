@@ -1,5 +1,6 @@
 import { juengsterKiVorschlag, ladeNachricht, ladeZuordnungsKandidaten } from '@vermieteros/db'
 import type { Sortierung } from '@vermieteros/ki'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
@@ -47,35 +48,44 @@ export default async function TicketNeu({
   const v = d.vorlage
   const ort = v?.ort ?? (sp.objekt ? `${sp.objekt}|` : undefined)
   return (
-    <div className="karte">
-      <h1>Ticket anlegen</h1>
-      {d.liste.length === 0 ? (
-        <p className="leise">Zuerst ein Objekt anlegen.</p>
-      ) : (
-        <Formular aktion={ticketAnlegen} knopf="Ticket anlegen" testId="ticket-anlegen">
-          {v ? <input type="hidden" name="nachrichtId" value={v.nachrichtId} /> : null}
-          {v?.mietverhaeltnisId ? (
-            <input type="hidden" name="mietverhaeltnisId" value={v.mietverhaeltnisId} />
-          ) : null}
-          <Auswahl
-            label="Wo"
-            name="ort"
-            optionen={d.liste.map((o) => [o.wert, o.text] as const)}
-            defaultValue={ort}
-          />
-          <Feld label="Titel" name="titel" defaultValue={v?.titel ?? ''} required />
-          <label>
-            Beschreibung
-            <textarea name="beschreibung" rows={6} defaultValue={v?.beschreibung ?? ''} />
-          </label>
-          <Auswahl
-            label="Priorität"
-            name="prioritaet"
-            optionen={optionen(PRIORITAET_TEXT)}
-            defaultValue={v?.prioritaet ?? 'normal'}
-          />
-        </Formular>
-      )}
-    </div>
+    <>
+      <nav className="brotkrumen" aria-label="Pfad">
+        <Link href={'/tickets'}>Tickets</Link>
+        <span aria-hidden>/</span>
+        <span>Ticket anlegen</span>
+      </nav>
+      <div className="karte">
+        <h1>Ticket anlegen</h1>
+        {d.liste.length === 0 ? (
+          <p className="leise">
+            Zuerst ein Objekt anlegen: <Link href="/objekte/neu">Objekt anlegen</Link>
+          </p>
+        ) : (
+          <Formular aktion={ticketAnlegen} knopf="Ticket anlegen" testId="ticket-anlegen">
+            {v ? <input type="hidden" name="nachrichtId" value={v.nachrichtId} /> : null}
+            {v?.mietverhaeltnisId ? (
+              <input type="hidden" name="mietverhaeltnisId" value={v.mietverhaeltnisId} />
+            ) : null}
+            <Auswahl
+              label="Objekt / Einheit"
+              name="ort"
+              optionen={d.liste.map((o) => [o.wert, o.text] as const)}
+              defaultValue={ort}
+            />
+            <Feld label="Titel" name="titel" defaultValue={v?.titel ?? ''} required />
+            <label>
+              Beschreibung
+              <textarea name="beschreibung" rows={6} defaultValue={v?.beschreibung ?? ''} />
+            </label>
+            <Auswahl
+              label="Priorität"
+              name="prioritaet"
+              optionen={optionen(PRIORITAET_TEXT)}
+              defaultValue={v?.prioritaet ?? 'normal'}
+            />
+          </Formular>
+        )}
+      </div>
+    </>
   )
 }

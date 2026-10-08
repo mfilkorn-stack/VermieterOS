@@ -6,10 +6,12 @@ import {
   BookOpenText,
   Calculator,
   ClipboardCheck,
+  Contact,
   Ellipsis,
   HardHat,
   Inbox,
   Landmark,
+  LayoutDashboard,
   Library,
   ReceiptText,
   Mail,
@@ -24,7 +26,9 @@ import { usePathname } from 'next/navigation'
 
 /** Icons als Namen, weil Komponenten nicht vom Server an den Client gereicht werden können. */
 const ICONS = {
+  start: LayoutDashboard,
   objekte: Building2,
+  mieter: Contact,
   posteingang: Inbox,
   tickets: Wrench,
   belege: ReceiptText,
@@ -59,7 +63,7 @@ function aktiv(pfad: string, e: NavEintrag): boolean {
   return bereiche.some((b) => (b === '/' ? pfad === '/' : pfad === b || pfad.startsWith(`${b}/`)))
 }
 
-function Zaehler({ z }: { z: NonNullable<NavEintrag['zaehler']> }) {
+export function Zaehler({ z }: { z: NonNullable<NavEintrag['zaehler']> }) {
   if (z.n === 0) return null
   return (
     <span className={`zaehler zaehler-${z.art}`} title={z.text}>

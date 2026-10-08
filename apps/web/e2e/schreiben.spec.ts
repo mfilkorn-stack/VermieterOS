@@ -28,7 +28,7 @@ test('Schreiben: Wohnungsgeberbestätigung, Mietschuldenfreiheit, Vermieterbesch
   await e.getByLabel('Anteil Zähler').fill('1')
   await e.getByLabel('Nenner').fill('1')
   await e.getByLabel('Gilt ab').fill('2020-01-01')
-  await e.getByRole('button', { name: 'Hinzufügen' }).click()
+  await e.getByRole('button', { name: 'Eigentümer anlegen' }).click()
   await expect(page.getByTestId('eigentuemerliste')).toContainText('Erika Mustermann')
 
   await page.goto('/')
@@ -45,7 +45,11 @@ test('Schreiben: Wohnungsgeberbestätigung, Mietschuldenfreiheit, Vermieterbesch
   const eh = page.getByTestId('einheit')
   await eh.getByLabel('Bezeichnung').fill('Wohnung 1')
   await eh.getByRole('button', { name: 'Speichern' }).click()
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Vorname').first().fill('Max')
   await v.getByLabel('Nachname').fill('Beispiel')

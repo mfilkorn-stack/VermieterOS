@@ -33,6 +33,7 @@ import {
 } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
 import { mitMandant, verlange, type MandantKontext } from '@/lib/sitzung'
+import { setzeHinweis } from '@/lib/hinweis'
 import { speichere } from '@/lib/speichern'
 import { heuteBerlin } from '@/lib/zeit'
 import { grundbuchAusRoh, nebenkostenAusRoh } from '@/lib/umwandeln'
@@ -51,6 +52,7 @@ async function schreibe(
         throw new Eingabefehler('Objekt nicht gefunden.')
       return (await fn(tx, k, objektId)) ?? `/objekte/${objektId}`
     })
+    await setzeHinweis('Gespeichert.')
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
@@ -147,12 +149,14 @@ export async function einheitSpeichern(_: FormStatus, d: FormData): Promise<Form
         begruendung: text(d, 'begruendung'),
       })
     } else {
-      await speichere(tx, k, {
+      const r = await speichere(tx, k, {
         entitaet: 'einheit',
         identitaet: { objektId },
         daten,
         gueltigAb: datum(d, 'giltAb', 'Gilt ab'),
       })
+      // Nächster Schritt nach einer neuen Einheit: das Mietverhältnis (Hinweis in der Akte)
+      return `/objekte/${objektId}?neu=${r.identId}`
     }
   })
 }

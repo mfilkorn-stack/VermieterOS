@@ -172,7 +172,11 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await e.getByRole('button', { name: 'Speichern' }).click()
 
   const mieterin = `max.mieter${zusatz}@example.org`
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Vorname').fill('Max')
   await v.getByLabel('Nachname').fill('Mieter')

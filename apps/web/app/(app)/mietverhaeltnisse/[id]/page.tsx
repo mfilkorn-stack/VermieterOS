@@ -1,7 +1,7 @@
 import {
   ladeVerlauf,
-  ladeZuordnungsKandidaten,
   letzteVersion,
+  listeMietverhaeltnisse,
   listeDokumente,
   portalZugaengeZuMv,
   type PortalZugang,
@@ -22,10 +22,10 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
-import { zeitpunktAnzeige } from '@/lib/format'
+import { euroAnzeige, zeitpunktAnzeige } from '@/lib/format'
 import { anhangText, mietverhaeltnisText, ZUORDNUNG_TEXT } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
-import { isoZuBerlin } from '@/lib/zeit'
+import { heuteBerlin, isoZuBerlin } from '@/lib/zeit'
 import { portalEinladen, portalSperren, telefonnotizSpeichern } from './aktionen'
 
 type Mieter = { id: string; name: string; email: string | null }
@@ -183,7 +183,13 @@ function Eintrag({ e, notieren, mvId }: { e: VerlaufEintrag; notieren: boolean; 
     return (
       <li className="karte" data-testid="verlauf-eintrag" data-art="antwort">
         <div className="zeile">
-          <Link href={`/posteingang/${e.nachrichtId}`}>
+          <Link
+            href={
+              e.nachrichtId
+                ? `/posteingang/${e.nachrichtId}`
+                : `/posteingang/portal/${e.portalNachrichtId}`
+            }
+          >
             <strong>{e.betreff}</strong>
           </Link>
           <span className="leise">{zeitpunktAnzeige(e.zeitpunkt)}</span>
@@ -212,6 +218,7 @@ function Eintrag({ e, notieren, mvId }: { e: VerlaufEintrag; notieren: boolean; 
             <MessageSquare size={14} aria-hidden />
             Mieterportal, {e.von}
           </span>
+          <Link href={`/posteingang/portal/${e.id}`}>Antworten</Link>
         </p>
         <p className="auszug" style={{ whiteSpace: 'pre-wrap' }}>
           {e.text}
@@ -271,7 +278,9 @@ function Eintrag({ e, notieren, mvId }: { e: VerlaufEintrag; notieren: boolean; 
 
 export default async function VerlaufSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  if (!(await darf({ post: ['lesen'] }))) redirect('/')
+  // Stammdaten reichen zum Lesen; Verlauf, Notizen und Portal brauchen das Post-Recht.
+  if (!(await darf({ stammdaten: ['lesen'] }))) redirect('/')
+  const post = await darf({ post: ['lesen'] })
   const notieren = await darf({ post: ['notieren'] })
   const { kopf, verlauf, dokumente, zugaenge, mieter } = await mitMandant(async (tx) => {
     const mv = await letzteVersion(tx, 'mietverhaeltnis', id)
@@ -286,8 +295,10 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
         })
     }
     return {
-      kopf: (await ladeZuordnungsKandidaten(tx)).find((k) => k.mietverhaeltnisId === id),
-      verlauf: await ladeVerlauf(tx, id),
+      kopf: (await listeMietverhaeltnisse(tx, heuteBerlin())).find(
+        (k) => k.mietverhaeltnisId === id,
+      ),
+      verlauf: post ? await ladeVerlauf(tx, id) : [],
       dokumente: await listeDokumente(tx, { mietverhaeltnisId: id }),
       zugaenge: await portalZugaengeZuMv(tx, id),
       mieter,
@@ -303,21 +314,59 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
         <span aria-hidden>/</span>
         <Link href={`/objekte/${kopf.objektId}`}>{kopf.objekt}</Link>
         <span aria-hidden>/</span>
-        <Link href={`/objekte/${kopf.objektId}/einheiten/${kopf.einheitId}/vermietung`}>
-          Vermietung
-        </Link>
+        {schreiben ? (
+          <Link href={`/objekte/${kopf.objektId}/einheiten/${kopf.einheitId}/vermietung`}>
+            {kopf.einheit}
+          </Link>
+        ) : (
+          <span>{kopf.einheit}</span>
+        )}
+        <span aria-hidden>/</span>
+        <span>Mietverhältnis</span>
       </nav>
       <div className="seitenkopf">
         <div>
-          <h1>Verlauf · {kopf.mieterNamen.join(', ') || kopf.einheit}</h1>
+          <h1>Mietverhältnis · {kopf.mieterNamen.join(', ') || kopf.einheit}</h1>
           <p className="leise" data-testid="verlauf-kopf">
             {mietverhaeltnisText(kopf)}
             {kopf.mieterEmails.length ? ` · ${kopf.mieterEmails.join(', ')}` : ''}
           </p>
         </div>
+        {schreiben ? (
+          <Link
+            className="knopf zweit"
+            href={`/objekte/${kopf.objektId}/einheiten/${kopf.einheitId}/vermietung`}
+            data-testid="mv-bearbeiten"
+          >
+            Mieter und Konditionen bearbeiten
+          </Link>
+        ) : null}
       </div>
+      <nav className="reiter" aria-label="Abschnitte" style={{ marginBottom: 16 }}>
+        <a href="#dokumente">Dokumente</a>
+        {post ? <a href="#portal">Portal</a> : null}
+        {post ? <a href="#verlauf">Verlauf</a> : null}
+      </nav>
+      <dl className="karte kopfdaten" data-testid="mv-konditionen">
+        <dt>Mieter</dt>
+        <dd>
+          {mieter.length
+            ? mieter.map((m) => m.name + (m.email ? ' <' + m.email + '>' : '')).join(', ')
+            : '–'}
+        </dd>
+        <dt>Kaltmiete</dt>
+        <dd className="ziffern">
+          {kopf.kaltmieteCent != null ? euroAnzeige(kopf.kaltmieteCent) : '–'}
+        </dd>
+        <dt>Vorauszahlungen</dt>
+        <dd className="ziffern">
+          {kopf.vorauszahlungCent != null ? euroAnzeige(kopf.vorauszahlungCent) : '–'}
+        </dd>
+        <dt>Personen im Haushalt</dt>
+        <dd>{kopf.personenzahl ?? '–'}</dd>
+      </dl>
 
-      <div className="karte" data-testid="mv-dokumente">
+      <div className="karte" id="dokumente" data-testid="mv-dokumente">
         <div className="zeile">
           <h2>Dokumente</h2>
           {schreiben ? (
@@ -342,7 +391,11 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
         <DokumentListe dokumente={dokumente} />
       </div>
 
-      <PortalKarte mvId={id} zugaenge={zugaenge} mieter={mieter} verwalten={schreiben} />
+      {post ? (
+        <div id="portal">
+          <PortalKarte mvId={id} zugaenge={zugaenge} mieter={mieter} verwalten={schreiben} />
+        </div>
+      ) : null}
 
       {notieren ? (
         <details className="karte" open={verlauf.length === 0}>
@@ -365,10 +418,10 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
         </details>
       ) : null}
 
-      {verlauf.length === 0 ? (
+      {post && verlauf.length === 0 ? (
         <p className="leise">Noch keine Mails oder Notizen zu diesem Mietverhältnis.</p>
       ) : null}
-      <ol className="liste" data-testid="verlauf">
+      <ol className="liste" id="verlauf" data-testid="verlauf">
         {verlauf.map((e) => (
           <Eintrag key={`${e.art}-${e.id}`} e={e} notieren={notieren} mvId={id} />
         ))}

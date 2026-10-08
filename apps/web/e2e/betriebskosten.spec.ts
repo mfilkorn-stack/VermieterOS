@@ -52,7 +52,11 @@ test('Betriebskosten: Abrechnung mit Messdienst, CO2-Abzug, Ergebnis und Folgeja
   await eh.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByTestId('einheitenliste')).toContainText('EG rechts')
   const akte = page.url()
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Nachname').fill('Beispiel')
   await v.getByLabel('E-Mail').fill(mieterMail)

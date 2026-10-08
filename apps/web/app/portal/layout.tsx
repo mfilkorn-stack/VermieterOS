@@ -9,12 +9,12 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
   return (
     <div className="oeffentlich portal">
       <div className="schmal">
-        <div className="marke">
+        <Link href="/portal" className="marke">
           <span className="marke-zeichen">
             <Building2 size={18} strokeWidth={2} aria-hidden />
           </span>
           <span className="marke-name">Mieterportal</span>
-        </div>
+        </Link>
         <main>{children}</main>
         <p className="leise oeffentlich-fuss">
           <Link href="/datenschutz">Datenschutz</Link>

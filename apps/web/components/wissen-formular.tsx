@@ -6,7 +6,7 @@ import { Formular } from './formular'
 
 export function WissenFormular({ objektId, w }: { objektId: string; w?: WissenZeile }) {
   return (
-    <Formular aktion={wissenSpeichern} knopf="Speichern" testId="wissen">
+    <Formular aktion={wissenSpeichern} knopf="Artikel speichern" testId="wissen">
       <input type="hidden" name="objektId" value={objektId} />
       {w ? <input type="hidden" name="wissensartikelId" value={w.id} /> : null}
       <div className="zeile">

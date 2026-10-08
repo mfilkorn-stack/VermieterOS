@@ -22,8 +22,15 @@ import { belegAuslesenDirekt, belegHochladen } from '../../belege/aktionen'
 import { ticketAktualisieren } from '../aktionen'
 import { KiHinweis } from '@/components/ki-hinweis'
 
-export default async function TicketSeite({ params }: { params: Promise<{ id: string }> }) {
+export default async function TicketSeite({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ gebucht?: string }>
+}) {
   const { id } = await params
+  const gebucht = (await searchParams).gebucht === '1'
   const d = await mitMandant(async (tx) => {
     const t = await ladeTicket(tx, id)
     if (!t) return null
@@ -57,6 +64,11 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
 
   return (
     <>
+      {gebucht ? (
+        <p className="karte" data-testid="gebucht-hinweis">
+          Rechnung gebucht; sie steht im Journal und unter Belegen.
+        </p>
+      ) : null}
       <nav className="brotkrumen" aria-label="Pfad">
         <Link href="/tickets">Tickets</Link>
         <span aria-hidden>/</span>
@@ -116,10 +128,10 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
         <div>
           {schreiben ? (
             <div className="karte">
-              <h2>Weiter bearbeiten</h2>
+              <h2>Status und Auftrag</h2>
               <Formular
                 aktion={ticketAktualisieren}
-                knopf="Speichern"
+                knopf="Änderungen speichern"
                 testId="ticket-aktualisieren"
               >
                 <input type="hidden" name="ticketId" value={t.id} />
@@ -188,8 +200,8 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
               </ul>
             ) : (
               <p className="leise">
-                Die Rechnung des Handwerkers hier ablegen: Sie landet als Beleg im Belegeingang, mit
-                Objekt und Handwerker aus dem Ticket.
+                Die Rechnung des Handwerkers hier ablegen: Sie landet unter Belegen, mit Objekt und
+                Handwerker aus dem Ticket.
               </p>
             )}
             {schreiben ? (

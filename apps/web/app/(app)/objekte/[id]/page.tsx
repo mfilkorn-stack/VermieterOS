@@ -23,7 +23,10 @@ import {
   TriangleAlert,
   Users,
   type LucideIcon,
+  CircleCheck,
+  ArrowRight,
 } from 'lucide-react'
+import { sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AmpelStatus, MODUL_ICON, MODUL_TEXT } from '@/components/status'
@@ -31,6 +34,8 @@ import {
   journalSummen,
   ladeNotfallkarte,
   listeDokumente,
+  ladePosteingang,
+  listePostfaecher,
   listeTickets,
   listeWissen,
 } from '@vermieteros/db'
@@ -38,7 +43,7 @@ import { DokumentListe } from '@/components/dokument-liste'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { ladeAkte, type Akte } from '@/lib/akte'
 import { NOTFALL_TEXT, WISSEN_TEXT } from '@/lib/betrieb-text'
-import { datumAnzeige, dezimalText, euroAnzeige } from '@/lib/format'
+import { datumAnzeige, dezimalText, euroAnzeige, zeitpunktAnzeige } from '@/lib/format'
 import { heuteBerlin } from '@/lib/zeit'
 import { darf, mitMandant } from '@/lib/sitzung'
 
@@ -77,14 +82,23 @@ function Bearbeiten({
   href,
   testId,
   text = 'Bearbeiten',
+  icon,
 }: {
   href: string
   testId?: string
   text?: string
+  /** Stift fürs Ändern, Plus fürs Anlegen, Pfeil fürs Öffnen einer anderen Seite */
+  icon?: 'stift' | 'plus' | 'pfeil'
 }) {
+  const Icon =
+    icon === 'pfeil'
+      ? ArrowRight
+      : (icon ?? (text === 'Bearbeiten' ? 'stift' : 'plus')) === 'stift'
+        ? Pencil
+        : Plus
   return (
     <Link className="knopf zweit" href={href} data-testid={testId}>
-      {text === 'Bearbeiten' ? <Pencil size={16} aria-hidden /> : <Plus size={16} aria-hidden />}
+      <Icon size={16} aria-hidden />
       {text}
     </Link>
   )
@@ -122,8 +136,16 @@ function ziel(a: Akte, b: Befund): string {
   }
 }
 
-export default async function ObjektSeite({ params }: { params: Promise<{ id: string }> }) {
+export default async function ObjektSeite({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ neu?: string }>
+}) {
   const { id } = await params
+  const neueEinheit = (await searchParams).neu ?? null
+  const post = await darf({ post: ['lesen'] })
   const daten = await mitMandant(async (tx) => {
     const akte = await ladeAkte(tx, id)
     if (!akte) return null
@@ -134,14 +156,48 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
       tickets: await listeTickets(tx, { offen: true, objektId: id }),
       dokumente: await listeDokumente(tx, { objektId: id }),
       journal: await journalSummen(tx, { jahr: Number(heuteBerlin().slice(0, 4)), objektId: id }),
+      // Mails, die dem Objekt zugeordnet sind (WEG, Behörde, Versorger)
+      post: post ? await ladePosteingang(tx, { objektId: id, limit: 10 }) : [],
+      postfaecher: (await listePostfaecher(tx)).length,
+      portal:
+        (
+          await tx.execute<{ n: number }>(
+            sql`select count(*)::int as n from portal_zugaenge where widerrufen_am is null`,
+          )
+        )[0]?.n ?? 0,
     }
   })
   if (!daten) notFound()
-  const { akte, notfall, wissen, tickets, dokumente, journal } = daten
+  const { akte, notfall, wissen, tickets, dokumente, journal, post: postMails } = daten
+  // Geführter Start: fünf Schritte, die ein Objekt nutzbar machen
+  const schritte = [
+    {
+      text: 'Einheit anlegen',
+      href: `/objekte/${id}/einheiten/neu`,
+      fertig: akte.einheiten.length > 0,
+    },
+    {
+      text: 'Mietverhältnis erfassen',
+      href: akte.einheiten[0]
+        ? `/objekte/${id}/einheiten/${akte.einheiten[0].id}/vermietung`
+        : `/objekte/${id}/einheiten/neu`,
+      fertig: akte.einheiten.some((e) => e.mietverhaeltnisse.length > 0),
+    },
+    { text: 'Postfach verbinden', href: '/postfaecher', fertig: daten.postfaecher > 0 },
+    { text: 'Notfallkarte anlegen', href: `/objekte/${id}/notfallkarte`, fertig: !!notfall },
+    {
+      text: 'Mieter ins Portal einladen',
+      href: akte.einheiten.flatMap((e) => e.mietverhaeltnisse)[0]
+        ? `/mietverhaeltnisse/${akte.einheiten.flatMap((e) => e.mietverhaeltnisse)[0]!.id}#portal`
+        : `/objekte/${id}`,
+      fertig: daten.portal > 0,
+    },
+  ]
+  const offeneSchritte = schritte.filter((x) => !x.fertig).length
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const o = akte.objekt
   const q = akte.qualitaet
-  const jahr = new Date().getFullYear() - 1
+  const jahr = Number(heuteBerlin().slice(0, 4)) - 1
 
   const ak =
     o.kaufpreisCent != null && o.gebaeudeanteilPromille != null
@@ -248,6 +304,233 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
         </>
       ) : null}
 
+      {schreiben && offeneSchritte > 0 ? (
+        <div className="karte" data-testid="naechste-schritte">
+          <h2>Nächste Schritte</h2>
+          <ol className="schritte">
+            {schritte.map((x) => (
+              <li key={x.text} data-fertig={x.fertig ? 'ja' : 'nein'}>
+                {x.fertig ? (
+                  <span className="erledigt">
+                    <CircleCheck size={15} aria-hidden /> {x.text}
+                  </span>
+                ) : (
+                  <Link href={x.href}>{x.text}</Link>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+      {neueEinheit ? (
+        <p className="karte" data-testid="einheit-neu-hinweis">
+          Einheit angelegt.{' '}
+          <Link href={`/objekte/${id}/einheiten/${neueEinheit}/vermietung?neu=1`}>
+            Jetzt das Mietverhältnis erfassen
+          </Link>{' '}
+          oder später über „Mietverhältnisse“ an der Einheit.
+        </p>
+      ) : null}
+      <Abschnitt titel="Einheiten" id="einheiten">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/objekte/${id}/einheiten/neu`}
+            testId="einheit-neu"
+            text="Einheit anlegen"
+          />
+        ) : null}
+      </Abschnitt>
+      <ul className="liste" data-testid="einheitenliste">
+        {akte.einheiten.map((e) => {
+          const Icon = TYP_ICON[e.v.typ] ?? DoorOpen
+          return (
+            <li key={e.id} className="karte objektkarte">
+              <div className="objektkarte-kopf">
+                <span className="icon-kachel">
+                  <Icon size={20} strokeWidth={1.75} aria-hidden />
+                </span>
+                <span className="objektkarte-titel">
+                  <strong>{e.v.bezeichnung}</strong>
+                  <span className="meta">
+                    <span>
+                      {TYP_TEXT[e.v.typ] ?? e.v.typ}
+                      {e.v.wohnflaecheQm100 ? ` · ${dezimalText(e.v.wohnflaecheQm100, 2)} m²` : ''}
+                    </span>
+                  </span>
+                </span>
+                <span className="aktionen">
+                  {schreiben ? (
+                    <>
+                      <Link className="knopf zweit" href={`/objekte/${id}/einheiten/${e.id}`}>
+                        Bearbeiten
+                      </Link>
+                      <Link
+                        className="knopf zweit"
+                        href={`/objekte/${id}/einheiten/${e.id}/vermietung`}
+                      >
+                        Mietverhältnisse
+                      </Link>
+                    </>
+                  ) : null}
+                  <Link
+                    className="knopf zweit"
+                    href={`/objekte/${id}/einheiten/${e.id}/betriebskosten`}
+                  >
+                    Betriebskosten
+                  </Link>
+                </span>
+              </div>
+              {schreiben &&
+              !e.mietverhaeltnisse.some((m) => !m.v.ende || m.v.ende >= heuteBerlin()) ? (
+                <p className="meta">
+                  <Link
+                    href={'/objekte/' + id + '/einheiten/' + e.id + '/vermietung'}
+                    data-testid="mieter-anlegen"
+                  >
+                    <Users size={15} aria-hidden /> Frei · Mieter anlegen
+                  </Link>
+                </p>
+              ) : null}
+              {e.mietverhaeltnisse.map((m) => (
+                <p key={m.id} className="meta">
+                  <span>
+                    <Users size={15} aria-hidden />
+                    <Link href={`/mietverhaeltnisse/${m.id}`} data-testid="mietverhaeltnis-link">
+                      {m.mieter.join(', ') || 'ohne Mieter'}
+                    </Link>{' '}
+                    seit {datumAnzeige(m.v.beginn)}
+                    {m.v.ende ? ` bis ${datumAnzeige(m.v.ende)}` : ''}
+                  </span>
+                  {m.kondition ? (
+                    <span className="ziffern">
+                      Kaltmiete {euroAnzeige(m.kondition.v.kaltmieteCent)}
+                    </span>
+                  ) : null}
+                </p>
+              ))}
+            </li>
+          )
+        })}
+      </ul>
+
+      {post ? (
+        <>
+          <Abschnitt titel="Post" />
+          {postMails.length === 0 ? (
+            <p className="leise">Keine Mails zu diesem Objekt zugeordnet.</p>
+          ) : (
+            <ul className="liste-schlicht" data-testid="objekt-post">
+              {postMails.map((m) => (
+                <li key={m.id} className="zeile">
+                  <Link href={`/posteingang/${m.id}`}>{m.betreff || '(ohne Betreff)'}</Link>
+                  <span className="leise">
+                    {m.vonName ?? m.vonAdresse} · {zeitpunktAnzeige(m.gesendetAm ?? m.empfangenAm)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : null}
+      <Abschnitt titel="Tickets">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/tickets/neu?objekt=${id}`}
+            text="Ticket anlegen"
+            testId="objekt-ticket-neu"
+          />
+        ) : null}
+      </Abschnitt>
+      {tickets.length === 0 ? <p className="leise">Keine offenen Tickets.</p> : null}
+      <ul className="liste" data-testid="objekt-tickets">
+        {tickets.map((t) => (
+          <li key={t.id} className="karte zeile">
+            <Link href={`/tickets/${t.id}`}>{t.titel}</Link>
+            <span className="meta">
+              <PrioritaetBadge p={t.prioritaet} />
+              <TicketStatusBadge status={t.status} />
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <Abschnitt titel="Dokumente">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/dokumente/neu?objekt=${id}`}
+            text="Dokument hochladen"
+            testId="objekt-dokument-neu"
+          />
+        ) : null}
+      </Abschnitt>
+      <div className="karte">
+        <DokumentListe dokumente={dokumente} />
+      </div>
+
+      <Abschnitt titel="Notfallkarte">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/objekte/${id}/notfallkarte`}
+            testId="notfallkarte-bearbeiten"
+            text={notfall ? 'Bearbeiten' : 'Notfallkarte anlegen'}
+          />
+        ) : null}
+      </Abschnitt>
+      {notfall?.zeilen.length ? (
+        <ul className="karte befunde" data-testid="notfallkarte">
+          {notfall.zeilen.map((z, i) => (
+            <li key={i}>
+              <Siren size={16} aria-hidden color="var(--rot)" />
+              <span style={{ flex: 1 }}>
+                <strong>{NOTFALL_TEXT[z.art]}</strong> · {z.name}
+                {z.hinweis ? <span className="leise"> · {z.hinweis}</span> : null}
+              </span>
+              {z.telefon ? (
+                <a href={`tel:${z.telefon.replace(/[^+\d]/g, '')}`} className="ziffern">
+                  <Phone size={14} aria-hidden /> {z.telefon}
+                </a>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="leise">
+          Noch keine Notfallkarte. Mieter sehen sie im Portal, die KI nutzt sie für Antworten.
+        </p>
+      )}
+
+      <Abschnitt titel="Wissensbasis">
+        {schreiben ? (
+          <Bearbeiten
+            href={`/objekte/${id}/wissen/neu`}
+            text="Artikel anlegen"
+            testId="wissen-neu"
+          />
+        ) : null}
+      </Abschnitt>
+      {wissen.length === 0 ? (
+        <p className="leise">Hausordnung, Anleitungen, Müllabfuhr, häufige Fragen.</p>
+      ) : null}
+      <ul className="liste" data-testid="wissensbasis">
+        {wissen.map((w) => (
+          <li key={w.id} className="karte zeile">
+            {schreiben ? (
+              <Link href={`/objekte/${id}/wissen/${w.id}`}>{w.titel}</Link>
+            ) : (
+              <strong>{w.titel}</strong>
+            )}
+            <span className="meta">
+              <span>{WISSEN_TEXT[w.kategorie]}</span>
+              {w.mieterSichtbar ? null : <span>nur intern</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="leise" style={{ marginTop: 24 }}>
+        Kennzahlen sind eine Vorbereitung für den Steuerberater, keine Steuerberatung. Gebäudeanteil
+        und AfA-Satz bitte mit dem Berater abstimmen.
+      </p>
       <Abschnitt titel="Kauf und Abschreibung">
         {schreiben ? <Bearbeiten href={`/objekte/${id}/kauf`} /> : null}
       </Abschnitt>
@@ -316,83 +599,6 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      <Abschnitt titel="Einheiten" id="einheiten">
-        {schreiben ? (
-          <Bearbeiten
-            href={`/objekte/${id}/einheiten/neu`}
-            testId="einheit-neu"
-            text="Einheit anlegen"
-          />
-        ) : null}
-      </Abschnitt>
-      <ul className="liste" data-testid="einheitenliste">
-        {akte.einheiten.map((e) => {
-          const Icon = TYP_ICON[e.v.typ] ?? DoorOpen
-          return (
-            <li key={e.id} className="karte objektkarte">
-              <div className="objektkarte-kopf">
-                <span className="icon-kachel">
-                  <Icon size={20} strokeWidth={1.75} aria-hidden />
-                </span>
-                <span className="objektkarte-titel">
-                  <strong>{e.v.bezeichnung}</strong>
-                  <span className="meta">
-                    <span>
-                      {TYP_TEXT[e.v.typ] ?? e.v.typ}
-                      {e.v.wohnflaecheQm100 ? ` · ${dezimalText(e.v.wohnflaecheQm100, 2)} m²` : ''}
-                    </span>
-                  </span>
-                </span>
-                {schreiben ? (
-                  <span className="aktionen">
-                    <Link className="knopf zweit" href={`/objekte/${id}/einheiten/${e.id}`}>
-                      Bearbeiten
-                    </Link>
-                    <Link
-                      className="knopf zweit"
-                      href={`/objekte/${id}/einheiten/${e.id}/vermietung`}
-                    >
-                      Vermietung
-                    </Link>
-                    <Link
-                      className="knopf zweit"
-                      href={`/objekte/${id}/einheiten/${e.id}/betriebskosten`}
-                    >
-                      Betriebskosten
-                    </Link>
-                  </span>
-                ) : null}
-              </div>
-              {schreiben &&
-              !e.mietverhaeltnisse.some((m) => !m.v.ende || m.v.ende >= heuteBerlin()) ? (
-                <p className="meta">
-                  <Link
-                    href={'/objekte/' + id + '/einheiten/' + e.id + '/vermietung'}
-                    data-testid="mieter-anlegen"
-                  >
-                    <Users size={15} aria-hidden /> Frei · Mieter anlegen
-                  </Link>
-                </p>
-              ) : null}
-              {e.mietverhaeltnisse.map((m) => (
-                <p key={m.id} className="meta">
-                  <span>
-                    <Users size={15} aria-hidden />
-                    {m.mieter.join(', ')} seit {datumAnzeige(m.v.beginn)}
-                    {m.v.ende ? ` bis ${datumAnzeige(m.v.ende)}` : ''}
-                  </span>
-                  {m.kondition ? (
-                    <span className="ziffern">
-                      Kaltmiete {euroAnzeige(m.kondition.v.kaltmieteCent)}
-                    </span>
-                  ) : null}
-                </p>
-              ))}
-            </li>
-          )
-        })}
-      </ul>
-
       <Abschnitt titel="Darlehen">
         {schreiben ? (
           <Bearbeiten href={`/objekte/${id}/darlehen/neu`} text="Darlehen anlegen" />
@@ -426,28 +632,6 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
           </li>
         ))}
       </ul>
-      <Abschnitt titel="Tickets">
-        {schreiben ? (
-          <Bearbeiten
-            href={`/tickets/neu?objekt=${id}`}
-            text="Ticket anlegen"
-            testId="objekt-ticket-neu"
-          />
-        ) : null}
-      </Abschnitt>
-      {tickets.length === 0 ? <p className="leise">Keine offenen Tickets.</p> : null}
-      <ul className="liste" data-testid="objekt-tickets">
-        {tickets.map((t) => (
-          <li key={t.id} className="karte zeile">
-            <Link href={`/tickets/${t.id}`}>{t.titel}</Link>
-            <span className="meta">
-              <PrioritaetBadge p={t.prioritaet} />
-              <TicketStatusBadge status={t.status} />
-            </span>
-          </li>
-        ))}
-      </ul>
-
       <Abschnitt titel={`Journal ${heuteBerlin().slice(0, 4)}`}>
         <div className="aktionen">
           <Link
@@ -460,6 +644,7 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
           <Bearbeiten
             href={`/journal?objekt=${id}`}
             text="Journal öffnen"
+            icon="pfeil"
             testId="objekt-journal"
           />
         </div>
@@ -488,82 +673,6 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
           </dl>
         )}
       </div>
-
-      <Abschnitt titel="Dokumente">
-        {schreiben ? (
-          <Bearbeiten
-            href={`/dokumente/neu?objekt=${id}`}
-            text="Dokument hochladen"
-            testId="objekt-dokument-neu"
-          />
-        ) : null}
-      </Abschnitt>
-      <div className="karte">
-        <DokumentListe dokumente={dokumente} />
-      </div>
-
-      <Abschnitt titel="Notfallkarte">
-        {schreiben ? (
-          <Bearbeiten
-            href={`/objekte/${id}/notfallkarte`}
-            testId="notfallkarte-bearbeiten"
-            text={notfall ? 'Bearbeiten' : 'Notfallkarte anlegen'}
-          />
-        ) : null}
-      </Abschnitt>
-      {notfall?.zeilen.length ? (
-        <ul className="karte befunde" data-testid="notfallkarte">
-          {notfall.zeilen.map((z, i) => (
-            <li key={i}>
-              <Siren size={16} aria-hidden color="var(--rot)" />
-              <span style={{ flex: 1 }}>
-                <strong>{NOTFALL_TEXT[z.art]}</strong> · {z.name}
-                {z.hinweis ? <span className="leise"> · {z.hinweis}</span> : null}
-              </span>
-              {z.telefon ? (
-                <a href={`tel:${z.telefon.replace(/[^+\d]/g, '')}`} className="ziffern">
-                  <Phone size={14} aria-hidden /> {z.telefon}
-                </a>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="leise">Noch keine Notfallkarte. Sie steht später im Mieterportal.</p>
-      )}
-
-      <Abschnitt titel="Wissensbasis">
-        {schreiben ? (
-          <Bearbeiten
-            href={`/objekte/${id}/wissen/neu`}
-            text="Artikel anlegen"
-            testId="wissen-neu"
-          />
-        ) : null}
-      </Abschnitt>
-      {wissen.length === 0 ? (
-        <p className="leise">Hausordnung, Anleitungen, Müllabfuhr, häufige Fragen.</p>
-      ) : null}
-      <ul className="liste" data-testid="wissensbasis">
-        {wissen.map((w) => (
-          <li key={w.id} className="karte zeile">
-            {schreiben ? (
-              <Link href={`/objekte/${id}/wissen/${w.id}`}>{w.titel}</Link>
-            ) : (
-              <strong>{w.titel}</strong>
-            )}
-            <span className="meta">
-              <span>{WISSEN_TEXT[w.kategorie]}</span>
-              {w.mieterSichtbar ? null : <span>nur intern</span>}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      <p className="leise" style={{ marginTop: 24 }}>
-        Kennzahlen sind eine Vorbereitung für den Steuerberater, keine Steuerberatung. Gebäudeanteil
-        und AfA-Satz bitte mit dem Berater abstimmen.
-      </p>
     </>
   )
 }

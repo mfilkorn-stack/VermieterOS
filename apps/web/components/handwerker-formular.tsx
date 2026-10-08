@@ -21,7 +21,7 @@ export function HandwerkerFormular({
   adresssuche: boolean
 }) {
   return (
-    <Formular aktion={handwerkerSpeichern} knopf="Speichern" testId="handwerker">
+    <Formular aktion={handwerkerSpeichern} knopf="Handwerker speichern" testId="handwerker">
       {h ? <input type="hidden" name="handwerkerId" value={h.id} /> : null}
       {firmensuche ? <Firmensuche /> : null}
       <div className="zeile">

@@ -249,10 +249,81 @@ describe('Zuordnung', () => {
     )
     expect(e?.zuordnung).toEqual({
       mietverhaeltnisId: null,
+      objektId: null,
+      handwerkerId: null,
       art: 'aufgehoben',
       begruendung: 'falsch zugeordnet',
     })
     expect(await withMandant(v.app, a, (tx) => offeneNachrichten(tx))).toBe(offenVorher)
+  })
+
+  it('Zuordnung zu Objekt oder „erledigt“ nimmt die Mail aus „offen“; nur ein Ziel, nur Nutzer', async () => {
+    const id = (await withMandant(v.worker, a, (tx) =>
+      legeNachrichtAn(tx, nachricht(a, postfachA, { betreff: 'Angebot Dachrinne' }), SYSTEM),
+    ))!
+    const [objektA] = await withMandant(v.app, a, (tx) =>
+      tx.execute<{ objekt_id: string }>(sql`select objekt_id from objekte_aktuell limit 1`),
+    )
+    const offenVorher = await withMandant(v.app, a, (tx) => offeneNachrichten(tx))
+    await withMandant(v.app, a, (tx) =>
+      ordneNachrichtZu(tx, {
+        mandantId: a,
+        nachrichtId: id,
+        mietverhaeltnisId: null,
+        objektId: objektA!.objekt_id,
+        art: 'manuell',
+        akteur: NUTZER,
+      }),
+    )
+    expect(await withMandant(v.app, a, (tx) => offeneNachrichten(tx))).toBe(offenVorher - 1)
+    const amObjekt = await withMandant(v.app, a, (tx) =>
+      ladePosteingang(tx, { objektId: objektA!.objekt_id }),
+    )
+    expect(amObjekt.map((x) => x.id)).toEqual([id])
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, a, (tx) =>
+          ordneNachrichtZu(tx, {
+            mandantId: a,
+            nachrichtId: id,
+            mietverhaeltnisId: mvA,
+            objektId: objektA!.objekt_id,
+            art: 'manuell',
+            akteur: NUTZER,
+          }),
+        ),
+      /nachricht_zuordnungen_ziel_chk/,
+    )
+    await erwarteFehler(
+      () =>
+        withMandant(v.worker, a, (tx) =>
+          ordneNachrichtZu(tx, {
+            mandantId: a,
+            nachrichtId: id,
+            mietverhaeltnisId: null,
+            objektId: objektA!.objekt_id,
+            art: 'absender',
+            akteur: SYSTEM,
+          }),
+        ),
+      /nachricht_zuordnungen_ziel_nutzer_chk/,
+    )
+    await withMandant(v.app, a, (tx) =>
+      ordneNachrichtZu(tx, {
+        mandantId: a,
+        nachrichtId: id,
+        mietverhaeltnisId: null,
+        art: 'erledigt',
+        begruendung: 'Werbung',
+        akteur: NUTZER,
+      }),
+    )
+    expect(await withMandant(v.app, a, (tx) => offeneNachrichten(tx))).toBe(offenVorher - 1)
+    expect(
+      (await withMandant(v.app, a, (tx) => ladePosteingang(tx, { nurOffen: true }))).some(
+        (x) => x.id === id,
+      ),
+    ).toBe(false)
   })
 
   it('manuelle Zuordnung nur durch Nutzer, nie auf fremdes Mietverhältnis', async () => {
@@ -470,5 +541,13 @@ describe('Antworten aus der App', () => {
         (e) => e.art === 'antwort',
       ),
     ).toEqual([])
+    // Genau ein Bezug: Mail oder Portal-Nachricht
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, a, (tx) =>
+          legeAntwortAn(tx, { ...basis, nachrichtId: null, messageId: '<antwort-2@example.org>' }),
+        ),
+      /antworten_bezug_chk/,
+    )
   })
 })

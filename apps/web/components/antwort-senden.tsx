@@ -10,7 +10,9 @@ import { zeitpunktAnzeige } from '@/lib/format'
  * Antworten stehen darüber; danach ist das Feld leer, damit nichts doppelt rausgeht.
  */
 export function AntwortSenden(p: {
-  nachrichtId: string
+  /** Mail oder Nachricht aus dem Mieterportal, auf die geantwortet wird */
+  nachrichtId?: string
+  portalNachrichtId?: string
   an: string
   betreff: string
   entwurf: string | null
@@ -21,7 +23,7 @@ export function AntwortSenden(p: {
   postfachAdresse: string | null
 }) {
   return (
-    <div className="karte" data-testid="antwort-senden">
+    <div className="karte" id="antworten" data-testid="antwort-senden">
       <h2>
         <Reply size={18} aria-hidden style={{ verticalAlign: '-3px', marginRight: 6 }} />
         Antworten
@@ -37,12 +39,15 @@ export function AntwortSenden(p: {
       ) : null}
       {!p.darf ? null : !p.moeglich ? (
         <p className="leise">
-          Der Mailversand ist nicht eingerichtet (SMTP_HOST). Der Entwurf lässt sich im Mailprogramm
-          öffnen.
+          Der Mailversand ist in dieser Installation nicht eingerichtet. Der Entwurf lässt sich im
+          Mailprogramm öffnen.
         </p>
       ) : (
         <Formular aktion={antwortSenden} knopf="Antwort senden" testId="antwort-formular">
-          <input type="hidden" name="nachrichtId" value={p.nachrichtId} />
+          {p.nachrichtId ? <input type="hidden" name="nachrichtId" value={p.nachrichtId} /> : null}
+          {p.portalNachrichtId ? (
+            <input type="hidden" name="portalNachrichtId" value={p.portalNachrichtId} />
+          ) : null}
           <div className="zeile">
             <Feld label="An" name="an" type="email" defaultValue={p.an} required />
             <Feld

@@ -1,7 +1,9 @@
+import { CircleCheck, PauseCircle, TriangleAlert } from 'lucide-react'
 import { listePostfaecher } from '@vermieteros/db'
 import { redirect } from 'next/navigation'
 import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
+import { Status } from '@/components/status'
 import { datumAnzeige, zeitpunktAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { postfachAendern, postfachAnlegen } from './aktionen'
@@ -24,6 +26,12 @@ export default async function PostfaecherSeite() {
       {kiEingerichtet() && process.env['KI_SORTIERUNG'] !== 'aus' ? (
         <KiHinweis was="Jede neu abgerufene Mail wird automatisch nach Thema und Dringlichkeit eingeordnet und" />
       ) : null}
+      {postfaecher.length === 0 ? (
+        <p className="leise" data-testid="postfaecher-leer">
+          Noch kein Postfach verbunden. Unten die Zugangsdaten des Vermietungs-Postfachs eintragen;
+          danach ruft die App neue Mails alle paar Minuten ab.
+        </p>
+      ) : null}
       <ul className="liste" data-testid="postfachliste">
         {postfaecher.map((p) => (
           <li key={p.id} className="karte" data-testid={`postfach-${p.bezeichnung}`}>
@@ -32,11 +40,12 @@ export default async function PostfaecherSeite() {
                 {p.bezeichnung}
                 {p.zweck === 'belege' ? <span className="leise"> · Beleg-Adresse</span> : null}
               </strong>
-              <span
-                className={`ampel ampel-${!p.aktiv ? 'gelb' : p.letzterFehler ? 'rot' : 'gruen'}`}
+              <Status
+                ton={!p.aktiv ? 'gelb' : p.letzterFehler ? 'rot' : 'gruen'}
+                icon={!p.aktiv ? PauseCircle : p.letzterFehler ? TriangleAlert : CircleCheck}
               >
                 {!p.aktiv ? 'deaktiviert' : p.letzterFehler ? 'Fehler beim Abruf' : 'aktiv'}
-              </span>
+              </Status>
             </div>
             <p className="leise">
               {p.benutzer} · {p.host}:{p.port}
@@ -48,7 +57,7 @@ export default async function PostfaecherSeite() {
             </p>
             {p.letzterFehler ? <p className="fehler">{p.letzterFehler}</p> : null}
             <details>
-              <summary>Ändern</summary>
+              <summary>Passwort ersetzen oder deaktivieren</summary>
               <Formular aktion={postfachAendern} knopf="Passwort ersetzen">
                 <input type="hidden" name="postfachId" value={p.id} />
                 {[
@@ -93,7 +102,7 @@ export default async function PostfaecherSeite() {
             name="zweck"
             optionen={[
               ['post', 'Post von Mietern und Handwerkern (Posteingang)'],
-              ['belege', 'Beleg-Adresse: Anhänge landen im Belegeingang'],
+              ['belege', 'Beleg-Adresse: Anhänge landen bei den Belegen'],
             ]}
           />
           <div className="zeile">

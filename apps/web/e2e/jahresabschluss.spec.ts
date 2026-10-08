@@ -26,7 +26,11 @@ test('Jahresabschluss: Checkliste, Erledigen über Link, Wächter im laufenden J
   await e.getByLabel('Bezeichnung').fill('Wohnung 1')
   await e.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByTestId('einheitenliste')).toContainText('Wohnung 1')
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Nachname').fill('Beispiel')
   await v.getByLabel('Mietbeginn').fill(`${vorjahr}-01-01`)
@@ -56,9 +60,9 @@ test('Jahresabschluss: Checkliste, Erledigen über Link, Wächter im laufenden J
   await f.getByLabel('Titel').fill('Grundsteuerbescheid')
   await f.getByLabel('Datum des Dokuments').fill(`${vorjahr - 1}-03-01`)
   await f.getByRole('button', { name: 'Hochladen' }).click()
-  await expect(page.getByTestId('dokument-titel')).toHaveText('Grundsteuerbescheid')
-
-  await page.goto('/jahresabschluss')
+  // UX-7: zurück in den Jahresabschluss, mit Bestätigung
+  await expect(page).toHaveURL(/\/jahresabschluss/)
+  await expect(page.getByTestId('hinweis')).toContainText('Dokument abgelegt.')
   await expect(punkt('grundsteuer')).toHaveAttribute('data-stand', 'erledigt')
   await expect(k.getByTestId('abschluss-stand')).toHaveText('2 von 5 erledigt')
 

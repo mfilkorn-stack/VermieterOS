@@ -61,7 +61,7 @@ export default async function BetriebskostenListe({
       {schreiben ? (
         <div className="karte">
           <h2>Neue Abrechnung</h2>
-          <Formular aktion={bkAnlegen} knopf="Anlegen" testId="bk-anlegen">
+          <Formular aktion={bkAnlegen} knopf="Abrechnung anlegen" testId="bk-anlegen">
             <input type="hidden" name="einheitId" value={eid} />
             <label>
               Jahr
