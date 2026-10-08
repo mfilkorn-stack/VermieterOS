@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Building2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -12,6 +13,9 @@ export default function OeffentlichLayout({ children }: { children: ReactNode })
           <span className="marke-name">Vermieter.OS</span>
         </div>
         <main>{children}</main>
+        <p className="leise oeffentlich-fuss">
+          <Link href="/datenschutz">Datenschutz</Link>
+        </p>
       </div>
     </div>
   )

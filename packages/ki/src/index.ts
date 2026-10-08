@@ -70,4 +70,16 @@ export {
 export { fuerBeleg, type BelegKontextDaten } from './kontext/beleg'
 export { pruefeFundstelle, type Pruefergebnis } from './fundstelle'
 export { belegeAuslesen } from './beleglauf'
-export { musterRechnung, musterSteuerberatung } from './testpdf'
+export { musterKaufvertrag, musterRechnung, musterSteuerberatung } from './testpdf'
+export {
+  bruchAus,
+  flaecheAus,
+  gebaeudeanteilAus,
+  KAUFVERTRAG_EXTRAKTION,
+  KAUFVERTRAG_FELDER,
+  KaufvertragAuszug,
+  werteKaufvertragAus,
+  type GrundbuchAuswertung,
+  type KaufvertragAuswertung,
+  type KaufvertragFeld,
+} from './aufgaben/kaufvertrag'

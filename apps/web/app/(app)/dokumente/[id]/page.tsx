@@ -1,10 +1,18 @@
 import {
+  fachdaten,
   juengsterKiVorschlag,
   ladeDokument,
   ladeZuordnungsKandidaten,
   letzteVersion,
 } from '@vermieteros/db'
-import { werteMietvertragAus, type Auswertung, type MietvertragAuszug } from '@vermieteros/ki'
+import {
+  werteKaufvertragAus,
+  werteMietvertragAus,
+  type Auswertung,
+  type KaufvertragAuszug,
+  type MietvertragAuszug,
+} from '@vermieteros/ki'
+import { ObjektDaten } from '@vermieteros/schema'
 import { CircleCheck, Download, FileSearch, TriangleAlert } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -17,6 +25,8 @@ import { groesseText, mietverhaeltnisText } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { aktuelleVertragsdaten, dokumentSeiten } from '@/lib/vertrag'
 import { dokumentStatus, vertragAuslesen, vertragUebernehmen, vertragVerwerfen } from '../aktionen'
+import { KaufvertragKarte, ScanBestaetigung } from './kaufvertrag'
+import { KiHinweis } from '@/components/ki-hinweis'
 
 const FELD_TEXT: Record<Auswertung['feld'], string> = {
   mietbeginn: 'Mietbeginn',
@@ -59,10 +69,31 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
       : []
     const akt =
       vertrag && d.mietverhaeltnisId ? await aktuelleVertragsdaten(tx, d.mietverhaeltnisId) : null
-    return { d, mv, objekt, vertrag, vorschlag, aktiv, auswertung, akt }
+    const kauf = d.typ === 'kaufvertrag' && d.mime === 'application/pdf' && objekt
+    const kaufVorschlag = kauf
+      ? await juengsterKiVorschlag(tx, 'kaufvertrag_extraktion', { entitaet: 'dokument', id })
+      : null
+    const kaufAktiv =
+      kaufVorschlag && (kaufVorschlag.status === 'offen' || kaufVorschlag.status === 'bestaetigt')
+        ? kaufVorschlag
+        : null
+    const kaufAuswertung = kaufAktiv
+      ? werteKaufvertragAus(kaufAktiv.ausgabe as KaufvertragAuszug, await dokumentSeiten(tx, id))
+      : { felder: [], grundbuch: [] }
+    return {
+      d,
+      mv,
+      objekt,
+      vertrag,
+      vorschlag,
+      aktiv,
+      auswertung,
+      akt,
+      kauf: kauf ? { vorschlag: kaufVorschlag, aktiv: kaufAktiv, ...kaufAuswertung } : null,
+    }
   })
   if (!daten) notFound()
-  const { d, mv, objekt, vertrag, vorschlag, aktiv, auswertung, akt } = daten
+  const { d, mv, objekt, vertrag, vorschlag, aktiv, auswertung, akt, kauf } = daten
   const erfasst: Record<Auswertung['feld'], number | string | null | undefined> = {
     mietbeginn: akt?.mv?.beginn,
     kaution: akt?.mv?.kautionCent,
@@ -176,13 +207,16 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
                 </p>
                 {schreiben && d.status === 'gueltig' ? (
                   kiEingerichtet() ? (
-                    <Formular
-                      aktion={vertragAuslesen}
-                      knopf="Vertrag auslesen"
-                      testId="vertrag-auslesen"
-                    >
-                      <input type="hidden" name="dokumentId" value={d.id} />
-                    </Formular>
+                    <>
+                      <Formular
+                        aktion={vertragAuslesen}
+                        knopf="Vertrag auslesen"
+                        testId="vertrag-auslesen"
+                      >
+                        <input type="hidden" name="dokumentId" value={d.id} />
+                      </Formular>
+                      <KiHinweis was="Der Vertrag" />
+                    </>
                   ) : (
                     <p className="leise">Die KI ist nicht eingerichtet (ANTHROPIC_API_KEY).</p>
                   )
@@ -228,7 +262,7 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
                                   <>
                                     <TriangleAlert size={13} aria-hidden color="var(--gelb)" />{' '}
                                     {w.pruefung === 'scan'
-                                      ? 'Scan ohne Text, bitte selbst prüfen'
+                                      ? 'Scan ohne Text, bitte am Dokument prüfen'
                                       : `nicht belegt (S. ${w.seite})`}
                                   </>
                                 )}
@@ -236,7 +270,9 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
                             </td>
                             <td className="ziffern">{anzeige(w.feld, erfasst[w.feld])}</td>
                             <td>
-                              {w.pruefung === 'belegt' && !gleich ? (
+                              {(w.pruefung === 'belegt' || w.pruefung === 'scan') &&
+                              w.normiert !== null &&
+                              !gleich ? (
                                 <input
                                   type="checkbox"
                                   name="felder"
@@ -255,6 +291,7 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
                       })}
                     </tbody>
                   </table>
+                  {auswertung.some((w) => w.pruefung === 'scan') ? <ScanBestaetigung /> : null}
                   {auszug?.mieter.length ? (
                     <p className="leise">Mieter laut Vertrag: {auszug.mieter.join(', ')}</p>
                   ) : null}
@@ -282,6 +319,19 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
               </>
             )}
           </div>
+        ) : null}
+        {kauf && objekt ? (
+          <KaufvertragKarte
+            dokumentId={d.id}
+            gueltig={d.status === 'gueltig'}
+            schreiben={schreiben}
+            ki={kiEingerichtet()}
+            vorschlag={kauf.vorschlag}
+            aktiv={kauf.aktiv}
+            felder={kauf.felder}
+            grundbuch={kauf.grundbuch}
+            objekt={ObjektDaten.safeParse(fachdaten('objekt', objekt)).data ?? null}
+          />
         ) : null}
       </div>
     </>

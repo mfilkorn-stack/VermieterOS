@@ -1,0 +1,20 @@
+{
+  "beschreibung": "Nicht ausgefülltes Formular mit Fallen: leere Felder, Inklusivmiete, Vorauszahlungen je Kostenart, Sonderkündigungsfrist",
+  "synthetisch": true,
+  "datei": "01-leeres-formular.pdf",
+  "daten": {
+    "titel": "Mietvertrag",
+    "typ": "mietvertrag",
+    "dateiname": "01-leeres-formular.pdf",
+    "mime": "application/pdf",
+    "mietverhaeltnis": null
+  },
+  "erwartet": {
+    "mietbeginn": null,
+    "kaltmiete": null,
+    "vorauszahlung_betriebskosten": null,
+    "vorauszahlung_heizkosten": null,
+    "kaution": null,
+    "kuendigungsfrist_monate": null
+  }
+}

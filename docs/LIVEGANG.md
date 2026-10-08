@@ -10,12 +10,12 @@ Checkliste für das erste Produktiv-Deployment. Die Einzelheiten stehen in [BETR
 
 ## 2 · Entscheidungen vorab
 
-| Frage            | Empfehlung                                                                                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Domain           | `www.vermieteros.app` für die App, `vermieteros.app` leitet dorthin um (`DOMAIN_UMLEITUNG`); Mails von `noreply@vermieteros.app`                                    |
-| Wer registriert  | Nur die eigene Adresse in `REGISTRIERUNG_ERLAUBT`; alle anderen kommen per Einladung                                                                                |
-| KI               | Zum Start aus (`ANTHROPIC_API_KEY` leer). Erst einschalten, wenn der Auftragsverarbeitungsvertrag mit Anthropic abgeschlossen ist (BETRIEB „KI-Schlüssel“)          |
-| Backup-Schlüssel | Restore-Test vom eigenen Rechner statt Schlüssel auf dem Server, wenn der Server möglichst wenig wissen soll; sonst Kopie unter `geheim/backup.key` (BETRIEB, oben) |
+| Frage            | Empfehlung                                                                                                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain           | `www.vermieteros.app` für die App, `vermieteros.app` leitet dorthin um (`DOMAIN_UMLEITUNG`); Mails von `noreply@vermieteros.app`                                                              |
+| Wer registriert  | Nur die eigene Adresse in `REGISTRIERUNG_ERLAUBT`; alle anderen kommen per Einladung                                                                                                          |
+| KI               | Auftragsverarbeitung mit Anthropic steht (Teil der Commercial Terms, BETRIEB „KI-Schlüssel“). Einschalten mit `ANTHROPIC_API_KEY`; vorher Datenschutzhinweis für Mieter um Anthropic ergänzen |
+| Backup-Schlüssel | Restore-Test vom eigenen Rechner statt Schlüssel auf dem Server, wenn der Server möglichst wenig wissen soll; sonst Kopie unter `geheim/backup.key` (BETRIEB, oben)                           |
 
 ## 3 · Geheimnisse erzeugen (eigener Rechner)
 
@@ -112,5 +112,5 @@ Mit Musterdaten, noch ohne echte Mieter:
 - Musterdaten-Mandant behalten oder stehen lassen; echte Daten in einem neuen Mandanten
 - Miteigentümer und Steuerberater einladen (Mitglieder), Rollen prüfen
 - Postfach für den Posteingang und eine Beleg-Adresse verbinden (ohne KI läuft alles bis auf die Vorschläge)
-- KI einschalten erst nach Auftragsverarbeitungsvertrag; vorher `KI_MODELL` nur mit bestandenem Golden-Set
+- KI einschalten: Schlüssel in die `.env`, `docker compose up -d`; `KI_MODELL` nur mit bestandenem Golden-Set ändern
 - Updates: `./deploy.sh sha-<neu>` (sichert vorher automatisch)

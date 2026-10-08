@@ -20,6 +20,8 @@ import { ZuordnenFormular } from '@/components/zuordnen-formular'
 import { zeitpunktAnzeige } from '@/lib/format'
 import { groesseText, mietverhaeltnisText, ZUORDNUNG_TEXT } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { KiHinweis } from '@/components/ki-hinweis'
+import { kiEingerichtet } from '@/lib/ki'
 
 export default async function NachrichtSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -160,6 +162,7 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
             an={n.vonAdresse}
             betreff={n.betreff}
           />
+          {kiEingerichtet() ? <KiHinweis was="Der Inhalt dieser Mail" /> : null}
 
           <div className="karte">
             <h2>Dateien</h2>

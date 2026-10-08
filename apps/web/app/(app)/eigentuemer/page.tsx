@@ -1,8 +1,10 @@
 import { letzteVersion, schema } from '@vermieteros/db'
 import { summeBrueche } from '@vermieteros/rechenkern'
 import { sql } from 'drizzle-orm'
+import { Adresssuche } from '@/components/adresssuche'
 import { Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
+import { adresssucheAn } from '@/lib/adresse'
 import { bruchText, datumAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { anteilAendern, eigentuemerAnlegen } from './aktionen'
@@ -90,6 +92,7 @@ export default async function EigentuemerSeite() {
               <Feld label="Vorname" name="vorname" />
               <Feld label="Nachname" name="nachname" required />
             </div>
+            {adresssucheAn() ? <Adresssuche /> : null}
             <div className="zeile">
               <Feld label="Straße" name="strasse" />
               <Feld label="Hausnummer" name="hausnummer" />

@@ -73,7 +73,7 @@ Der Wert kommt als `POSTFACH_SCHLUESSEL` in die `.env` und zusätzlich in den Pa
 
 ### KI-Schlüssel
 
-`ANTHROPIC_API_KEY` in der `.env` schaltet die KI ein (Web und Worker). Ohne Schlüssel läuft alles außer den KI-Vorschlägen. Bevor echte Mieterdaten an die API gehen: Auftragsverarbeitungsvertrag mit Anthropic abschließen, Commercial Terms (kein Training mit unseren Daten) bestätigen, im Account prüfen, ob EU-Inferenz und verkürzte Aufbewahrung verfügbar sind (PLAN 4.4). Was an die KI geht, steht pro Aufruf als Ereignis `ki_aufruf` im Ledger, ohne Inhalt. `KI_MODELL` nur ändern, wenn das Golden-Set mit dem neuen Modell besteht (Workflow „KI Golden-Set“, manuell starten mit Modell). Mit Schlüssel sortiert der Worker neue Mails der letzten drei Tage automatisch, höchstens `KI_SORTIERUNG_LIMIT` (Standard 20) pro Durchlauf; nach zwei gescheiterten Versuchen bleibt eine Mail unsortiert. `KI_SORTIERUNG=aus` schaltet das ab, Einschätzungen und Entwürfe auf Knopfdruck bleiben. Für CI liegt derselbe Schlüssel als Repository-Secret `ANTHROPIC_API_KEY`; ohne Secret überspringt der wöchentliche Lauf.
+`ANTHROPIC_API_KEY` in der `.env` schaltet die KI ein (Web und Worker). Ohne Schlüssel läuft alles außer den KI-Vorschlägen. Bevor echte Mieterdaten an die API gehen: Die Auftragsverarbeitung (DPA mit Standardvertragsklauseln) ist Teil der Commercial Terms und gilt mit deren Annahme in der Console; Text als PDF ablegen und Anthropic ins Verzeichnis der Verarbeitungstätigkeiten aufnehmen. Außerdem im Account prüfen, ob EU-Inferenz und verkürzte Aufbewahrung verfügbar sind (PLAN 4.4). Was an die KI geht, steht pro Aufruf als Ereignis `ki_aufruf` im Ledger, ohne Inhalt. `KI_MODELL` nur ändern, wenn das Golden-Set mit dem neuen Modell besteht (Workflow „KI Golden-Set“, manuell starten mit Modell). Mit Schlüssel sortiert der Worker neue Mails der letzten drei Tage automatisch, höchstens `KI_SORTIERUNG_LIMIT` (Standard 20) pro Durchlauf; nach zwei gescheiterten Versuchen bleibt eine Mail unsortiert. `KI_SORTIERUNG=aus` schaltet das ab, Einschätzungen und Entwürfe auf Knopfdruck bleiben. Für CI liegt derselbe Schlüssel als Repository-Secret `ANTHROPIC_API_KEY`; ohne Secret überspringt der wöchentliche Lauf.
 
 ### Dokumente
 
@@ -102,6 +102,12 @@ docker compose logs web | grep '\[mail\]'
 ```
 
 `[mail] SMTP bereit (smtp.ionos.de:587)` ist richtig. `nicht erreichbar: getaddrinfo ENOTFOUND` heißt Tippfehler im Host, `Invalid login` oder `535` falscher Benutzer oder falsches Passwort.
+
+### Adresssuche
+
+Objekt anlegen, Stammdaten und Eigentümer haben ein Feld „Adresse suchen“. Ein gewählter Vorschlag füllt Straße, Hausnummer, PLZ, Ort und, wo es das Feld gibt, das Bundesland. Danach zeigt das Formular „Anschrift gefunden“. Weicht man von Hand davon ab, steht dort „abweichend geändert“. Gespeichert wird, was in den Feldern steht.
+
+Die Vorschläge kommen von Photon (OpenStreetMap, betrieben von komoot in Deutschland, ohne Schlüssel und ohne Vertrag; die öffentliche Instanz ist für faire, geringe Nutzung gedacht). Die App fragt vom Server aus an und schickt nur den Suchtext, nie Nutzer, Mandant oder IP des Browsers. `ADRESSSUCHE=aus` blendet das Feld aus, `ADRESSSUCHE_URL` zeigt auf einen eigenen Photon-Server. Ist der Dienst nicht erreichbar, sagt das Formular es und die Felder bleiben normal ausfüllbar.
 
 ### Registrierung
 

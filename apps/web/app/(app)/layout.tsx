@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Building2, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowLeftRight, Building2, FileLock, LogOut, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { NavGruppe, TabLeiste } from '@/components/navigation'
@@ -43,6 +43,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <Link href="/sicherheit" className="nav-link">
               <ShieldCheck size={18} strokeWidth={1.75} aria-hidden />
               <span className="label">Sicherheit</span>
+            </Link>
+            <Link href="/datenschutz" className="nav-link">
+              <FileLock size={18} strokeWidth={1.75} aria-hidden />
+              <span className="label">Datenschutz</span>
             </Link>
             <div className="nutzer">
               <span className="initialen" aria-hidden>

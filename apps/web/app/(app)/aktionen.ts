@@ -64,6 +64,7 @@ export async function objektAnlegen(_: FormStatus, daten: FormData): Promise<For
     hausnummer: feld(daten, 'hausnummer') || null,
     plz: feld(daten, 'plz') || null,
     ort: feld(daten, 'ort') || null,
+    bundesland: feld(daten, 'bundesland') || null,
   }
   const p = ObjektDaten.safeParse(roh)
   if (!p.success)

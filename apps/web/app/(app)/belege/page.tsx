@@ -7,6 +7,7 @@ import { datumAnzeige, euroAnzeige } from '@/lib/format'
 import { kiEingerichtet } from '@/lib/ki'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { belegAuslesenDirekt, belegHochladen } from './aktionen'
+import { KiHinweis } from '@/components/ki-hinweis'
 
 function Herkunft({ b }: { b: BelegZeile }) {
   if (b.ticketId)
@@ -109,6 +110,7 @@ export default async function BelegeSeite({
                 ki={ki}
                 objekte={objekte.map((o) => ({ id: o.id, bezeichnung: o.bezeichnung }))}
               />
+              {ki ? <KiHinweis was="Jeder hochgeladene Beleg" /> : null}
             </div>
           ) : null}
           <div className="karte">

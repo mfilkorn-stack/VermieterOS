@@ -1,9 +1,12 @@
 import { BUNDESLAENDER, BUNDESLAND_NAME } from '@vermieteros/schema'
 import { notFound, redirect } from 'next/navigation'
+import { Adresssuche } from '@/components/adresssuche'
 import { Aenderung, Auswahl, Feld } from '@/components/felder'
+import { AusKaufvertrag } from '@/components/aus-kaufvertrag'
 import { Formular } from '@/components/formular'
 import { GrundbuchEditor } from '@/components/grundbuch-editor'
-import { ladeAkte } from '@/lib/akte'
+import { adresssucheAn } from '@/lib/adresse'
+import { gueltigerKaufvertrag, ladeAkte } from '@/lib/akte'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { grundbuchZuRoh } from '@/lib/umwandeln'
 import { stammdatenSpeichern } from '../aktionen'
@@ -11,12 +14,16 @@ import { stammdatenSpeichern } from '../aktionen'
 export default async function StammdatenSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect(`/objekte/${id}`)
-  const akte = await mitMandant((tx) => ladeAkte(tx, id))
+  const { akte, kaufvertrag } = await mitMandant(async (tx) => ({
+    akte: await ladeAkte(tx, id),
+    kaufvertrag: await gueltigerKaufvertrag(tx, id),
+  }))
   if (!akte) notFound()
   const o = akte.objekt
   return (
     <div className="karte">
       <h1>Stammdaten und Grundbuch</h1>
+      <AusKaufvertrag objektId={id} kaufvertrag={kaufvertrag} />
       <Formular aktion={stammdatenSpeichern} knopf="Speichern" testId="stammdaten">
         <input type="hidden" name="objektId" value={id} />
         <Feld label="Bezeichnung" name="bezeichnung" defaultValue={o.bezeichnung} required />
@@ -29,6 +36,7 @@ export default async function StammdatenSeite({ params }: { params: Promise<{ id
             ['etw', 'Eigentumswohnung'],
           ]}
         />
+        {adresssucheAn() ? <Adresssuche /> : null}
         <div className="zeile">
           <Feld label="Straße" name="strasse" defaultValue={o.strasse ?? ''} />
           <Feld label="Hausnummer" name="hausnummer" defaultValue={o.hausnummer ?? ''} />

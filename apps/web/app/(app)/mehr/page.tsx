@@ -1,4 +1,4 @@
-import { ArrowLeftRight, ChevronRight, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowLeftRight, ChevronRight, FileLock, LogOut, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { NavIcon } from '@/components/navigation'
 import { ladeNavigation } from '@/lib/navigation'
@@ -38,6 +38,13 @@ export default async function MehrSeite() {
           <Link href="/mandanten">
             <ArrowLeftRight size={20} strokeWidth={1.75} aria-hidden />
             <span className="label">Mandant wechseln</span>
+            <ChevronRight size={16} aria-hidden />
+          </Link>
+        </li>
+        <li>
+          <Link href="/datenschutz">
+            <FileLock size={20} strokeWidth={1.75} aria-hidden />
+            <span className="label">Datenschutz</span>
             <ChevronRight size={16} aria-hidden />
           </Link>
         </li>

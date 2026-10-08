@@ -1232,3 +1232,89 @@ img.vorschau {
   padding: 10px 12px;
   margin: 0 0 10px;
 }
+
+/* Adresssuche (components/adresssuche.tsx) */
+.adresssuche {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+.adresssuche-liste {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 2px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--fl);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-klein);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+}
+.adresssuche-liste li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.adresssuche-liste li[aria-selected='true'] {
+  background: var(--akzent-fl);
+}
+.adresse-ok,
+.adresse-abweichend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+}
+.adresse-ok {
+  color: var(--gruen-text);
+}
+.adresse-abweichend {
+  color: var(--gelb-text);
+}
+
+/* Hinweis mit Icon, z. B. „Aus dem Kaufvertrag übernehmen“ */
+.hinweis-box {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-klein);
+  background: var(--akzent-fl);
+  font-size: 0.9375rem;
+}
+.hinweis-box > svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+/* Datenschutzinformation */
+.datenschutz h2 {
+  margin-top: 1.4em;
+}
+.datenschutz ul {
+  padding-left: 1.2em;
+}
+.datenschutz li + li {
+  margin-top: 0.4em;
+}
+.ki-hinweis {
+  font-size: 0.8125rem;
+}
+.oeffentlich .schmal:has(.datenschutz) {
+  max-width: 760px;
+}
+.datenschutz .vergleich {
+  display: block;
+  overflow-x: auto;
+}
+.oeffentlich-fuss {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.8125rem;
+}

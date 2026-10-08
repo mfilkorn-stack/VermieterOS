@@ -1,0 +1,18 @@
+{
+  "beschreibung": "ETW mit separatem Stellplatz, Kaufpreis aufgeteilt, Übergang an Zahlung gebunden",
+  "synthetisch": true,
+  "datei": "01-etw-stellplatz.pdf",
+  "daten": {
+    "titel": "Kaufvertrag",
+    "typ": "kaufvertrag",
+    "dateiname": "01-etw-stellplatz.pdf",
+    "mime": "application/pdf",
+    "mietverhaeltnis": null
+  },
+  "erwartet": {
+    "kaufvertrag_datum": { "wert": "30.04.2021", "seite": 1 },
+    "uebergang_nutzen_lasten": null,
+    "kaufpreis": { "wert": "187.000,00 €", "seite": 3 },
+    "anteil_grund_boden": { "wert": "37.400,00 €", "seite": 3 }
+  }
+}

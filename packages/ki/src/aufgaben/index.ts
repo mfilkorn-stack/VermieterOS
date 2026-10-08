@@ -1,6 +1,7 @@
 import type { Aufgabe } from '../aufgabe'
 import { ANTWORTVORSCHLAG } from './antwortvorschlag'
 import { BELEG_EXTRAKTION } from './beleg'
+import { KAUFVERTRAG_EXTRAKTION } from './kaufvertrag'
 import { MIETVERTRAG_EXTRAKTION } from './mietvertrag'
 import { SORTIERUNG } from './sortierung'
 
@@ -14,4 +15,5 @@ export const AUFGABEN: Array<Aufgabe<any, any>> = [
   ANTWORTVORSCHLAG,
   MIETVERTRAG_EXTRAKTION,
   BELEG_EXTRAKTION,
+  KAUFVERTRAG_EXTRAKTION,
 ]

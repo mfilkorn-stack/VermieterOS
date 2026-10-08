@@ -26,4 +26,6 @@ export const E2E = {
   port: Number(process.env['E2E_PORT'] ?? 3100),
   /** KI-Attrappe statt Anthropic-API (e2e/ki-attrappe.ts) */
   ki: { port: 3198, url: 'http://127.0.0.1:3198', schluessel: 'e2e-attrappe' },
+  /** Photon-Attrappe für die Adresssuche (e2e/adresse-attrappe.ts) */
+  adresse: { port: 3197, url: 'http://127.0.0.1:3197' },
 }

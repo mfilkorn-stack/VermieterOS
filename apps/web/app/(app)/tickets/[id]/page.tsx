@@ -20,6 +20,7 @@ import { darf, mitMandant } from '@/lib/sitzung'
 import { isoZuBerlin } from '@/lib/zeit'
 import { belegAuslesenDirekt, belegHochladen } from '../../belege/aktionen'
 import { ticketAktualisieren } from '../aktionen'
+import { KiHinweis } from '@/components/ki-hinweis'
 
 export default async function TicketSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -192,12 +193,15 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
               </p>
             )}
             {schreiben ? (
-              <BelegImport
-                hochladen={belegHochladen}
-                auslesen={belegAuslesenDirekt}
-                ki={kiEingerichtet()}
-                ticketId={t.id}
-              />
+              <>
+                <BelegImport
+                  hochladen={belegHochladen}
+                  auslesen={belegAuslesenDirekt}
+                  ki={kiEingerichtet()}
+                  ticketId={t.id}
+                />
+                {kiEingerichtet() ? <KiHinweis was="Jede hochgeladene Rechnung" /> : null}
+              </>
             ) : null}
           </div>
         </div>
