@@ -63,13 +63,14 @@ export {
   BELEG_EXTRAKTION,
   BELEG_FELDER,
   BelegAuszug,
+  vorgeschlageneObjekte,
   werteBelegAus,
   type BelegAuswertung,
   type BelegFeld,
 } from './aufgaben/beleg'
 export { fuerBeleg, type BelegKontextDaten } from './kontext/beleg'
 export { pruefeFundstelle, type Pruefergebnis } from './fundstelle'
-export { belegeAuslesen } from './beleglauf'
+export { belegeAuslesen, SEIT_TAGEN as BELEG_TAGE } from './beleglauf'
 export { musterKaufvertrag, musterRechnung, musterSteuerberatung } from './testpdf'
 export {
   bruchAus,
@@ -83,3 +84,4 @@ export {
   type KaufvertragAuswertung,
   type KaufvertragFeld,
 } from './aufgaben/kaufvertrag'
+export { objekteImText, type ObjektReferenz, type ObjektTreffer } from './objektabgleich'

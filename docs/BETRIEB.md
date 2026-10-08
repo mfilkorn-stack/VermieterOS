@@ -81,7 +81,11 @@ Dokumente liegen wie Mails im Object Storage (`mandanten/<id>/dokument/…`), un
 
 ### Belege
 
-Eine eigene Beleg-Adresse ist ein Postfach mit Zweck „Belege“ (eigene Adresse oder eigener Ordner per Regel im Mailprogramm). Ihre Mails erscheinen nicht im Posteingang; jeder PDF- oder Bild-Anhang wird ein Beleg, dieselbe Datei nur einmal. Mit KI-Schlüssel liest der Worker neue Belege der letzten 30 Tage aus, höchstens `KI_BELEGE_LIMIT` (Standard 10) pro Durchlauf, nach zwei Fehlversuchen nicht mehr automatisch. Belege sind steuerlich aufbewahrungspflichtig (mindestens zehn Jahre); sie liegen unveränderlich im Object Storage und werden nie gelöscht, auch nicht nach „Aus dem Eingang nehmen“.
+Eine eigene Beleg-Adresse ist ein Postfach mit Zweck „Belege“ (eigene Adresse oder eigener Ordner per Regel im Mailprogramm). Ihre Mails erscheinen nicht im Posteingang; jeder PDF- oder Bild-Anhang wird ein Beleg, dieselbe Datei nur einmal. Mit KI-Schlüssel liest der Worker neue Belege der letzten 30 Tage aus, bei allen Mandanten (auch ohne Postfach) und unabhängig von `KI_SORTIERUNG`, höchstens `KI_BELEGE_LIMIT` (Standard 10) pro Durchlauf, nach zwei Fehlversuchen nicht mehr automatisch. Uploads im Belegeingang, Rechnungen am Ticket und Dokumente der Art „Beleg“ werden schon beim Hochladen ausgelesen; der Worker fängt auf, was dabei scheitert.
+
+**Anhänge im normalen Posteingang:** In jeder Mail, auch ohne Zuordnung, lässt sich ein PDF- oder Bild-Anhang mit „Als Beleg auslesen“ direkt in den Belegeingang übernehmen oder über „Als Dokument ablegen“ an Mietverhältnis bzw. Objekt ablegen. Belege, Mietverträge (am Mietverhältnis) und Kaufverträge (am Objekt) werden dabei sofort ausgelesen; die Felder sind vorbelegt und werden erst mit Bestätigung übernommen. Ein bereits abgelegter Anhang zeigt „Beleg öffnen“ bzw. „Dokument öffnen“ statt einer zweiten Ablage.
+
+**Vorbelegung beim Buchen:** Werte mit am PDF geprüfter Fundstelle; bei Fotos und Scans ebenfalls alle Werte, gebucht wird dann erst nach dem Haken „am Beleg geprüft“ (Herkunft „Foto oder Scan, von Hand geprüft“). Das Objekt kommt in dieser Reihenfolge: beim Hochladen gewählt oder aus dem Ticket, dann eine Anschrift oder Objektbezeichnung, die wörtlich im Beleg steht, dann der Vorschlag der KI. Betrifft ein Beleg mehrere Objekte (z. B. Steuerberatung für alle), wird gleichmäßig aufgeteilt. Belege sind steuerlich aufbewahrungspflichtig (mindestens zehn Jahre); sie liegen unveränderlich im Object Storage und werden nie gelöscht, auch nicht nach „Aus dem Eingang nehmen“.
 
 ### Mailversand
 
@@ -108,6 +112,8 @@ docker compose logs web | grep '\[mail\]'
 Objekt anlegen, Stammdaten und Eigentümer haben ein Feld „Adresse suchen“. Ein gewählter Vorschlag füllt Straße, Hausnummer, PLZ, Ort und, wo es das Feld gibt, das Bundesland. Danach zeigt das Formular „Anschrift gefunden“. Weicht man von Hand davon ab, steht dort „abweichend geändert“. Gespeichert wird, was in den Feldern steht.
 
 Die Vorschläge kommen von Photon (OpenStreetMap, betrieben von komoot in Deutschland, ohne Schlüssel und ohne Vertrag; die öffentliche Instanz ist für faire, geringe Nutzung gedacht). Die App fragt vom Server aus an und schickt nur den Suchtext, nie Nutzer, Mandant oder IP des Browsers. `ADRESSSUCHE=aus` blendet das Feld aus, `ADRESSSUCHE_URL` zeigt auf einen eigenen Photon-Server. Ist der Dienst nicht erreichbar, sagt das Formular es und die Felder bleiben normal ausfüllbar.
+
+**Firmensuche (Handwerker):** Das Handwerker-Formular hat ein Feld „Firma suchen“. Vorschläge sind OpenStreetMap-Einträge mit Namen über Photon, Handwerksbetriebe zuerst; die Auswahl füllt Firma, Anschrift und, wo eindeutig, das Gewerk. Telefon, E-Mail und Webseite holt die App erst nach der Auswahl, einmal pro Firma, von Nominatim (Nutzungsregeln: kein Abruf beim Tippen, höchstens einer pro Sekunde) und trägt sie nur in leere Felder ein. Nicht jeder Betrieb steht in OpenStreetMap; „Im Internet suchen“ öffnet dann eine Websuche im eigenen Browser. `FIRMENSUCHE=aus` schaltet ab, `FIRMENSUCHE_DETAILS_URL` zeigt auf ein eigenes Nominatim.
 
 ### Registrierung
 

@@ -24,10 +24,10 @@
   },
   "erwartet": {
     "einordnung": {
-      "objekt_id": "o1",
       "steuerkategorie": "betriebskosten",
       "kostenart": "versicherung",
-      "umlagefaehig": true
+      "umlagefaehig": true,
+      "objekt_ids": ["o1"]
     }
   }
 }

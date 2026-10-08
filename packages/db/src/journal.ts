@@ -7,7 +7,7 @@ import type {
 } from '@vermieteros/schema'
 import { sql } from 'drizzle-orm'
 import { v7 as uuidv7 } from 'uuid'
-import type { Tx } from './client'
+import type { Db, Tx } from './client'
 import { neueVersion, storniereVersion } from './ledger'
 import { ereignisse, journalAnteile, journalEintraege, type Akteur } from './schema/index'
 
@@ -361,6 +361,17 @@ export async function objekteFuerBeleg(tx: Tx): Promise<BelegObjekt[]> {
     FROM objekte_aktuell o
     ORDER BY o.bezeichnung`)
   return rows.map((r) => ({ ...r, einheiten: r.einheiten ?? [] }))
+}
+
+/**
+ * Worker: Mandanten mit Dokumenten der letzten Tage, auch ohne Postfach (Belege per Upload).
+ * SECURITY-DEFINER-Funktion, liefert nur IDs; gelesen wird danach im Mandantenkontext.
+ */
+export async function mandantenMitNeuenDokumenten(db: Db, seitTagen: number): Promise<string[]> {
+  const rows = await db.execute<{ id: string }>(
+    sql`SELECT mandanten_mit_neuen_dokumenten(${seitTagen}) AS id`,
+  )
+  return rows.map((r) => r.id)
 }
 
 /** Dateitypen, die als Beleg taugen; Signaturen, vCards und Kalendereinträge bleiben in der Mail. */

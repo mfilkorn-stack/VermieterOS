@@ -18,6 +18,7 @@ test('Datenschutzinformation ohne Anmeldung, mit Verantwortlichem und aktiven Di
   await expect(empfaenger).toContainText('Anthropic PBC')
   await expect(empfaenger).toContainText('Mailanbieter (127.0.0.1)')
   await expect(empfaenger).toContainText('komoot GmbH')
+  await expect(empfaenger).toContainText('OpenStreetMap Foundation (Nominatim)')
   await expect(page.getByTestId('datenschutz-ki')).toContainText('nicht zum Training')
 
   await page.goto('/portal/login')

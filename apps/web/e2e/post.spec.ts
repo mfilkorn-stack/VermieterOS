@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import nodemailer from 'nodemailer'
+import { musterRechnung } from '../../../packages/ki/src/testpdf'
 import { konto, registrieren, workerEinmal } from './hilfen'
 import { E2E } from './umgebung'
 
@@ -230,4 +231,72 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(telefon).toContainText('Donnerstag')
   await expect(telefon).toContainText('korrigiert')
   await expect(telefon).not.toContainText('Mittwoch')
+})
+
+/**
+ * Belege aus Mails: Rechnung als PDF-Anhang einer nicht zugeordneten Mail, mit einem Klick als
+ * Beleg auslesen (KI-Attrappe). Werte und Objekt sind vorbelegt, die Mail verweist danach auf
+ * den Beleg statt einen zweiten anzulegen.
+ */
+test('Mail-Anhang als Beleg auslesen', async ({ page }) => {
+  test.setTimeout(120_000)
+  const stempel = Date.now()
+  const postfach = `belege-${stempel}@example.org`
+  await registrieren(page, konto('Post Beleg', 'postbeleg'))
+  await page.getByTestId('mandant-neu').click()
+  const m = page.getByTestId('mandant-anlegen')
+  await m.getByLabel('Name').fill('Post Beleg Mandant')
+  await m.getByRole('button', { name: 'Anlegen' }).click()
+  await page.getByTestId('objekt-neu').click()
+  const o = page.getByTestId('objekt-anlegen')
+  await o.getByLabel('Bezeichnung').fill('Musterweg 1')
+  await o.getByLabel('Im Bestand seit').fill('2020-01-01')
+  await o.getByRole('button', { name: 'Anlegen' }).click()
+  await expect(page.getByTestId('objekt-titel')).toHaveText('Musterweg 1')
+
+  await page.goto('/postfaecher')
+  const f = page.getByTestId('postfach')
+  await f.getByLabel('IMAP-Server').fill(E2E.imap.host)
+  await f.getByLabel('Port').fill(String(E2E.imap.port))
+  await f.getByLabel(/Verschlüsselt \(TLS\)/).uncheck()
+  await f.getByLabel('Benutzer').fill(postfach)
+  await f.getByLabel('Passwort').fill('app-passwort')
+  await f.getByRole('button', { name: 'Verbindung prüfen und speichern' }).click()
+  await expect(page.getByTestId('postfachliste')).toContainText(postfach)
+
+  const smtp = nodemailer.createTransport({ ...E2E.smtp, secure: false, ignoreTLS: true })
+  await smtp.sendMail({
+    from: 'Wasserversorgung <rechnung@wasser.example>',
+    to: postfach,
+    subject: 'Ihre Jahresrechnung',
+    text: 'Anbei die Rechnung.',
+    attachments: [
+      {
+        filename: 'rechnung.pdf',
+        content: Buffer.from(musterRechnung()),
+        contentType: 'application/pdf',
+      },
+    ],
+  })
+  smtp.close()
+  workerEinmal()
+
+  await page.goto('/posteingang')
+  await page.getByRole('link', { name: 'Ihre Jahresrechnung' }).click()
+  await expect(page.getByTestId('nachricht-betreff')).toHaveText('Ihre Jahresrechnung')
+  const mailUrl = page.url()
+  await page.getByTestId('als-beleg-rechnung.pdf').getByRole('button').click()
+  await expect(page).toHaveURL(/\/belege\/[0-9a-f-]{36}$/)
+  const b = page.getByTestId('beleg-buchen')
+  await expect(b.getByLabel('Betrag (brutto, €)')).toHaveValue('481,50')
+  await expect(b.getByLabel('Zahlungsdatum')).toHaveValue('2026-01-15')
+  await expect(
+    b.getByTestId('anteil').locator('select[name="anteilObjekt"] option:checked'),
+  ).toHaveText('Musterweg 1')
+  const belegUrl = page.url()
+
+  await page.goto(mailUrl)
+  await expect(page.getByTestId('als-beleg-rechnung.pdf')).toHaveCount(0)
+  await page.getByTestId('abgelegt-rechnung.pdf').click()
+  await expect(page).toHaveURL(belegUrl)
 })

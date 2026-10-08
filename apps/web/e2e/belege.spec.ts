@@ -66,7 +66,13 @@ test('Belege: Import, Auslesen, Buchen, Aufteilen, Journal, Storno', async ({ pa
   await expect(f.getByLabel('Rechnungsnummer')).toHaveValue('')
   await expect(f.getByLabel('Kategorie')).toHaveValue('betriebskosten')
   await expect(f.getByLabel('umlagefähig')).toBeChecked()
-  await expect(f.getByTestId('anteil').locator('select[name="anteilObjekt"]')).toHaveValue(/.+/)
+  // Objekt aus der Anschrift im Beleg (am PDF geprüft), nicht geraten
+  await expect(
+    f.getByTestId('anteil').locator('select[name="anteilObjekt"] option:checked'),
+  ).toHaveText('Musterweg 1')
+  await expect(f.getByTestId('buchung-aufteilung')).toContainText(
+    'Im Beleg steht „Musterweg 1“ (S. 1)',
+  )
   await f.getByRole('button', { name: 'Bestätigen und buchen' }).click()
 
   // Ein Klick pro Beleg: weiter zur Steuerberatung, aufteilen auf beide Objekte
@@ -75,17 +81,10 @@ test('Belege: Import, Auslesen, Buchen, Aufteilen, Journal, Storno', async ({ pa
   await expect(s.getByLabel('Betrag (brutto, €)')).toHaveValue('714,00')
   await expect(s.getByLabel('Kategorie')).toHaveValue('verwaltungskosten')
   await s.getByLabel('Zahlungsdatum').fill('2026-03-25')
-  await s
-    .getByTestId('anteil')
-    .first()
-    .locator('select[name="anteilObjekt"]')
-    .selectOption({ label: 'Musterweg 1' })
-  await s.getByTestId('anteil-hinzu').click()
-  await s
-    .getByTestId('anteil')
-    .nth(1)
-    .locator('select[name="anteilObjekt"]')
-    .selectOption({ label: 'Beispielstraße 7' })
+  // „für alle Objekte“: die KI schlägt beide vor, gleichmäßig aufgeteilt
+  const anteile = s.getByTestId('anteil').locator('select[name="anteilObjekt"] option:checked')
+  await expect(anteile).toHaveText(['Beispielstraße 7', 'Musterweg 1'])
+  await expect(s.getByTestId('buchung-aufteilung')).toContainText('gleichmäßig aufgeteilt')
   await s.getByRole('button', { name: 'Bestätigen und buchen' }).click()
   await expect(page.getByTestId('belege-fertig')).toBeVisible()
   await expect(page.getByTestId('belege-gebucht')).toContainText('2026-0001')
@@ -110,6 +109,7 @@ test('Belege: Import, Auslesen, Buchen, Aufteilen, Journal, Storno', async ({ pa
     expect(e!.herkunft['bruttoCent']).toMatchObject({ quelle: 'dokument', seite: 1 })
     expect(e!.herkunft['steuerkategorie']).toMatchObject({ quelle: 'ki_vorschlag' })
     expect(e!.herkunft['rechnungsnummer']).toBeUndefined()
+    expect(e!.herkunft['anteile']).toMatchObject({ quelle: 'dokument', seite: 1 })
   } finally {
     await sql.end()
   }
@@ -138,4 +138,63 @@ test('Belege: Import, Auslesen, Buchen, Aufteilen, Journal, Storno', async ({ pa
   await n.getByRole('button', { name: 'Buchen' }).click()
   await expect(page.getByTestId('journal-titel')).toContainText('Mieterin Beispiel')
   await expect(page.getByTestId('journal-titel')).toContainText('2026-0003')
+})
+
+/** 1×1-PNG: ein Foto ohne Textebene */
+const FOTO = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+/**
+ * Foto eines Belegs: ausgelesen und vorbelegt wie ein PDF, gebucht wird erst nach dem Haken
+ * „am Beleg geprüft“. Beleg über den Dokument-Upload: landet ausgelesen im Belegeingang.
+ */
+test('Belege: Foto mit Bestätigung, Beleg über Dokument-Upload', async ({ page }) => {
+  test.setTimeout(120_000)
+  await registrieren(page, konto('Belege Foto', 'bfoto'))
+  await page.getByTestId('mandant-neu').click()
+  const m = page.getByTestId('mandant-anlegen')
+  await m.getByLabel('Name').fill('Foto Mandant')
+  await m.getByRole('button', { name: 'Anlegen' }).click()
+  await expect(page.getByTestId('objekt-neu')).toBeVisible()
+  await objektAnlegen(page, 'Musterweg 1')
+  const objektId = page.url().split('/').pop()!
+
+  await page.goto('/belege')
+  const imp = page.getByTestId('beleg-import')
+  await imp
+    .getByLabel(/Dateien/)
+    .setInputFiles([{ name: 'foto.png', mimeType: 'image/png', buffer: FOTO }])
+  await imp.getByRole('button', { name: 'Hochladen und auslesen' }).click()
+  await expect(page.getByTestId('import-liste').locator('li[data-stand="fertig"]')).toHaveCount(1)
+  await page.getByTestId('belege-offen').getByRole('link', { name: 'foto' }).click()
+
+  const f = page.getByTestId('beleg-buchen')
+  // Werte aus dem Foto sind vorbelegt, auch die nicht prüfbare Rechnungsnummer
+  await expect(f.getByLabel('Betrag (brutto, €)')).toHaveValue('481,50')
+  await expect(f.getByLabel('Rechnungsnummer')).toHaveValue('W-2026-0816')
+  await expect(page.getByTestId('beleg-ki')).toContainText('Foto oder Scan')
+  const haken = f.getByTestId('scan-bestaetigung').getByRole('checkbox')
+  await expect(haken).not.toBeChecked()
+  await f.getByLabel('Rechnungsnummer').fill('W-2026-0815')
+  await haken.check()
+  await f.getByRole('button', { name: 'Bestätigen und buchen' }).click()
+  await expect(page.getByTestId('belege-fertig')).toBeVisible()
+
+  // Beleg über „Dokument hochladen“ am Objekt: ausgelesen, im Belegeingang
+  await page.goto('/dokumente/neu?objekt=' + objektId + '&typ=beleg')
+  const d = page.getByTestId('dokument-hochladen')
+  await d.getByLabel(/Datei/).setInputFiles({
+    name: 'rechnung.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from(musterRechnung()),
+  })
+  await d.getByLabel('Titel').fill('Wasser per Dokument')
+  await d.getByRole('button', { name: 'Hochladen' }).click()
+  await expect(page).toHaveURL(/\/belege\/[0-9a-f-]{36}$/)
+  await expect(page.getByTestId('beleg-buchen').getByLabel('Betrag (brutto, €)')).toHaveValue(
+    '481,50',
+  )
+  await expect(page.getByTestId('scan-bestaetigung')).toHaveCount(0)
 })

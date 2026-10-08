@@ -1,6 +1,8 @@
 import {
+  dokumenteZuAnhaengen,
   juengsterKiVorschlag,
   ladeNachricht,
+  objekteFuerBeleg,
   ladeZuordnungsKandidaten,
   listeTickets,
 } from '@vermieteros/db'
@@ -38,10 +40,12 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
       antwort: await juengsterKiVorschlag(tx, 'antwortvorschlag', bezug),
       fakten: await nachrichtFakten(tx, id),
       tickets: await listeTickets(tx, { nachrichtId: id }),
+      abgelegt: await dokumenteZuAnhaengen(tx, id),
+      objekte: await objekteFuerBeleg(tx),
     }
   })
   if (!daten) notFound()
-  const { n, kandidaten, sortierung, antwort, fakten, tickets } = daten
+  const { n, kandidaten, sortierung, antwort, fakten, tickets, abgelegt, objekte } = daten
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const kandidatNach = new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k]))
   const aktuell = n.zuordnungen.at(-1)
@@ -179,28 +183,81 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
                     </span>
                   </span>
                   <Download size={16} color="var(--dezent)" aria-hidden />
-                  {schreiben && mv && ablegbar(a.mimeTyp, a.dateiname) ? (
-                    <details className="ablegen">
-                      <summary>Als Dokument ablegen</summary>
+                  {abgelegt
+                    .filter((x) => x.anhangId === a.id)
+                    .map((x) => (
+                      <Link
+                        key={x.dokumentId}
+                        href={(x.beleg ? '/belege/' : '/dokumente/') + x.dokumentId}
+                        className="knopf zweit klein"
+                        data-testid={'abgelegt-' + a.dateiname}
+                      >
+                        {x.beleg ? 'Beleg öffnen' : 'Dokument öffnen'}
+                      </Link>
+                    ))}
+                  {schreiben &&
+                  ablegbar(a.mimeTyp, a.dateiname) &&
+                  !abgelegt.some((x) => x.anhangId === a.id) ? (
+                    <>
                       <Formular
                         aktion={anhangAlsDokument}
-                        knopf="Ablegen"
-                        testId={`ablegen-${a.dateiname}`}
+                        knopf={kiEingerichtet() ? 'Als Beleg auslesen' : 'Als Beleg übernehmen'}
+                        testId={'als-beleg-' + a.dateiname}
+                        zweit
                       >
                         <input type="hidden" name="anhangId" value={a.id} />
-                        <input
-                          type="hidden"
-                          name="mietverhaeltnisId"
-                          value={mv.mietverhaeltnisId}
-                        />
-                        <DokumentArtAuswahl
-                          defaultValue={
-                            a.mimeTyp === 'application/pdf' ? 'mietvertrag' : 'sonstiges'
-                          }
-                        />
-                        <Feld label="Titel" name="titel" defaultValue={a.dateiname} />
+                        <input type="hidden" name="typ" value="beleg" />
+                        <input type="hidden" name="titel" value={n.betreff || a.dateiname} />
+                        {mv ? (
+                          <input
+                            type="hidden"
+                            name="mietverhaeltnisId"
+                            value={mv.mietverhaeltnisId}
+                          />
+                        ) : null}
                       </Formular>
-                    </details>
+                      <details className="ablegen">
+                        <summary>Als Dokument ablegen</summary>
+                        <Formular
+                          aktion={anhangAlsDokument}
+                          knopf={kiEingerichtet() ? 'Ablegen und auslesen' : 'Ablegen'}
+                          testId={'ablegen-' + a.dateiname}
+                        >
+                          <input type="hidden" name="anhangId" value={a.id} />
+                          {mv ? (
+                            <input
+                              type="hidden"
+                              name="mietverhaeltnisId"
+                              value={mv.mietverhaeltnisId}
+                            />
+                          ) : (
+                            <label>
+                              Objekt
+                              <select name="objektId" required defaultValue="">
+                                <option value="" disabled>
+                                  Bitte wählen
+                                </option>
+                                {objekte.map((o) => (
+                                  <option key={o.id} value={o.id}>
+                                    {o.bezeichnung}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          )}
+                          <DokumentArtAuswahl
+                            defaultValue={
+                              a.mimeTyp === 'application/pdf'
+                                ? mv
+                                  ? 'mietvertrag'
+                                  : 'kaufvertrag'
+                                : 'sonstiges'
+                            }
+                          />
+                          <Feld label="Titel" name="titel" defaultValue={a.dateiname} />
+                        </Formular>
+                      </details>
+                    </>
                   ) : null}
                 </li>
               ))}

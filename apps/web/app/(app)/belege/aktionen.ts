@@ -45,6 +45,7 @@ import { mitMandant, verlange, type MandantKontext } from '@/lib/sitzung'
 import { speichere } from '@/lib/speichern'
 import { objektSpeicher } from '@/lib/speicher'
 import { uploadVorbereiten } from '@/lib/upload'
+import { gleicheObjekte, objektVorschlag, type ObjektVorschlag } from '@/lib/beleg-objekte'
 import { dokumentSeiten } from '@/lib/vertrag'
 import { heuteBerlin } from '@/lib/zeit'
 
@@ -248,9 +249,12 @@ function herkunftFuer(
   vorschlagId: string | null,
   auswertung: BelegAuswertung[],
   auszug: BelegAuszug | null,
+  objekt: ObjektVorschlag | null,
 ): Herkunft {
   const belegt = new Map(
-    auswertung.filter((w) => w.pruefung === 'belegt').map((w) => [w.feld, w] as const),
+    auswertung
+      .filter((w) => w.pruefung === 'belegt' || w.pruefung === 'scan')
+      .map((w) => [w.feld, w] as const),
   )
   const paare: Array<[keyof JournalEintragDaten, BelegAuswertung['feld']]> = [
     ['gegenpartei', 'lieferant'],
@@ -267,7 +271,13 @@ function herkunftFuer(
     const w = belegt.get(quelle)
     const eintrag: HerkunftEintrag =
       w && vorschlagId && String(w.normiert) === String(daten[feld])
-        ? { quelle: 'dokument', dokumentId, seite: w.seite, vorschlagId }
+        ? {
+            quelle: 'dokument',
+            dokumentId,
+            seite: w.seite,
+            vorschlagId,
+            ...(w.pruefung === 'scan' ? { hinweis: 'Foto oder Scan, von Hand geprüft' } : {}),
+          }
         : { quelle: 'manuell' }
     if (daten[feld] !== null && daten[feld] !== undefined) h[feld] = eintrag
   }
@@ -277,11 +287,21 @@ function herkunftFuer(
   h['steuerkategorie'] = ki(e?.steuerkategorie === daten.steuerkategorie)
   if (daten.kostenart) h['kostenart'] = ki(e?.kostenart === daten.kostenart)
   h['umlagefaehig'] = ki(e?.umlagefaehig === daten.umlagefaehig)
-  h['anteile'] = ki(
-    Boolean(e?.objekt_id) &&
-      daten.anteile.length === 1 &&
-      daten.anteile[0]?.objektId === e?.objekt_id,
-  )
+  // Aufteilung: Herkunft nach der Quelle des Objekt-Vorschlags, wenn genau so gebucht
+  const gebucht = daten.anteile.map((a) => a.objektId)
+  h['anteile'] =
+    objekt && gleicheObjekte(gebucht, objekt.ids)
+      ? objekt.quelle === 'anschrift'
+        ? {
+            quelle: 'dokument',
+            dokumentId,
+            seite: objekt.seite ?? 1,
+            ...(vorschlagId ? { vorschlagId } : {}),
+          }
+        : objekt.quelle === 'ki'
+          ? ki(true)
+          : { quelle: 'manuell' }
+      : { quelle: 'manuell' }
   return h
 }
 
@@ -305,7 +325,9 @@ export async function belegBuchen(_: FormStatus, d: FormData): Promise<FormStatu
       if (!b) throw new Eingabefehler('Beleg nicht gefunden.')
       if (b.buchung)
         throw new Eingabefehler(`Der Beleg ist schon gebucht (${b.buchung.belegnummer}).`)
-      const daten = buchungAusFormular(d, await objekteFuerBeleg(tx))
+      const objekte = await objekteFuerBeleg(tx)
+      const daten = buchungAusFormular(d, objekte)
+      const seiten = await dokumentSeiten(tx, dokumentId)
       let auswertung: BelegAuswertung[] = []
       let auszug: BelegAuszug | null = null
       if (vorschlagId) {
@@ -329,8 +351,18 @@ export async function belegBuchen(_: FormStatus, d: FormData): Promise<FormStatu
             )
         }
         auszug = v.ausgabe as BelegAuszug
-        auswertung = werteBelegAus(auszug, await dokumentSeiten(tx, dokumentId))
+        auswertung = werteBelegAus(auszug, seiten)
+        if (auswertung.some((w) => w.pruefung === 'scan') && text(d, 'scanGeprueft') !== 'ja')
+          throw new Eingabefehler('Bitte bestätigen, dass du die Werte am Beleg geprüft hast.')
       }
+      const ticket = b.ticketId ? await ladeTicket(tx, b.ticketId) : null
+      const objekt = objektVorschlag({
+        objekte,
+        objektId: b.objektId ?? ticket?.objektId ?? null,
+        ticket: ticket ? { titel: ticket.titel, objekt: ticket.objekt } : null,
+        seiten,
+        einordnung: auszug?.einordnung,
+      })
       await bucheJournal(tx, {
         mandantId: k.mandantId,
         akteur: { art: 'nutzer', id: k.nutzerId },
@@ -338,7 +370,7 @@ export async function belegBuchen(_: FormStatus, d: FormData): Promise<FormStatu
         dokumentId,
         ticketId: b.ticketId,
         vorschlagId,
-        herkunft: herkunftFuer(daten, dokumentId, vorschlagId, auswertung, auszug),
+        herkunft: herkunftFuer(daten, dokumentId, vorschlagId, auswertung, auszug, objekt),
       })
       const n = await naechsterOffenerBeleg(tx, dokumentId)
       return n ? `/belege/${n}` : '/belege?gebucht=1'

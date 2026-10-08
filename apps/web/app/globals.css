@@ -1318,3 +1318,13 @@ img.vorschau {
   text-align: center;
   font-size: 0.8125rem;
 }
+.firmensuche-fuss {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.knopf.klein {
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+}

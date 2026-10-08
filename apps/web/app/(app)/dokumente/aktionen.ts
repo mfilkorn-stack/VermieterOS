@@ -2,14 +2,18 @@
 
 import {
   anhangFuerDokument,
+  belegMitHash,
+  ladeZuordnungsKandidaten,
   fachdaten,
   ladeDokument,
   letzteVersion,
   type Tx,
 } from '@vermieteros/db'
 import {
+  BELEG_EXTRAKTION,
   bestaetigeVorschlagInTx,
   erzeugeVorschlag,
+  fuerBeleg,
   fuerDokument,
   gebaeudeanteilAus,
   KAUFVERTRAG_EXTRAKTION,
@@ -62,6 +66,7 @@ async function ablegen(
     bezug: { objektId: string | null; mietverhaeltnisId: string | null }
     datei: { schluessel: string; sha256: string; dateiname: string; mime: string; groesse: number }
     daten: ReturnType<typeof daten>
+    anhangId?: string
     ersetztId: string | null
   },
 ): Promise<string> {
@@ -74,11 +79,18 @@ async function ablegen(
   ) {
     throw new Eingabefehler('Mietverhältnis nicht gefunden.')
   }
+  if (p.daten.typ === 'beleg') {
+    const doppelt = await belegMitHash(tx, p.datei.sha256)
+    if (doppelt) throw new Eingabefehler('Diesen Beleg gibt es schon im Belegeingang.')
+  }
   const r = await speichere(tx, k, {
     entitaet: 'dokument',
     identitaet: {
       objektId: p.bezug.objektId,
       mietverhaeltnisId: p.bezug.mietverhaeltnisId,
+      // Art „Beleg“ kommt in den Belegeingang wie ein Upload dort (Auslesen, Buchen)
+      beleg: p.daten.typ === 'beleg',
+      anhangId: p.anhangId ?? null,
       dateiHash: p.datei.sha256,
       speicherSchluessel: p.datei.schluessel,
       dateiname: p.datei.dateiname,
@@ -112,6 +124,42 @@ async function letzteVersionDaten(tx: Tx, id: string) {
   return fachdaten('dokument', v)
 }
 
+/**
+ * Nach dem Ablegen gleich auslesen, wie beim Sammel-Upload der Belege: Belege immer, Mietverträge
+ * am Mietverhältnis und Kaufverträge am Objekt (jeweils PDF). Ein Fehler der KI hält das Ablegen
+ * nicht auf; Belege versucht der Worker erneut, Verträge lassen sich per Knopf neu auslesen.
+ */
+async function auslesenNachAblage(id: string): Promise<string> {
+  const dok = await mitMandant((tx) => ladeDokument(tx, id))
+  if (!dok) return `/dokumente/${id}`
+  const aufgabe =
+    dok.typ === 'beleg'
+      ? BELEG_EXTRAKTION
+      : dok.mime !== 'application/pdf'
+        ? null
+        : dok.typ === 'mietvertrag' && dok.mietverhaeltnisId
+          ? MIETVERTRAG_EXTRAKTION
+          : dok.typ === 'kaufvertrag' && dok.objektId
+            ? KAUFVERTRAG_EXTRAKTION
+            : null
+  const u = aufgabe ? await kiUmgebung() : null
+  if (u && aufgabe) {
+    try {
+      if (aufgabe === BELEG_EXTRAKTION)
+        await erzeugeVorschlag(u, BELEG_EXTRAKTION, (tx) => fuerBeleg(tx, id, objektSpeicher()))
+      else
+        await erzeugeVorschlag(u, aufgabe as typeof MIETVERTRAG_EXTRAKTION, (tx) =>
+          fuerDokument(tx, id, objektSpeicher()),
+        )
+    } catch (e) {
+      console.warn(
+        '[dokument] Auslesen nach Ablage gescheitert: ' + (e instanceof Error ? e.message : e),
+      )
+    }
+  }
+  return dok.typ === 'beleg' ? `/belege/${id}` : `/dokumente/${id}`
+}
+
 export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<FormStatus> {
   let id: string
   try {
@@ -143,17 +191,21 @@ export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<For
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
-  redirect(`/dokumente/${id}`)
+  redirect(await auslesenNachAblage(id))
 }
 
-/** Anhang einer zugeordneten Mail als Dokument ablegen; die Datei liegt schon im Speicher. */
+/**
+ * Anhang einer Mail als Dokument oder Beleg ablegen; die Datei liegt schon im Speicher. Die Mail
+ * muss keinem Mietverhältnis zugeordnet sein: Dokumente brauchen ein Objekt, Belege nicht.
+ */
 export async function anhangAlsDokument(_: FormStatus, d: FormData): Promise<FormStatus> {
   let id: string
   try {
     await verlange({ stammdaten: ['schreiben'] })
-    const mietverhaeltnisId = pflicht(d, 'mietverhaeltnisId', 'Mietverhältnis')
+    const mietverhaeltnisId = text(d, 'mietverhaeltnisId')
+    const anhangId = pflicht(d, 'anhangId', 'Anhang')
     id = await mitMandant(async (tx, k) => {
-      const a = await anhangFuerDokument(tx, pflicht(d, 'anhangId', 'Anhang'))
+      const a = await anhangFuerDokument(tx, anhangId)
       if (!a) throw new Eingabefehler('Anhang nicht gefunden.')
       const mime = mimeErmitteln(a.mimeTyp, a.dateiname, new Uint8Array())
       let datei = {
@@ -171,17 +223,29 @@ export async function anhangAlsDokument(_: FormStatus, d: FormData): Promise<For
       } else if (!ERLAUBTE_TYPEN.has(mime)) {
         throw new Eingabefehler('Diese Dateiart wird nicht abgelegt.')
       }
+      const dokumentDaten = daten(d, datei.dateiname)
+      // Objekt: gewählt oder das Objekt des Mietverhältnisses (Kaufvertrag braucht es)
+      const objektId =
+        text(d, 'objektId') ??
+        (mietverhaeltnisId
+          ? ((await ladeZuordnungsKandidaten(tx)).find(
+              (x) => x.mietverhaeltnisId === mietverhaeltnisId,
+            )?.objektId ?? null)
+          : null)
+      if (!objektId && !mietverhaeltnisId && dokumentDaten.typ !== 'beleg')
+        throw new Eingabefehler('Bitte ein Objekt wählen (nur Belege dürfen ohne Objekt sein).')
       return ablegen(tx, k, {
-        bezug: { objektId: null, mietverhaeltnisId },
+        bezug: { objektId, mietverhaeltnisId },
         datei,
-        daten: daten(d, datei.dateiname),
+        daten: dokumentDaten,
         ersetztId: null,
+        anhangId,
       })
     })
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
-  redirect(`/dokumente/${id}`)
+  redirect(await auslesenNachAblage(id))
 }
 
 /** Status „abgelaufen“ oder wieder „gültig“; „ersetzt“ entsteht nur beim Ersetzen. */

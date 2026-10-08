@@ -30,6 +30,8 @@ export type BuchungVorgabe = {
   verteilungJahre?: number | null
   beschreibung?: string | null
   objektId?: string | null
+  /** Mehrere Objekte: je eine Zeile, Beträge leer = gleichmäßig aufteilen */
+  objektIds?: string[]
 }
 
 type Zeile = { schluessel: number; objektId: string; einheitId: string; betrag: string }
@@ -58,9 +60,11 @@ export function BuchungFelder({
       ? vorgabe.steuerkategorie
       : '',
   )
-  const [zeilen, setZeilen] = useState<Zeile[]>([
-    { schluessel: 0, objektId: vorgabe.objektId ?? '', einheitId: '', betrag: '' },
-  ])
+  const [zeilen, setZeilen] = useState<Zeile[]>(
+    (vorgabe.objektIds?.length ? vorgabe.objektIds : [vorgabe.objektId ?? '']).map(
+      (objektId, schluessel) => ({ schluessel, objektId, einheitId: '', betrag: '' }),
+    ),
+  )
   const aendere = (i: number, z: Partial<Zeile>) =>
     setZeilen((alt) => alt.map((x, j) => (j === i ? { ...x, ...z } : x)))
 

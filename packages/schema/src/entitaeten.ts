@@ -268,6 +268,15 @@ export const HandwerkerDaten = z.object({
   telefon: Telefon.nullish(),
   notdienstTelefon: Telefon.nullish(),
   email: Email.nullish(),
+  strasse: Text.nullish(),
+  hausnummer: z.string().trim().max(20).nullish(),
+  plz: Plz.nullish(),
+  ort: Text.nullish(),
+  /** Webseite, nur http(s) */
+  webseite: z
+    .url({ protocol: /^https?$/ })
+    .max(300)
+    .nullish(),
   /** Erreichbar außerhalb der Geschäftszeiten */
   notdienst: z.boolean().default(false),
   /** Für welche Objekte; leer = alle */

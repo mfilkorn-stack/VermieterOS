@@ -45,6 +45,9 @@ services:
       # Adresssuche (Photon/OpenStreetMap); ADRESSSUCHE=aus schaltet sie ab
       ADRESSSUCHE: ${ADRESSSUCHE:-}
       ADRESSSUCHE_URL: ${ADRESSSUCHE_URL:-}
+      # Firmensuche im Handwerkerverzeichnis (Photon + Nominatim); FIRMENSUCHE=aus schaltet sie ab
+      FIRMENSUCHE: ${FIRMENSUCHE:-}
+      FIRMENSUCHE_DETAILS_URL: ${FIRMENSUCHE_DETAILS_URL:-}
       # Downloads von Mails und Anhängen (WP 1.2)
       S3_ENDPOINT: ${S3_ENDPOINT}
       S3_REGION: ${S3_REGION:-fsn1}

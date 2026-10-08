@@ -24,6 +24,11 @@ export type HandwerkerZeile = {
   telefon: string | null
   notdienstTelefon: string | null
   email: string | null
+  strasse: string | null
+  hausnummer: string | null
+  plz: string | null
+  ort: string | null
+  webseite: string | null
   notdienst: boolean
   objektIds: string[]
   bewertung: number | null
@@ -34,7 +39,8 @@ export type HandwerkerZeile = {
 export async function listeHandwerker(tx: Tx): Promise<HandwerkerZeile[]> {
   return tx.execute<HandwerkerZeile>(sql`
     SELECT handwerker_id AS id, firma, ansprechpartner, gewerke, telefon,
-           notdienst_telefon AS "notdienstTelefon", email, notdienst, objekt_ids AS "objektIds",
+           notdienst_telefon AS "notdienstTelefon", email, strasse, hausnummer, plz, ort, webseite,
+           notdienst, objekt_ids AS "objektIds",
            bewertung, notizen, gueltig_ab::text AS "gueltigAb"
     FROM handwerker_aktuell ORDER BY lower(firma)`)
 }

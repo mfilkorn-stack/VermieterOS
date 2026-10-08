@@ -2,21 +2,28 @@ import type { HandwerkerZeile } from '@vermieteros/db'
 import { GEWERKE } from '@vermieteros/schema'
 import { handwerkerSpeichern } from '@/app/(app)/handwerker/aktionen'
 import { GEWERK_TEXT } from '@/lib/betrieb-text'
+import { Adresssuche } from './adresssuche'
 import { Aenderung, Feld } from './felder'
+import { Firmensuche } from './firmensuche'
 import { Formular } from './formular'
 
 export function HandwerkerFormular({
   h,
   objekte,
   heute,
+  firmensuche,
+  adresssuche,
 }: {
   h?: HandwerkerZeile
   objekte: Array<{ id: string; bezeichnung: string }>
   heute: string
+  firmensuche: boolean
+  adresssuche: boolean
 }) {
   return (
     <Formular aktion={handwerkerSpeichern} knopf="Speichern" testId="handwerker">
       {h ? <input type="hidden" name="handwerkerId" value={h.id} /> : null}
+      {firmensuche ? <Firmensuche /> : null}
       <div className="zeile">
         <Feld label="Firma oder Name" name="firma" defaultValue={h?.firma ?? ''} required />
         <Feld
@@ -44,6 +51,20 @@ export function HandwerkerFormular({
       <div className="zeile">
         <Feld label="Telefon" name="telefon" type="tel" defaultValue={h?.telefon ?? ''} />
         <Feld label="E-Mail" name="email" type="email" defaultValue={h?.email ?? ''} />
+      </div>
+      <Feld
+        label="Webseite"
+        name="webseite"
+        type="url"
+        placeholder="https://"
+        defaultValue={h?.webseite ?? ''}
+      />
+      {adresssuche ? <Adresssuche /> : null}
+      <div className="zeile">
+        <Feld label="Straße" name="strasse" defaultValue={h?.strasse ?? ''} />
+        <Feld label="Hausnummer" name="hausnummer" defaultValue={h?.hausnummer ?? ''} />
+        <Feld label="PLZ" name="plz" inputMode="numeric" defaultValue={h?.plz ?? ''} />
+        <Feld label="Ort" name="ort" defaultValue={h?.ort ?? ''} />
       </div>
       <div className="zeile">
         <label className="haken">

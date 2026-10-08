@@ -1,5 +1,5 @@
 import { listeHandwerker } from '@vermieteros/db'
-import { HardHat, Mail, Phone, Plus, Siren, Star } from 'lucide-react'
+import { Globe, HardHat, Mail, MapPin, Phone, Plus, Siren, Star } from 'lucide-react'
 import Link from 'next/link'
 import { Status } from '@/components/status'
 import { GEWERK_TEXT } from '@/lib/betrieb-text'
@@ -70,6 +70,16 @@ export default async function HandwerkerSeite() {
                 <a href={`mailto:${h.email}`}>
                   <Mail size={14} aria-hidden /> {h.email}
                 </a>
+              ) : null}
+              {h.webseite ? (
+                <a href={h.webseite} target="_blank" rel="noopener noreferrer">
+                  <Globe size={14} aria-hidden /> Webseite
+                </a>
+              ) : null}
+              {h.ort ? (
+                <span>
+                  <MapPin size={14} aria-hidden /> {[h.plz, h.ort].filter(Boolean).join(' ')}
+                </span>
               ) : null}
             </p>
           </li>

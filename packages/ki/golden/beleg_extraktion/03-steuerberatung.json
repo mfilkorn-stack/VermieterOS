@@ -24,10 +24,10 @@
   },
   "erwartet": {
     "einordnung": {
-      "objekt_id": null,
       "steuerkategorie": "verwaltungskosten",
       "kostenart": null,
-      "umlagefaehig": false
+      "umlagefaehig": false,
+      "objekt_ids": ["o1", "o2"]
     }
   }
 }
