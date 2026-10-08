@@ -56,7 +56,7 @@ Für den monatlichen Restore-Test auf dem Server liegt eine Kopie unter `/srv/ve
 ssh betrieb@<server>
 cd /srv/vermieteros
 # aus dem Repository: ops/compose.yml, Caddyfile, postgres-init.sh, deploy.sh, env.beispiel
-cp env.beispiel .env && chmod 600 .env    # ausfüllen, Passwörter mit: openssl rand -hex 24
+cp -n env.beispiel .env && chmod 600 .env    # -n überschreibt keine vorhandene .env; Passwörter mit: openssl rand -hex 24
 # Der ops-Container läuft als uid 70 (postgres) und muss das Verzeichnis lesen können.
 sudo install -d -o 70 -g 70 -m 700 geheim
 # optional, für den Restore-Test auf dem Server (siehe oben):

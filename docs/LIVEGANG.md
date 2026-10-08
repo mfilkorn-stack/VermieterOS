@@ -70,7 +70,7 @@ Absender ist das IONOS-Postfach `noreply@vermieteros.app`. Ohne Mailversand lass
 scp ops/{compose.yml,Caddyfile,postgres-init.sh,deploy.sh,env.beispiel} betrieb@<server>:/srv/vermieteros/
 ssh betrieb@<server>
 cd /srv/vermieteros
-cp env.beispiel .env && chmod 600 .env && nano .env
+cp -n env.beispiel .env && chmod 600 .env && nano .env   # -n: eine vorhandene .env wird nie überschrieben
 sudo install -d -o 70 -g 70 -m 700 geheim
 # nur wenn der Restore-Test auf dem Server laufen soll:
 sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
