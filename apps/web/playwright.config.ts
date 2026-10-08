@@ -38,6 +38,9 @@ export default defineConfig({
       ANTHROPIC_API_KEY: E2E.ki.schluessel,
       ANTHROPIC_BASE_URL: E2E.ki.url,
       ADRESSSUCHE_URL: E2E.adresse.url,
+      DATENSCHUTZ_VERANTWORTLICHER: 'Vermieter Muster',
+      DATENSCHUTZ_ANSCHRIFT: 'Musterweg 1, 99999 Musterstadt',
+      DATENSCHUTZ_EMAIL: 'datenschutz@example.org',
       // Mailversand an GreenMail (Einladungen, Anmeldelinks, Hinweise an Vermieter)
       SMTP_HOST: E2E.smtp.host,
       SMTP_PORT: String(E2E.smtp.port),

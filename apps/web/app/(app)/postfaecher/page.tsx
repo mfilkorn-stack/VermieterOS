@@ -5,6 +5,8 @@ import { Formular } from '@/components/formular'
 import { datumAnzeige, zeitpunktAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { postfachAendern, postfachAnlegen } from './aktionen'
+import { KiHinweis } from '@/components/ki-hinweis'
+import { kiEingerichtet } from '@/lib/ki'
 
 export default async function PostfaecherSeite() {
   if (!(await darf({ post: ['postfaecher'] }))) redirect('/posteingang')
@@ -19,6 +21,9 @@ export default async function PostfaecherSeite() {
         oder gelöscht. Abruf alle paar Minuten. Das Passwort wird verschlüsselt gespeichert und nie
         wieder angezeigt; am besten ein App-Passwort des Anbieters verwenden.
       </p>
+      {kiEingerichtet() && process.env['KI_SORTIERUNG'] !== 'aus' ? (
+        <KiHinweis was="Jede neu abgerufene Mail wird automatisch nach Thema und Dringlichkeit eingeordnet und" />
+      ) : null}
       <ul className="liste" data-testid="postfachliste">
         {postfaecher.map((p) => (
           <li key={p.id} className="karte" data-testid={`postfach-${p.bezeichnung}`}>

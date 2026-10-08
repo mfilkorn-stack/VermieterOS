@@ -7,6 +7,7 @@ import type {
 import type { ObjektDaten } from '@vermieteros/schema'
 import { CircleCheck, FileSearch, TriangleAlert } from 'lucide-react'
 import { Formular } from '@/components/formular'
+import { KiHinweis } from '@/components/ki-hinweis'
 import { Status } from '@/components/status'
 import { datumAnzeige, euroAnzeige } from '@/lib/format'
 import { kaufvertragUebernehmen, vertragAuslesen, vertragVerwerfen } from '../aktionen'
@@ -115,9 +116,16 @@ export function KaufvertragKarte(p: {
           </p>
           {p.schreiben && p.gueltig ? (
             p.ki ? (
-              <Formular aktion={vertragAuslesen} knopf="Vertrag auslesen" testId="vertrag-auslesen">
-                <input type="hidden" name="dokumentId" value={p.dokumentId} />
-              </Formular>
+              <>
+                <Formular
+                  aktion={vertragAuslesen}
+                  knopf="Vertrag auslesen"
+                  testId="vertrag-auslesen"
+                >
+                  <input type="hidden" name="dokumentId" value={p.dokumentId} />
+                </Formular>
+                <KiHinweis was="Der Kaufvertrag" />
+              </>
             ) : (
               <p className="leise">Die KI ist nicht eingerichtet (ANTHROPIC_API_KEY).</p>
             )

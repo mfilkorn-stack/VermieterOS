@@ -1292,3 +1292,29 @@ img.vorschau {
   flex: none;
   margin-top: 3px;
 }
+
+/* Datenschutzinformation */
+.datenschutz h2 {
+  margin-top: 1.4em;
+}
+.datenschutz ul {
+  padding-left: 1.2em;
+}
+.datenschutz li + li {
+  margin-top: 0.4em;
+}
+.ki-hinweis {
+  font-size: 0.8125rem;
+}
+.oeffentlich .schmal:has(.datenschutz) {
+  max-width: 760px;
+}
+.datenschutz .vergleich {
+  display: block;
+  overflow-x: auto;
+}
+.oeffentlich-fuss {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.8125rem;
+}

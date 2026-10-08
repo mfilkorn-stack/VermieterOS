@@ -26,6 +26,7 @@ import { darf, mitMandant } from '@/lib/sitzung'
 import { aktuelleVertragsdaten, dokumentSeiten } from '@/lib/vertrag'
 import { dokumentStatus, vertragAuslesen, vertragUebernehmen, vertragVerwerfen } from '../aktionen'
 import { KaufvertragKarte, ScanBestaetigung } from './kaufvertrag'
+import { KiHinweis } from '@/components/ki-hinweis'
 
 const FELD_TEXT: Record<Auswertung['feld'], string> = {
   mietbeginn: 'Mietbeginn',
@@ -206,13 +207,16 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
                 </p>
                 {schreiben && d.status === 'gueltig' ? (
                   kiEingerichtet() ? (
-                    <Formular
-                      aktion={vertragAuslesen}
-                      knopf="Vertrag auslesen"
-                      testId="vertrag-auslesen"
-                    >
-                      <input type="hidden" name="dokumentId" value={d.id} />
-                    </Formular>
+                    <>
+                      <Formular
+                        aktion={vertragAuslesen}
+                        knopf="Vertrag auslesen"
+                        testId="vertrag-auslesen"
+                      >
+                        <input type="hidden" name="dokumentId" value={d.id} />
+                      </Formular>
+                      <KiHinweis was="Der Vertrag" />
+                    </>
                   ) : (
                     <p className="leise">Die KI ist nicht eingerichtet (ANTHROPIC_API_KEY).</p>
                   )

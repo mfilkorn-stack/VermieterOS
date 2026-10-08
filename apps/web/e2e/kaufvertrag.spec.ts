@@ -21,6 +21,7 @@ test('Kaufvertrag: Hochladen, Auslesen, Übernahme in Kauf und Grundbuch', async
   await o.getByLabel('Art').selectOption('etw')
   await o.getByLabel('Im Bestand seit').fill('2021-06-01')
   await o.getByRole('button', { name: 'Anlegen' }).click()
+  await expect(page).toHaveURL(/\/objekte\/[0-9a-f-]{36}$/)
   const akte = page.url()
 
   // Einstieg aus dem Kauf-Schritt: noch kein Kaufvertrag, also Hochladen
@@ -89,5 +90,10 @@ test('Kaufvertrag: Hochladen, Auslesen, Übernahme in Kauf und Grundbuch', async
     await sql.end()
   }
   await page.goto(akte + '/stammdaten')
-  await expect(page.getByTestId('stammdaten')).toContainText('W-1')
+  const s = page.getByTestId('stammdaten')
+  await expect(s.getByLabel('Blatt', { exact: true }).first()).toHaveValue('W-1')
+  await expect(s.getByLabel('Miteigentumsanteil (Zähler)').first()).toHaveValue('88,89')
+  await expect(s.getByLabel('Nenner').first()).toHaveValue('1000')
+  // Das Stellplatz-Blatt mit erfundener Fläche wurde nicht übernommen
+  await expect(s.getByLabel('Blatt', { exact: true })).toHaveCount(1)
 })

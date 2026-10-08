@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Building2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -15,6 +16,9 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
           <span className="marke-name">Mieterportal</span>
         </div>
         <main>{children}</main>
+        <p className="leise oeffentlich-fuss">
+          <Link href="/datenschutz">Datenschutz</Link>
+        </p>
       </div>
     </div>
   )

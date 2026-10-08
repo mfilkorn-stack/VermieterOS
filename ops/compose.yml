@@ -31,6 +31,11 @@ services:
       # KI (WP 1.4), optional
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       KI_MODELL: ${KI_MODELL:-}
+      KI_SORTIERUNG: ${KI_SORTIERUNG:-}
+      # Datenschutzinformation (/datenschutz): Verantwortlicher, nicht im Repository
+      DATENSCHUTZ_VERANTWORTLICHER: ${DATENSCHUTZ_VERANTWORTLICHER:-}
+      DATENSCHUTZ_ANSCHRIFT: ${DATENSCHUTZ_ANSCHRIFT:-}
+      DATENSCHUTZ_EMAIL: ${DATENSCHUTZ_EMAIL:-}
       # Mailversand (WP 1.10): Bestätigungen, Einladungen, Mieterportal; leer = kein Versand
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

@@ -30,6 +30,7 @@ import {
   belegAuswertungVerwerfen,
   belegBuchen,
 } from '../aktionen'
+import { KiHinweis } from '@/components/ki-hinweis'
 
 function anzeige(w: BelegAuswertung): string {
   if (w.normiert === null) return w.wert
@@ -214,9 +215,16 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
                 </p>
                 {schreiben && !gebucht ? (
                   kiEingerichtet() ? (
-                    <Formular aktion={belegAuslesen} knopf="Beleg auslesen" testId="beleg-auslesen">
-                      <input type="hidden" name="dokumentId" value={b.id} />
-                    </Formular>
+                    <>
+                      <Formular
+                        aktion={belegAuslesen}
+                        knopf="Beleg auslesen"
+                        testId="beleg-auslesen"
+                      >
+                        <input type="hidden" name="dokumentId" value={b.id} />
+                      </Formular>
+                      <KiHinweis was="Der Beleg" />
+                    </>
                   ) : (
                     <p className="leise">
                       Die KI ist nicht eingerichtet (ANTHROPIC_API_KEY). Bitte von Hand buchen.
