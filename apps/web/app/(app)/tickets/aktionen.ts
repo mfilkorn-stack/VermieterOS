@@ -1,15 +1,32 @@
 'use server'
 
-import { ladeTicket, letzteVersion, schema, type Tx } from '@vermieteros/db'
+import {
+  fachdaten,
+  ladeDokument,
+  ladeTicket,
+  letzteVersion,
+  schema,
+  type Tx,
+} from '@vermieteros/db'
+import {
+  bestaetigeVorschlagInTx,
+  erzeugeVorschlag,
+  fuerDokument,
+  TICKET_EXTRAKTION,
+} from '@vermieteros/ki'
 import { eq } from 'drizzle-orm'
-import { TicketDaten, type TicketStatus } from '@vermieteros/schema'
+import { DokumentDaten, TicketDaten, type TicketStatus } from '@vermieteros/schema'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { TICKET_STATUS_TEXT } from '@/lib/betrieb-text'
+import { DATEI_FEHLER, ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
 import { Eingabefehler, pflicht, text, zodText } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
-import { mitMandant, verlange } from '@/lib/sitzung'
+import { kiUmgebung } from '@/lib/ki'
+import { mitMandant, verlange, type MandantKontext } from '@/lib/sitzung'
+import { objektSpeicher } from '@/lib/speicher'
 import { speichere } from '@/lib/speichern'
+import { uploadVorbereiten } from '@/lib/upload'
 import { berlinZuIso, heuteBerlin } from '@/lib/zeit'
 
 const LABELS = { titel: 'Titel', auftragnehmerId: 'Handwerker', termin: 'Termin' }
@@ -63,6 +80,18 @@ export async function ticketAnlegen(_: FormStatus, d: FormData): Promise<FormSta
         daten: p.data,
         gueltigAb: heuteBerlin(),
       })
+      const dokumentId = text(d, 'dokumentId')
+      if (dokumentId) await dateiAnsTicket(tx, k, dokumentId, r.identId, objektId)
+      const vorschlagId = text(d, 'vorschlagId')
+      if (vorschlagId) {
+        // Der Vorschlag gilt als bestätigt, sobald das Ticket aus ihm entsteht; veraltete
+        // Vorschläge (Datei inzwischen ersetzt) halten das Anlegen nicht auf.
+        await bestaetigeVorschlagInTx(
+          tx,
+          { mandantId: k.mandantId, akteur: { art: 'nutzer', id: k.nutzerId } },
+          vorschlagId,
+        ).catch(() => undefined)
+      }
       return r.identId
     })
   } catch (e) {
@@ -111,4 +140,110 @@ export async function ticketAktualisieren(_: FormStatus, d: FormData): Promise<F
   }
   revalidatePath('/', 'layout')
   redirect(`/tickets/${id}`)
+}
+
+/**
+ * Datei einer Meldung ans Ticket hängen: Dokumente sind unveränderlich, deshalb entsteht ein
+ * zweiter Eintrag am Ticket mit derselben Datei (kein zweiter Upload), und der Eintrag am
+ * Objekt gilt als ersetzt.
+ */
+async function dateiAnsTicket(
+  tx: Tx,
+  k: MandantKontext,
+  dokumentId: string,
+  ticketId: string,
+  objektId: string,
+) {
+  const alt = await ladeDokument(tx, dokumentId)
+  const v = await letzteVersion(tx, 'dokument', dokumentId)
+  if (!alt || !v || alt.objektId !== objektId || alt.ticketId)
+    throw new Eingabefehler('Die Datei gehört nicht zu diesem Objekt.')
+  const daten = fachdaten('dokument', v)
+  const neu = await speichere(tx, k, {
+    entitaet: 'dokument',
+    identitaet: {
+      objektId,
+      mietverhaeltnisId: null,
+      ticketId,
+      beleg: false,
+      anhangId: alt.anhangId,
+      dateiHash: alt.dateiHash,
+      speicherSchluessel: alt.speicherSchluessel,
+      dateiname: alt.dateiname,
+      mime: alt.mime,
+      groesseBytes: alt.groesseBytes,
+    },
+    daten: { ...daten, status: 'gueltig', ersetztDurch: null },
+    gueltigAb: heuteBerlin(),
+  })
+  await speichere(tx, k, {
+    entitaet: 'dokument',
+    identId: dokumentId,
+    daten: { ...daten, status: 'ersetzt', ersetztDurch: neu.identId },
+    gueltigAb: heuteBerlin() > alt.gueltigAb ? heuteBerlin() : alt.gueltigAb,
+    begruendung: 'Ans Ticket gehängt',
+  })
+}
+
+/**
+ * Ticket aus einer Datei (UX-8): Mängelmeldung oder Schreiben als PDF oder Foto hochladen, die
+ * KI schlägt Titel, Beschreibung und Priorität vor, das Formular ist vorbelegt und wird bestätigt.
+ * Die Datei liegt bis dahin als Dokument am Objekt.
+ */
+export async function ticketAusDatei(_: FormStatus, d: FormData): Promise<FormStatus> {
+  let ziel: string
+  try {
+    await verlange({ stammdaten: ['schreiben'] })
+    const datei = d.get('datei')
+    if (!(datei instanceof File) || datei.size === 0)
+      throw new Eingabefehler('Bitte eine Datei wählen.')
+    if (datei.size > MAX_GROESSE) throw new Eingabefehler('Die Datei ist größer als 20 MB.')
+    const upload = await uploadVorbereiten(datei, ERLAUBTE_TYPEN, DATEI_FEHLER)
+    const ort = pflicht(d, 'ort', 'Objekt')
+    const [objektId] = ort.split('|')
+    const id = await mitMandant(async (tx, k) => {
+      if (!objektId || !(await letzteVersion(tx, 'objekt', objektId)))
+        throw new Eingabefehler('Objekt nicht gefunden.')
+      const abgelegt = await objektSpeicher().ablegen(
+        k.mandantId,
+        'dokument',
+        upload.inhalt,
+        upload.mime,
+      )
+      const r = await speichere(tx, k, {
+        entitaet: 'dokument',
+        identitaet: {
+          objektId,
+          mietverhaeltnisId: null,
+          ticketId: null,
+          beleg: false,
+          anhangId: null,
+          dateiHash: abgelegt.sha256,
+          speicherSchluessel: abgelegt.schluessel,
+          dateiname: upload.dateiname,
+          mime: upload.mime,
+          groesseBytes: abgelegt.groesse,
+        },
+        daten: DokumentDaten.parse({
+          typ: upload.mime.startsWith('image/') ? 'mangelfoto' : 'sonstiges',
+          status: 'gueltig',
+          titel: 'Meldung: ' + upload.dateiname,
+        }),
+        gueltigAb: heuteBerlin(),
+      })
+      return r.identId
+    })
+    const u = await kiUmgebung()
+    if (u) {
+      try {
+        await erzeugeVorschlag(u, TICKET_EXTRAKTION, (tx) => fuerDokument(tx, id, objektSpeicher()))
+      } catch (e) {
+        console.warn('[ticket] Auslesen gescheitert: ' + (e instanceof Error ? e.message : e))
+      }
+    }
+    ziel = `/tickets/neu?dokument=${id}&ort=${encodeURIComponent(ort)}`
+  } catch (e) {
+    return { fehler: fehlertext(e) }
+  }
+  redirect(ziel)
 }

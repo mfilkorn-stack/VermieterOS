@@ -99,6 +99,8 @@ Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten un
 | eigener Mail-Hoster       | im Paket enthalten             | SMTP-Daten des Postfachs, z. B. `noreply@`; Versandlimits des Hosters beachten |
 | Amazon SES (eu-central-1) | etwa 0,10 USD je 1000 Mails    | Domain verifizieren, Sandbox verlassen, SMTP-Zugangsdaten erzeugen             |
 
+**Tickets aus Dateien:** Unter „Ticket anlegen“ lässt sich eine Mängelmeldung oder ein Schreiben als PDF oder Foto hochladen. Mit KI-Schlüssel schlägt die Aufgabe `ticket_extraktion` Titel, Beschreibung und Priorität vor; das Formular ist vorbelegt, erst das Anlegen schreibt das Ticket. Die Datei liegt bis dahin als Dokument am Objekt und hängt danach am Ticket (der Eintrag am Objekt gilt als ersetzt).
+
 **Nachrichten aus dem Mieterportal** stehen im Posteingang unter „Aus dem Mieterportal“, solange sie unbeantwortet sind, und lassen sich dort wie Mails beantworten: Die Antwort geht per Mail an die Portal-Adresse (Reply-To auf das erste aktive Vermietungs-Postfach) und erscheint im Portal unter „Ihre Nachrichten“ sowie im Verlauf des Mietverhältnisses.
 
 **Antworten aus dem Posteingang** gehen über denselben SMTP mit `MAIL_ABSENDER` als Absender und dem Postfach (IMAP-Benutzer, sofern eine Mailadresse) als Reply-To, damit die Rückantwort des Mieters wieder im Posteingang landet; `In-Reply-To` hängt die Antwort in den Thread. Jede Antwort wird vor dem Versand mit Text vermerkt (Tabelle `antworten`, append-only) und erscheint im Verlauf des Mietverhältnisses. Ist der IMAP-Benutzer keine Mailadresse, gehen Rückantworten an `MAIL_ABSENDER`.

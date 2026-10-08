@@ -10,6 +10,7 @@ import { Mail, MapPin, ReceiptText } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BelegImport } from '@/components/beleg-import'
+import { DokumentListe } from '@/components/dokument-liste'
 import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
@@ -41,13 +42,16 @@ export default async function TicketSeite({
       fotos: (await listeDokumente(tx, { ticketId: id })).filter(
         (x) => x.typ === 'mangelfoto' && x.status === 'gueltig',
       ),
+      dateien: (await listeDokumente(tx, { ticketId: id })).filter(
+        (x) => x.typ !== 'mangelfoto' && x.typ !== 'beleg' && !x.beleg && x.status === 'gueltig',
+      ),
       handwerker: (await listeHandwerker(tx)).filter(
         (h) => h.objektIds.length === 0 || h.objektIds.includes(t.objektId),
       ),
     }
   })
   if (!d) notFound()
-  const { t, verlauf, handwerker, rechnungen, fotos } = d
+  const { t, verlauf, handwerker, rechnungen, fotos, dateien } = d
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const auftragnehmer = handwerker.find((h) => h.id === t.auftragnehmerId)
   const ort = t.einheit ? `${t.objekt} · ${t.einheit}` : t.objekt
@@ -108,6 +112,12 @@ export default async function TicketSeite({
                   </a>
                 ))}
               </div>
+            </div>
+          ) : null}
+          {dateien.length ? (
+            <div className="karte" data-testid="ticket-dateien">
+              <h2>Dateien</h2>
+              <DokumentListe dokumente={dateien} />
             </div>
           ) : null}
           <div className="karte">
