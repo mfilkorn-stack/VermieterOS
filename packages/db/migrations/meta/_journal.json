@@ -225,6 +225,20 @@
       "when": 1791463383030,
       "tag": "0031_belege_mandanten",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791466106331,
+      "tag": "0032_antworten",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791466107525,
+      "tag": "0033_antworten_regeln",
+      "breakpoints": true
     }
   ]
 }

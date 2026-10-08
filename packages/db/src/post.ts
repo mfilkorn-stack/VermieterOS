@@ -4,6 +4,7 @@ import { v7 as uuidv7 } from 'uuid'
 import type { Db, Tx } from './client'
 import {
   anhaenge,
+  antworten,
   nachrichten,
   nachrichtZuordnungen,
   postfaecher,
@@ -433,7 +434,10 @@ export async function offeneNachrichten(tx: Tx): Promise<number> {
 export type NachrichtDetail = {
   id: string
   postfach: string
+  /** Mailadresse des Postfachs (Reply-To für Antworten), null wenn der Benutzer keine Adresse ist */
+  postfachAdresse: string | null
   messageId: string | null
+  referenzen: string[]
   vonAdresse: string
   vonName: string | null
   an: string[]
@@ -459,7 +463,9 @@ export async function ladeNachricht(tx: Tx, id: string): Promise<NachrichtDetail
   const [n] = await tx.execute<{
     id: string
     postfach: string
+    benutzer: string
     message_id: string | null
+    referenzen: string[]
     von_adresse: string
     von_name: string | null
     an: string[]
@@ -470,7 +476,8 @@ export async function ladeNachricht(tx: Tx, id: string): Promise<NachrichtDetail
     roh_groesse: number
     roh_sha256: string
   }>(sql`
-    SELECT n.id, pf.bezeichnung AS postfach, n.message_id, n.von_adresse, n.von_name, n.an, n.betreff,
+    SELECT n.id, pf.bezeichnung AS postfach, pf.benutzer, n.message_id, n.referenzen,
+           n.von_adresse, n.von_name, n.an, n.betreff,
            n.gesendet_am, n.empfangen_am, n.text, n.roh_groesse, n.roh_sha256
     FROM nachrichten n JOIN postfaecher pf ON pf.id = n.postfach_id
     WHERE n.id = ${id}`)
@@ -501,7 +508,9 @@ export async function ladeNachricht(tx: Tx, id: string): Promise<NachrichtDetail
   return {
     id: n.id,
     postfach: n.postfach,
+    postfachAdresse: n.benutzer.includes('@') ? n.benutzer : null,
     messageId: n.message_id,
+    referenzen: n.referenzen,
     vonAdresse: n.von_adresse,
     vonName: n.von_name,
     an: n.an,
@@ -586,6 +595,65 @@ export async function legeTelefonnotizAn(tx: Tx, n: NeueTelefonnotiz): Promise<s
   return id
 }
 
+export type NeueAntwort = {
+  mandantId: string
+  nachrichtId: string
+  mietverhaeltnisId: string | null
+  an: string[]
+  betreff: string
+  text: string
+  messageId: string
+  akteur: Akteur
+}
+
+/** Vermerkt eine aus der App verschickte Antwort; der Versand selbst läuft in der Web-App. */
+export async function legeAntwortAn(tx: Tx, a: NeueAntwort): Promise<string> {
+  const id = uuidv7()
+  await tx.insert(antworten).values({
+    id,
+    mandantId: a.mandantId,
+    nachrichtId: a.nachrichtId,
+    mietverhaeltnisId: a.mietverhaeltnisId,
+    an: a.an,
+    betreff: a.betreff.trim(),
+    text: a.text.trim(),
+    messageId: a.messageId,
+    akteurArt: a.akteur.art,
+    akteurId: a.akteur.id,
+  })
+  await ereignis(tx, {
+    mandantId: a.mandantId,
+    typ: 'antwort_gesendet',
+    entitaet: 'antwort',
+    entitaetId: id,
+    akteur: a.akteur,
+    payload: { nachrichtId: a.nachrichtId, mietverhaeltnisId: a.mietverhaeltnisId, an: a.an },
+  })
+  return id
+}
+
+export type Antwort = {
+  id: string
+  an: string[]
+  betreff: string
+  text: string
+  gesendetAm: string
+}
+
+export async function antwortenZuNachricht(tx: Tx, nachrichtId: string): Promise<Antwort[]> {
+  return tx
+    .select({
+      id: antworten.id,
+      an: antworten.an,
+      betreff: antworten.betreff,
+      text: antworten.text,
+      gesendetAm: antworten.gesendetAm,
+    })
+    .from(antworten)
+    .where(eq(antworten.nachrichtId, nachrichtId))
+    .orderBy(antworten.gesendetAm)
+}
+
 export type VerlaufEintrag =
   | {
       art: 'nachricht'
@@ -615,15 +683,26 @@ export type VerlaufEintrag =
       von: string
       text: string
     }
+  | {
+      art: 'antwort'
+      id: string
+      /** Nachricht, auf die geantwortet wurde */
+      nachrichtId: string
+      zeitpunkt: string
+      betreff: string
+      an: string[]
+      text: string
+    }
 
 /**
- * Mails (aktuell zugeordnet), Telefonnotizen (aktuelle Fassung) und Nachrichten aus dem
- * Mieterportal eines Mietverhältnisses, jüngste zuerst.
+ * Mails (aktuell zugeordnet), aus der App verschickte Antworten, Telefonnotizen (aktuelle
+ * Fassung) und Nachrichten aus dem Mieterportal eines Mietverhältnisses, jüngste zuerst.
  */
 export async function ladeVerlauf(tx: Tx, mietverhaeltnisId: string): Promise<VerlaufEintrag[]> {
   const rows = await tx.execute<{
-    art: 'nachricht' | 'telefonnotiz' | 'portal'
+    art: 'nachricht' | 'telefonnotiz' | 'portal' | 'antwort'
     id: string
+    nachricht_id: string | null
     zeitpunkt: string
     betreff: string
     wer: string
@@ -633,7 +712,8 @@ export async function ladeVerlauf(tx: Tx, mietverhaeltnisId: string): Promise<Ve
     richtung: GespraechRichtung | null
     korrigiert: boolean
   }>(sql`
-    SELECT 'nachricht' AS art, n.id, coalesce(n.gesendet_am, n.empfangen_am) AS zeitpunkt, n.betreff,
+    SELECT 'nachricht' AS art, n.id, NULL::uuid AS nachricht_id,
+           coalesce(n.gesendet_am, n.empfangen_am) AS zeitpunkt, n.betreff,
            coalesce(n.von_name, n.von_adresse) AS wer, left(n.text, 400) AS text,
            (SELECT count(*)::int FROM anhaenge a WHERE a.nachricht_id = n.id) AS anhaenge,
            za.art AS zuordnung, NULL AS richtung, false AS korrigiert
@@ -641,45 +721,60 @@ export async function ladeVerlauf(tx: Tx, mietverhaeltnisId: string): Promise<Ve
     JOIN nachrichten_zuordnung_aktuell za ON za.nachricht_id = n.id
     WHERE za.mietverhaeltnis_id = ${mietverhaeltnisId}
     UNION ALL
-    SELECT 'telefonnotiz', t.id, t.zeitpunkt, t.betreff, t.gespraechspartner, t.inhalt, 0, NULL, t.richtung,
+    SELECT 'telefonnotiz', t.id, NULL, t.zeitpunkt, t.betreff, t.gespraechspartner, t.inhalt, 0, NULL, t.richtung,
            t.ersetzt_id IS NOT NULL
     FROM telefonnotizen_aktuell t
     WHERE t.mietverhaeltnis_id = ${mietverhaeltnisId}
     UNION ALL
-    SELECT 'portal', p.id, p.erstellt_am, p.betreff, z.email, p.text, 0, NULL, NULL, false
+    SELECT 'portal', p.id, NULL, p.erstellt_am, p.betreff, z.email, p.text, 0, NULL, NULL, false
     FROM portal_nachrichten p JOIN portal_zugaenge z ON z.id = p.zugang_id
     WHERE p.mietverhaeltnis_id = ${mietverhaeltnisId}
+    UNION ALL
+    SELECT 'antwort', w.id, w.nachricht_id, w.gesendet_am, w.betreff, array_to_string(w.an, ', '),
+           w.text, 0, NULL, NULL, false
+    FROM antworten w
+    WHERE w.mietverhaeltnis_id = ${mietverhaeltnisId}
     ORDER BY zeitpunkt DESC, id DESC`)
   return rows.map((r): VerlaufEintrag =>
-    r.art === 'portal'
+    r.art === 'antwort'
       ? {
-          art: 'portal' as const,
+          art: 'antwort' as const,
           id: r.id,
+          nachrichtId: r.nachricht_id!,
           zeitpunkt: r.zeitpunkt,
           betreff: r.betreff,
-          von: r.wer,
+          an: r.wer.split(', '),
           text: r.text,
         }
-      : r.art === 'nachricht'
+      : r.art === 'portal'
         ? {
-            art: 'nachricht' as const,
+            art: 'portal' as const,
             id: r.id,
             zeitpunkt: r.zeitpunkt,
             betreff: r.betreff,
             von: r.wer,
-            auszug: r.text,
-            anhaenge: r.anhaenge,
-            zuordnung: r.zuordnung!,
+            text: r.text,
           }
-        : {
-            art: 'telefonnotiz' as const,
-            id: r.id,
-            zeitpunkt: r.zeitpunkt,
-            betreff: r.betreff,
-            gespraechspartner: r.wer,
-            richtung: r.richtung!,
-            inhalt: r.text,
-            korrigiert: r.korrigiert,
-          },
+        : r.art === 'nachricht'
+          ? {
+              art: 'nachricht' as const,
+              id: r.id,
+              zeitpunkt: r.zeitpunkt,
+              betreff: r.betreff,
+              von: r.wer,
+              auszug: r.text,
+              anhaenge: r.anhaenge,
+              zuordnung: r.zuordnung!,
+            }
+          : {
+              art: 'telefonnotiz' as const,
+              id: r.id,
+              zeitpunkt: r.zeitpunkt,
+              betreff: r.betreff,
+              gespraechspartner: r.wer,
+              richtung: r.richtung!,
+              inhalt: r.text,
+              korrigiert: r.korrigiert,
+            },
   )
 }

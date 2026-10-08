@@ -16,6 +16,7 @@ import {
   Phone,
   PhoneIncoming,
   PhoneOutgoing,
+  Reply,
 } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
@@ -175,6 +176,27 @@ function Eintrag({ e, notieren, mvId }: { e: VerlaufEintrag; notieren: boolean; 
           <span>{ZUORDNUNG_TEXT[e.zuordnung]}</span>
         </p>
         <p className="auszug">{e.auszug}</p>
+      </li>
+    )
+  }
+  if (e.art === 'antwort') {
+    return (
+      <li className="karte" data-testid="verlauf-eintrag" data-art="antwort">
+        <div className="zeile">
+          <Link href={`/posteingang/${e.nachrichtId}`}>
+            <strong>{e.betreff}</strong>
+          </Link>
+          <span className="leise">{zeitpunktAnzeige(e.zeitpunkt)}</span>
+        </div>
+        <p className="meta">
+          <span>
+            <Reply size={14} aria-hidden />
+            Antwort an {e.an.join(', ')}
+          </span>
+        </p>
+        <p className="auszug" style={{ whiteSpace: 'pre-wrap' }}>
+          {e.text}
+        </p>
       </li>
     )
   }

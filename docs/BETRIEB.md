@@ -97,6 +97,8 @@ Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten un
 | eigener Mail-Hoster       | im Paket enthalten             | SMTP-Daten des Postfachs, z. B. `noreply@`; Versandlimits des Hosters beachten |
 | Amazon SES (eu-central-1) | etwa 0,10 USD je 1000 Mails    | Domain verifizieren, Sandbox verlassen, SMTP-Zugangsdaten erzeugen             |
 
+**Antworten aus dem Posteingang** gehen über denselben SMTP mit `MAIL_ABSENDER` als Absender und dem Postfach (IMAP-Benutzer, sofern eine Mailadresse) als Reply-To, damit die Rückantwort des Mieters wieder im Posteingang landet; `In-Reply-To` hängt die Antwort in den Thread. Jede Antwort wird vor dem Versand mit Text vermerkt (Tabelle `antworten`, append-only) und erscheint im Verlauf des Mietverhältnisses. Ist der IMAP-Benutzer keine Mailadresse, gehen Rückantworten an `MAIL_ABSENDER`.
+
 Für jeden Anbieter SPF und DKIM für die Absender-Domain setzen, sonst landen Anmeldelinks im Spam. Ohne `SMTP_HOST` wird nichts verschickt: Einladungslinks fürs Portal erscheinen dann in der App zum persönlichen Weitergeben, Bestätigungsmails fehlen. Fehler beim Versand stehen im Log von `web`, ohne Inhalt.
 
 Beim Start prüft `web` Verbindung und Anmeldung am SMTP-Server, ohne etwas zu verschicken. Nach jedem Deployment oder jeder Änderung an der `.env`:
