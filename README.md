@@ -80,7 +80,7 @@ Vorerst zurückgestellt: eigene Zählererfassung und Heizkostenverteilung nach H
 
 ```bash
 pnpm install
-docker compose up -d            # Postgres, Redis, S3, GreenMail (Mail), Gotenberg
+docker compose up -d            # Postgres, S3, GreenMail (Mail)
 cp .env.example .env            # POSTFACH_SCHLUESSEL setzen: openssl rand -base64 32
 pnpm db:migrate                 # Migrationen als Besitzerrolle
 pnpm dev                        # http://localhost:3000

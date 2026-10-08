@@ -6,13 +6,14 @@ Runbook für Produktion auf einem Hetzner-Cloud-Server. Entscheidungen dazu in A
 
 Ein Server, Docker Compose, sechs Dienste:
 
-| Dienst     | Image                                      | Aufgabe                                                                                  |
-| ---------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `caddy`    | `caddy:2-alpine`                           | TLS (Let's Encrypt), Reverse Proxy, Sicherheits-Header. Einzige offene Ports 80 und 443. |
-| `web`      | `ghcr.io/mfilkorn-stack/vermieteros`       | Next.js, App-Rolle `vermieteros_app`                                                     |
-| `migrate`  | dasselbe Image, `node db/dist/migrate.mjs` | Migrationen mit `vermieteros_owner`, nur beim Deployment                                 |
-| `postgres` | `postgres:16`                              | Datenbank, Volume `pgdata`, Rollen beim ersten Start aus `postgres-init.sh`              |
-| `ops`      | `ghcr.io/mfilkorn-stack/vermieteros-ops`   | Zeitplan für Backup, Integritätsprüfung und Restore-Test                                 |
+| Dienst     | Image                                         | Aufgabe                                                                                  |
+| ---------- | --------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `caddy`    | `caddy:2-alpine`                              | TLS (Let's Encrypt), Reverse Proxy, Sicherheits-Header. Einzige offene Ports 80 und 443. |
+| `web`      | `ghcr.io/mfilkorn-stack/vermieteros`          | Next.js, App-Rolle `vermieteros_app`                                                     |
+| `worker`   | dasselbe Image, `node worker/dist/worker.mjs` | Mail-Abruf, KI-Sortierung, Belege auslesen; Rolle `vermieteros_worker`                   |
+| `migrate`  | dasselbe Image, `node db/dist/migrate.mjs`    | Migrationen mit `vermieteros_owner`, nur beim Deployment                                 |
+| `postgres` | `postgres:16`                                 | Datenbank, Volume `pgdata`, Rollen beim ersten Start aus `postgres-init.sh`              |
+| `ops`      | `ghcr.io/mfilkorn-stack/vermieteros-ops`      | Zeitplan für Backup, Integritätsprüfung und Restore-Test                                 |
 
 Vier Datenbankrollen: `vermieteros_owner` besitzt das Schema und migriert. `vermieteros_app` ist die Laufzeitrolle der App ohne BYPASSRLS. `vermieteros_worker` sieht die Postfächer aller Mandanten und schreibt Nachrichten nur im Mandantenkontext. `vermieteros_sicherung` liest nur, dafür an RLS vorbei, und dient ausschließlich Backup und Integritätsprüfung.
 
@@ -127,13 +128,14 @@ Erreichbar unter `https://www.vermieteros.app/portal`. Mieter werden am Mietverh
 
 ### Monitoring
 
-Bei healthchecks.io (oder selbst gehostet) drei Checks anlegen und die URLs in `.env` eintragen:
+Bei healthchecks.io (oder selbst gehostet) vier Checks anlegen und die URLs in `.env` eintragen:
 
-| Variable                  | Erwartet  | Karenz |
-| ------------------------- | --------- | ------ |
-| `HEALTHCHECK_BACKUP`      | täglich   | 2 h    |
-| `HEALTHCHECK_INTEGRITAET` | täglich   | 2 h    |
-| `HEALTHCHECK_RESTORE`     | monatlich | 1 Tag  |
+| Variable                  | Erwartet                                                   | Karenz |
+| ------------------------- | ---------------------------------------------------------- | ------ |
+| `HEALTHCHECK_BACKUP`      | täglich                                                    | 2 h    |
+| `HEALTHCHECK_INTEGRITAET` | täglich                                                    | 2 h    |
+| `HEALTHCHECK_RESTORE`     | monatlich                                                  | 1 Tag  |
+| `HEALTHCHECK_ABRUF`       | je Mail-Abruf (`ABRUF_INTERVALL_SEKUNDEN`, Standard 5 min) | 30 min |
 
 Dazu ein externer Uptime-Check auf `https://www.vermieteros.app/api/gesund`. Er antwortet mit 200, wenn die App läuft und die Datenbank erreicht.
 
