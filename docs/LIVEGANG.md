@@ -5,8 +5,8 @@ Checkliste für das erste Produktiv-Deployment. Die Einzelheiten stehen in [BETR
 ## 1 · Vorbedingungen im Repository
 
 - [x] WP 2.5 bis 2.7, Livegang-Vorbereitung und Domain sind in `main`
-- [ ] CI auf `main` grün, Job „images“ hat beide Images veröffentlicht
-- [ ] Tag notieren: GitHub → Packages → `vermieteros` → `sha-<kurz>` des letzten Merge-Commits
+- [x] CI auf `main` grün, Job „images“ hat beide Images veröffentlicht (Lauf 82, 8. Oktober 2026)
+- [x] Tag notiert: `sha-7d15015` (Merge von PR #34, Verbesserungen 2). Bei einem späteren Merge: GitHub → Packages → `vermieteros` → `sha-<kurz>` des neuen Merge-Commits
 
 ## 2 · Entscheidungen vorab
 
@@ -70,21 +70,21 @@ Absender ist das IONOS-Postfach `noreply@vermieteros.app`. Ohne Mailversand lass
 scp ops/{compose.yml,Caddyfile,postgres-init.sh,deploy.sh,env.beispiel} betrieb@<server>:/srv/vermieteros/
 ssh betrieb@<server>
 cd /srv/vermieteros
-cp env.beispiel .env && chmod 600 .env && nano .env
+cp -n env.beispiel .env && chmod 600 .env && nano .env   # -n: eine vorhandene .env wird nie überschrieben
 sudo install -d -o 70 -g 70 -m 700 geheim
 # nur wenn der Restore-Test auf dem Server laufen soll:
 sudo install -o 70 -g 70 -m 400 vermieteros-backup.key geheim/backup.key
 docker login ghcr.io -u <github-nutzer>       # Token (classic) nur mit read:packages
 ```
 
-`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP aus Schritt 6, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs. `ANTHROPIC_API_KEY` bleibt leer.
+`.env` vollständig: `DOMAIN=www.vermieteros.app`, `DOMAIN_UMLEITUNG=vermieteros.app`, `TAG=sha-7d15015`, sieben Geheimnisse aus Schritt 3, `REGISTRIERUNG_ERLAUBT`, SMTP aus Schritt 6, beide S3-Zugänge mit Endpoint und Region, `BACKUP_EMPFAENGER`, vier Healthcheck-URLs, `DATENSCHUTZ_VERANTWORTLICHER`, `DATENSCHUTZ_ANSCHRIFT` und `DATENSCHUTZ_EMAIL` (Pflicht, bevor Mieter das Portal nutzen; erscheint unter `/datenschutz`). `ANTHROPIC_API_KEY` bleibt leer; `ADRESSSUCHE` und `FIRMENSUCHE` bleiben leer (eingeschaltet).
 
 - [ ] Prüfpunkt: `docker compose config -q` ohne Fehler (meldet fehlende Pflichtwerte)
 
 ## 9 · Erstes Deployment
 
 ```sh
-./deploy.sh sha-<kurz> --ohne-backup
+./deploy.sh sha-7d15015 --ohne-backup
 docker compose ps                              # alle Dienste "running" bzw. "healthy"
 docker compose logs --tail 50 web worker ops caddy
 ```
@@ -101,6 +101,8 @@ Mit Musterdaten, noch ohne echte Mieter:
 - [ ] Zwei-Faktor einrichten, ab- und wieder anmelden
 - [ ] „Passwort vergessen?“: Mail kommt an, neues Passwort setzen, Anmeldung verlangt weiter den zweiten Faktor
 - [ ] Mandant und Musterobjekt anlegen, Dokument hochladen und wieder herunterladen (Object Storage)
+- [ ] Beim Objekt „Adresse suchen“ und im Handwerker-Formular „Firma suchen“ liefern Vorschläge (Photon und Nominatim vom Server aus erreichbar)
+- [ ] `/datenschutz` zeigt Verantwortlichen, Anschrift und E-Mail aus der `.env`
 - [ ] Mieterportal-Einladung an eine eigene Zweitadresse, Mail kommt an, Anmeldung per Link klappt
 - [ ] Backup von Hand: `docker compose run --rm ops backup`, dann `docker compose run --rm ops integritaet`; im Backup-Bucket liegt eine `.age`-Datei
 - [ ] Restore-Test einmal von Hand (BETRIEB „Von Hand sichern und prüfen“)

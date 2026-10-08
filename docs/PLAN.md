@@ -219,7 +219,7 @@ VermieterOS/
 │   ├── GLOSSAR.md        verbindliche Fachbegriffe
 │   ├── adr/              Architekturentscheidungen
 │   └── architektur/      Architekturplan (PDF)
-├── docker-compose.yml    Postgres, Redis, S3, GreenMail, Gotenberg (lokal)
+├── docker-compose.yml    Postgres, S3, GreenMail (lokal)
 ├── pnpm-workspace.yaml
 └── package.json
 ```
