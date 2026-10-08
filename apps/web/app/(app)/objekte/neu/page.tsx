@@ -1,5 +1,9 @@
+import { BUNDESLAENDER, BUNDESLAND_NAME } from '@vermieteros/schema'
 import { redirect } from 'next/navigation'
+import { Adresssuche } from '@/components/adresssuche'
+import { Auswahl } from '@/components/felder'
 import { Formular } from '@/components/formular'
+import { adresssucheAn } from '@/lib/adresse'
 import { darf } from '@/lib/sitzung'
 import { objektAnlegen } from '../../aktionen'
 
@@ -31,6 +35,7 @@ export default async function ObjektNeuSeite() {
             Übergang von Nutzen und Lasten, meist mit Zahlung des Kaufpreises.
           </span>
         </label>
+        {adresssucheAn() ? <Adresssuche /> : null}
         <label>
           Straße
           <input name="strasse" />
@@ -47,6 +52,12 @@ export default async function ObjektNeuSeite() {
           Ort
           <input name="ort" />
         </label>
+        <Auswahl
+          label="Bundesland"
+          name="bundesland"
+          leer="Bitte wählen"
+          optionen={BUNDESLAENDER.map((b) => [b, BUNDESLAND_NAME[b]] as const)}
+        />
       </Formular>
     </div>
   )

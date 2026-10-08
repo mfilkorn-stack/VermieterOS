@@ -103,6 +103,12 @@ docker compose logs web | grep '\[mail\]'
 
 `[mail] SMTP bereit (smtp.ionos.de:587)` ist richtig. `nicht erreichbar: getaddrinfo ENOTFOUND` heißt Tippfehler im Host, `Invalid login` oder `535` falscher Benutzer oder falsches Passwort.
 
+### Adresssuche
+
+Objekt anlegen, Stammdaten und Eigentümer haben ein Feld „Adresse suchen“. Ein gewählter Vorschlag füllt Straße, Hausnummer, PLZ, Ort und, wo es das Feld gibt, das Bundesland. Danach zeigt das Formular „Anschrift gefunden“. Weicht man von Hand davon ab, steht dort „abweichend geändert“. Gespeichert wird, was in den Feldern steht.
+
+Die Vorschläge kommen von Photon (OpenStreetMap, betrieben von komoot in Deutschland, ohne Schlüssel und ohne Vertrag; die öffentliche Instanz ist für faire, geringe Nutzung gedacht). Die App fragt vom Server aus an und schickt nur den Suchtext, nie Nutzer, Mandant oder IP des Browsers. `ADRESSSUCHE=aus` blendet das Feld aus, `ADRESSSUCHE_URL` zeigt auf einen eigenen Photon-Server. Ist der Dienst nicht erreichbar, sagt das Formular es und die Felder bleiben normal ausfüllbar.
+
 ### Registrierung
 
 In Produktion legt nicht jeder ein Konto an, der die Domain kennt. Erlaubt sind die Adressen in `REGISTRIERUNG_ERLAUBT` (kommagetrennt, typischerweise nur die eigene) und Adressen mit offener Einladung in einen Mandanten. Alle anderen bekommen „Registrierung nur mit Einladung“. Mieter brauchen kein Konto, sie nutzen das Portal. `REGISTRIERUNG=offen` hebt die Sperre auf (Tests, lokale Entwicklung; dort ist sie ohnehin aus).

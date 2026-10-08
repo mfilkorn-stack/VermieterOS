@@ -1,8 +1,10 @@
 import { BUNDESLAENDER, BUNDESLAND_NAME } from '@vermieteros/schema'
 import { notFound, redirect } from 'next/navigation'
+import { Adresssuche } from '@/components/adresssuche'
 import { Aenderung, Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { GrundbuchEditor } from '@/components/grundbuch-editor'
+import { adresssucheAn } from '@/lib/adresse'
 import { ladeAkte } from '@/lib/akte'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { grundbuchZuRoh } from '@/lib/umwandeln'
@@ -29,6 +31,7 @@ export default async function StammdatenSeite({ params }: { params: Promise<{ id
             ['etw', 'Eigentumswohnung'],
           ]}
         />
+        {adresssucheAn() ? <Adresssuche /> : null}
         <div className="zeile">
           <Feld label="Straße" name="strasse" defaultValue={o.strasse ?? ''} />
           <Feld label="Hausnummer" name="hausnummer" defaultValue={o.hausnummer ?? ''} />

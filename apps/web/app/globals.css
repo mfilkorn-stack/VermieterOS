@@ -1232,3 +1232,48 @@ img.vorschau {
   padding: 10px 12px;
   margin: 0 0 10px;
 }
+
+/* Adresssuche (components/adresssuche.tsx) */
+.adresssuche {
+  position: relative;
+  display: grid;
+  gap: 4px;
+}
+.adresssuche-liste {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 2px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--fl);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-klein);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+}
+.adresssuche-liste li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.adresssuche-liste li[aria-selected='true'] {
+  background: var(--akzent-fl);
+}
+.adresse-ok,
+.adresse-abweichend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.875rem;
+}
+.adresse-ok {
+  color: var(--gruen-text);
+}
+.adresse-abweichend {
+  color: var(--gelb-text);
+}

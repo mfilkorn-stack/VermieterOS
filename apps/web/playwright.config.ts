@@ -37,6 +37,7 @@ export default defineConfig({
       S3_SECRET_KEY: E2E.s3.secretKey,
       ANTHROPIC_API_KEY: E2E.ki.schluessel,
       ANTHROPIC_BASE_URL: E2E.ki.url,
+      ADRESSSUCHE_URL: E2E.adresse.url,
       // Mailversand an GreenMail (Einladungen, Anmeldelinks, Hinweise an Vermieter)
       SMTP_HOST: E2E.smtp.host,
       SMTP_PORT: String(E2E.smtp.port),

@@ -37,6 +37,9 @@ services:
       SMTP_BENUTZER: ${SMTP_BENUTZER:-}
       SMTP_PASSWORT: ${SMTP_PASSWORT:-}
       MAIL_ABSENDER: ${MAIL_ABSENDER:-}
+      # Adresssuche (Photon/OpenStreetMap); ADRESSSUCHE=aus schaltet sie ab
+      ADRESSSUCHE: ${ADRESSSUCHE:-}
+      ADRESSSUCHE_URL: ${ADRESSSUCHE_URL:-}
       # Downloads von Mails und Anhängen (WP 1.2)
       S3_ENDPOINT: ${S3_ENDPOINT}
       S3_REGION: ${S3_REGION:-fsn1}
