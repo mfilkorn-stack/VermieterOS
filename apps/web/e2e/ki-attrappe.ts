@@ -68,6 +68,51 @@ function beleg(a: Anfrage): unknown {
 function antwort(a: Anfrage): unknown {
   const system = a.system.map((s) => s.text).join('\n')
   if (system.includes('Rechnungen und Bescheide')) return beleg(a)
+  if (system.includes('Immobilienkaufverträge')) {
+    // Passt zu musterKaufvertrag(); die Fläche des Stellplatzes ist absichtlich falsch,
+    // das zweite Grundbuchblatt darf deshalb nicht übernehmbar sein.
+    const f = (wert: string, seite: number, zitat: string) => ({ wert, seite, zitat })
+    return {
+      kaufvertrag_datum: f('30.04.2021', 1, 'Verhandelt zu Musterstadt am 30.04.2021'),
+      uebergang_nutzen_lasten: null,
+      kaufpreis: f('187.000,00 €', 3, 'Der Kaufpreis beträgt 187.000,00 €.'),
+      anteil_grund_boden: f('37.400,00 €', 3, 'auf den Grund und Boden 37.400,00 €'),
+      grundbuch: [
+        {
+          art: 'wohnungsgrundbuch',
+          amtsgericht: f('Musterstadt', 2, 'Wohnungsgrundbuch des Amtsgerichts Musterstadt'),
+          blatt: f('W-1', 2, 'von Musterdorf Blatt W-1'),
+          miteigentumsanteil: f('88,89/1.000', 2, '88,89/1.000 Miteigentumsanteil'),
+          flurstuecke: [
+            {
+              nummer: f('Flurstück A', 2, 'an Flurstück A mit 464 m²'),
+              flaeche: f('464 m²', 2, 'Flurstück A mit 464 m²'),
+            },
+            {
+              nummer: f('Flurstück B', 2, 'Flurstück B mit 331 m²'),
+              flaeche: f('331 m²', 2, 'Flurstück B mit 331 m²'),
+            },
+          ],
+        },
+        {
+          art: 'teileigentumsgrundbuch',
+          amtsgericht: f('Musterstadt', 2, 'Teileigentumsgrundbuch des Amtsgerichts Musterstadt'),
+          blatt: f('G-2', 2, 'Blatt G-2'),
+          miteigentumsanteil: null,
+          flurstuecke: [
+            {
+              nummer: f('Flurstück C', 2, 'Stellplatz auf Flurstück C'),
+              flaeche: f('41 m²', 2, 'Flurstück C mit 41 m²'),
+            },
+          ],
+        },
+      ],
+      hinweise: [
+        'Nutzen und Lasten gehen mit vollständiger Zahlung des Kaufpreises über.',
+        'Mitverkaufte Einbauküche, bewertet mit 3.000,00 €.',
+      ],
+    }
+  }
   if (system.includes('Wohnraummietverträge')) {
     // Passt zu musterMietvertrag(); die Kaution ist absichtlich falsch und darf nicht belegt sein.
     const f = (wert: string, zitat: string) => ({ wert, seite: 2, zitat })

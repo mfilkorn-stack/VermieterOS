@@ -63,3 +63,35 @@ describe('Mietvertrag: Fundstellen prüfen', () => {
     expect(datumAus('ab sofort')).toBeNull()
   })
 })
+
+describe('Muster für das Golden-Set', () => {
+  it('Formular- und Gesamtmiete-Muster haben eine Textebene, Fundstellen sind prüfbar', async () => {
+    const { musterLeererMietvertrag, musterMietvertragGesamtmiete } = await import('../src/testpdf')
+    const leer = await seitenTexte(musterLeererMietvertrag())
+    expect(leer).toHaveLength(3)
+    const gesamt = await seitenTexte(musterMietvertragGesamtmiete())
+    const a = werteMietvertragAus(
+      {
+        mietbeginn: { wert: '01.03.2024', seite: 2, zitat: 'beginnt am 01.03.2024' },
+        kaltmiete: {
+          wert: '720,00 €',
+          seite: 2,
+          zitat: 'Die monatliche Kaltmiete beträgt 720,00 €',
+        },
+        vorauszahlung_betriebskosten: null,
+        vorauszahlung_heizkosten: null,
+        // Gesamtmiete statt Kaltmiete: steht so nicht als Kaution im Text
+        kaution: { wert: '945,00 €', seite: 2, zitat: 'Mietsicherheit in Höhe von 945,00 €' },
+        kuendigungsfrist_monate: null,
+        mieter: [],
+        hinweise: [],
+      },
+      gesamt,
+    )
+    expect(a.find((x) => x.feld === 'kaltmiete')).toMatchObject({
+      pruefung: 'belegt',
+      normiert: 72000,
+    })
+    expect(a.find((x) => x.feld === 'kaution')?.pruefung).toBe('nicht_belegt')
+  })
+})

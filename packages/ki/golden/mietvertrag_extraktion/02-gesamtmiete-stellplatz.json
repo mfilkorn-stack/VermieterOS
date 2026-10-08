@@ -1,0 +1,20 @@
+{
+  "beschreibung": "Kaltmiete, Stellplatz und Gesamtmiete getrennt, keine Heizkosten-Vorauszahlung, Mietsicherheit, Kündigung nach Gesetz",
+  "synthetisch": true,
+  "datei": "02-gesamtmiete-stellplatz.pdf",
+  "daten": {
+    "titel": "Mietvertrag",
+    "typ": "mietvertrag",
+    "dateiname": "02-gesamtmiete-stellplatz.pdf",
+    "mime": "application/pdf",
+    "mietverhaeltnis": null
+  },
+  "erwartet": {
+    "mietbeginn": { "wert": "01.03.2024", "seite": 2 },
+    "kaltmiete": { "wert": "720,00 €", "seite": 2 },
+    "vorauszahlung_betriebskosten": { "wert": "180,00 €", "seite": 2 },
+    "vorauszahlung_heizkosten": null,
+    "kaution": { "wert": "2.160,00 €", "seite": 2 },
+    "kuendigungsfrist_monate": null
+  }
+}

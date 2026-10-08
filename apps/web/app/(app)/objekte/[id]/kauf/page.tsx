@@ -4,9 +4,10 @@ import { BUNDESLAND_NAME } from '@vermieteros/schema'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Aenderung, Feld } from '@/components/felder'
+import { AusKaufvertrag } from '@/components/aus-kaufvertrag'
 import { Formular } from '@/components/formular'
 import { NebenkostenEditor } from '@/components/nebenkosten-editor'
-import { ladeAkte } from '@/lib/akte'
+import { gueltigerKaufvertrag, ladeAkte } from '@/lib/akte'
 import { datumAnzeige, euroAnzeige, euroText, prozentText } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { nebenkostenZuRoh } from '@/lib/umwandeln'
@@ -21,9 +22,9 @@ export default async function KaufSeite({ params }: { params: Promise<{ id: stri
     const grest = bl
       ? await ladeReferenzdaten<{ satzPromille: number }>(tx, 'grunderwerbsteuer', bl)
       : []
-    return { akte, grest }
+    return { akte, grest, kaufvertrag: await gueltigerKaufvertrag(tx, id) }
   })
-  const akte = daten.akte
+  const { akte, kaufvertrag } = daten
   if (!akte) notFound()
   const o = akte.objekt
   const stichtag = o.kaufvertragDatum ?? o.anschaffungsdatum
@@ -37,6 +38,7 @@ export default async function KaufSeite({ params }: { params: Promise<{ id: stri
       <p className="leise">
         Quelle: Kaufvertrag, Kostenrechnungen von Notar und Grundbuchamt, GrESt-Bescheid.
       </p>
+      <AusKaufvertrag objektId={id} kaufvertrag={kaufvertrag} />
       <Formular aktion={kaufSpeichern} knopf="Speichern" testId="kauf">
         <input type="hidden" name="objektId" value={id} />
         <div className="zeile">

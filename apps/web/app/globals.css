@@ -1277,3 +1277,18 @@ img.vorschau {
 .adresse-abweichend {
   color: var(--gelb-text);
 }
+
+/* Hinweis mit Icon, z. B. „Aus dem Kaufvertrag übernehmen“ */
+.hinweis-box {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-klein);
+  background: var(--akzent-fl);
+  font-size: 0.9375rem;
+}
+.hinweis-box > svg {
+  flex: none;
+  margin-top: 3px;
+}

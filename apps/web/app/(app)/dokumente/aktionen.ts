@@ -11,13 +11,23 @@ import {
   bestaetigeVorschlagInTx,
   erzeugeVorschlag,
   fuerDokument,
+  gebaeudeanteilAus,
+  KAUFVERTRAG_EXTRAKTION,
+  type KaufvertragAuszug,
   KiFehler,
+  type Pruefergebnis,
   MIETVERTRAG_EXTRAKTION,
   type MietvertragAuszug,
   verwirfVorschlag,
+  werteKaufvertragAus,
   werteMietvertragAus,
 } from '@vermieteros/ki'
-import { DokumentDaten, type Herkunft } from '@vermieteros/schema'
+import {
+  DokumentDaten,
+  ObjektDaten,
+  type GrundbuchEintrag,
+  type Herkunft,
+} from '@vermieteros/schema'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { DATEI_FEHLER, ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
@@ -201,16 +211,32 @@ export async function dokumentStatus(_: FormStatus, d: FormData): Promise<FormSt
   return {}
 }
 
-/** Mietvertrag von der KI auslesen lassen (Vorschlag mit Stempel, Datei-Prüfsumme). */
+/**
+ * Belegte Werte (Zitat steht im PDF) und Werte aus Scans ohne Textebene. Scans lassen sich nicht
+ * automatisch prüfen; sie sind vorbelegt, die Übernahme verlangt aber die Bestätigung der Prüfung.
+ */
+function uebernehmbar(p: Pruefergebnis): boolean {
+  return p === 'belegt' || p === 'scan'
+}
+const SCAN_HINWEIS = 'Scan ohne Textebene, von Hand geprüft'
+
+/** Übernahme aus einem Scan nur mit dem Haken „am Dokument geprüft“ (ScanBestaetigung). */
+function pruefeScanBestaetigung(d: FormData, werte: Array<{ pruefung: Pruefergebnis }>) {
+  if (werte.some((w) => w.pruefung === 'scan') && text(d, 'scanGeprueft') !== 'ja')
+    throw new Eingabefehler('Bitte bestätigen, dass du die Werte aus dem Scan geprüft hast.')
+}
+
+/** Miet- oder Kaufvertrag von der KI auslesen lassen (Vorschlag mit Stempel, Datei-Prüfsumme). */
 export async function vertragAuslesen(_: FormStatus, d: FormData): Promise<FormStatus> {
   try {
     await verlange({ stammdaten: ['schreiben'] })
     const id = pflicht(d, 'dokumentId', 'Dokument')
     const u = await kiUmgebung()
     if (!u) return { fehler: 'Die KI ist nicht eingerichtet (ANTHROPIC_API_KEY).' }
-    await erzeugeVorschlag(u, MIETVERTRAG_EXTRAKTION, (tx) =>
-      fuerDokument(tx, id, objektSpeicher()),
-    )
+    const typ = (await mitMandant((tx) => ladeDokument(tx, id)))?.typ
+    const kontext = (tx: Tx) => fuerDokument(tx, id, objektSpeicher())
+    if (typ === 'kaufvertrag') await erzeugeVorschlag(u, KAUFVERTRAG_EXTRAKTION, kontext)
+    else await erzeugeVorschlag(u, MIETVERTRAG_EXTRAKTION, kontext)
     revalidatePath(`/dokumente/${id}`)
     return {}
   } catch (e) {
@@ -249,9 +275,11 @@ export async function vertragUebernehmen(_: FormStatus, d: FormData): Promise<Fo
       const werte = werteMietvertragAus(
         p.vorschlag.ausgabe as MietvertragAuszug,
         await dokumentSeiten(tx, id),
-      ).filter((w) => gewaehlt.has(w.feld) && w.pruefung === 'belegt' && w.normiert !== null)
+      ).filter((w) => gewaehlt.has(w.feld) && uebernehmbar(w.pruefung) && w.normiert !== null)
+      pruefeScanBestaetigung(d, werte)
+      const hinweis = werte.some((w) => w.pruefung === 'scan') ? { hinweis: SCAN_HINWEIS } : {}
       const herkunft = (feld: string, seite: number): Herkunft => ({
-        [feld]: { quelle: 'dokument', dokumentId: id, seite, vorschlagId },
+        [feld]: { quelle: 'dokument', dokumentId: id, seite, vorschlagId, ...hinweis },
       })
       const mvFelder: Record<string, { feld: string; wert: unknown; seite: number }> = {}
       const kFelder: Record<string, { feld: string; wert: unknown; seite: number }> = {}
@@ -340,6 +368,108 @@ export async function vertragUebernehmen(_: FormStatus, d: FormData): Promise<Fo
   revalidatePath(`/dokumente/${id}`)
   return {
     hinweis: 'Übernommen. Die Werte stehen jetzt mit Herkunft „Dokument, Seite“ in den Stammdaten.',
+  }
+}
+
+/**
+ * Kaufvertrag in die Objektakte übernehmen: angehakte, am PDF belegte Daten und Grundbuchblätter,
+ * in einer Transaktion mit der Bestätigung des Vorschlags. Grundbuchblätter mit gleichem
+ * Amtsgericht und Blatt werden ersetzt, andere ergänzt. Der Gebäudeanteil folgt nur aus einer
+ * ausdrücklichen Aufteilung im Vertrag.
+ */
+export async function kaufvertragUebernehmen(_: FormStatus, d: FormData): Promise<FormStatus> {
+  let id: string
+  try {
+    await verlange({ stammdaten: ['schreiben'] })
+    id = pflicht(d, 'dokumentId', 'Dokument')
+    const vorschlagId = pflicht(d, 'vorschlagId', 'Vorschlag')
+    const gewaehlt = new Set(d.getAll('felder').map(String))
+    if (gewaehlt.size === 0)
+      throw new Eingabefehler('Bitte mindestens einen Wert zum Übernehmen anhaken.')
+    await mitMandant(async (tx, k) => {
+      const dok = await ladeDokument(tx, id)
+      if (!dok?.objektId) throw new Eingabefehler('Das Dokument hängt an keinem Objekt.')
+      const objektVersion = await letzteVersion(tx, 'objekt', dok.objektId)
+      if (!objektVersion) throw new Eingabefehler('Objekt nicht gefunden.')
+      const p = await bestaetigeVorschlagInTx(
+        tx,
+        { mandantId: k.mandantId, akteur: { art: 'nutzer', id: k.nutzerId } },
+        vorschlagId,
+      )
+      if (p.status === 'veraltet')
+        throw new Eingabefehler('Seit dem Auslesen hat sich etwas geändert. Bitte neu auslesen.')
+      if (p.status !== 'bestaetigt')
+        throw new Eingabefehler('Über diesen Vorschlag ist schon entschieden.')
+      const { felder, grundbuch } = werteKaufvertragAus(
+        p.vorschlag.ausgabe as KaufvertragAuszug,
+        await dokumentSeiten(tx, id),
+      )
+      const belegt = new Map(
+        felder
+          .filter((w) => gewaehlt.has(w.feld) && uebernehmbar(w.pruefung) && w.normiert !== null)
+          .map((w) => [w.feld, w]),
+      )
+      const blaetter = grundbuch.filter(
+        (g) => gewaehlt.has(`grundbuch_${g.index}`) && uebernehmbar(g.pruefung) && g.eintrag,
+      )
+      const alt = fachdaten('objekt', objektVersion)
+      const neu: Record<string, unknown> = {}
+      const herkunft: Herkunft = {}
+      pruefeScanBestaetigung(d, [...belegt.values(), ...blaetter])
+      const scan = felder.some((w) => w.pruefung === 'scan') ? { hinweis: SCAN_HINWEIS } : {}
+      const quelle = (feld: string, seite: number) => {
+        herkunft[feld] = { quelle: 'dokument', dokumentId: id, seite, vorschlagId, ...scan }
+      }
+      const datumFeld = belegt.get('kaufvertrag_datum')
+      if (datumFeld) {
+        neu['kaufvertragDatum'] = datumFeld.normiert
+        quelle('kaufvertragDatum', datumFeld.seite)
+      }
+      const uebergang = belegt.get('uebergang_nutzen_lasten')
+      if (uebergang) {
+        neu['anschaffungsdatum'] = uebergang.normiert
+        quelle('anschaffungsdatum', uebergang.seite)
+      }
+      const preis = belegt.get('kaufpreis')
+      if (preis) {
+        neu['kaufpreisCent'] = preis.normiert
+        quelle('kaufpreisCent', preis.seite)
+      }
+      const boden = belegt.get('anteil_grund_boden')
+      if (boden) {
+        const kaufpreis = (neu['kaufpreisCent'] ?? alt.kaufpreisCent) as number | null | undefined
+        const anteil = kaufpreis ? gebaeudeanteilAus(kaufpreis, boden.normiert as number) : null
+        if (anteil === null)
+          throw new Eingabefehler('Für den Gebäudeanteil fehlt ein passender Kaufpreis.')
+        neu['gebaeudeanteilPromille'] = anteil
+        quelle('gebaeudeanteilPromille', boden.seite)
+      }
+      if (blaetter.length) {
+        const liste: GrundbuchEintrag[] = [...(alt.grundbuch ?? [])]
+        for (const b of blaetter) {
+          const e = b.eintrag!
+          const i = liste.findIndex((x) => x.amtsgericht === e.amtsgericht && x.blatt === e.blatt)
+          if (i >= 0) liste[i] = e
+          else liste.push(e)
+        }
+        neu['grundbuch'] = liste
+        quelle('grundbuch', blaetter[0]!.fundstellen[0]?.seite ?? 1)
+      }
+      await speichere(tx, k, {
+        entitaet: 'objekt',
+        identId: dok.objektId,
+        daten: ObjektDaten.parse({ ...alt, ...neu }),
+        gueltigAb: objektVersion.gueltigAb,
+        begruendung: `Übernommen aus „${dok.titel}“`,
+        herkunft,
+      })
+    })
+  } catch (e) {
+    return { fehler: fehlertext(e) }
+  }
+  revalidatePath(`/dokumente/${id}`)
+  return {
+    hinweis: 'Übernommen. Die Werte stehen jetzt mit Herkunft „Dokument, Seite“ in der Objektakte.',
   }
 }
 

@@ -1,0 +1,20 @@
+{
+  "beschreibung": "Formular: Vorauszahlungen je Kostenart mit Summe, Heizkosten siehe Anlage, aufgedruckte Seitenzahlen ungleich PDF-Seiten, Wirksamkeit unter Bedingung",
+  "synthetisch": true,
+  "datei": "03-formular-einzelposten.pdf",
+  "daten": {
+    "titel": "Mietvertrag",
+    "typ": "mietvertrag",
+    "dateiname": "03-formular-einzelposten.pdf",
+    "mime": "application/pdf",
+    "mietverhaeltnis": null
+  },
+  "erwartet": {
+    "mietbeginn": { "wert": "01.06.2023", "seite": 1 },
+    "kaltmiete": { "seite": 2 },
+    "vorauszahlung_betriebskosten": { "seite": 2 },
+    "vorauszahlung_heizkosten": null,
+    "kaution": { "seite": 2 },
+    "kuendigungsfrist_monate": null
+  }
+}

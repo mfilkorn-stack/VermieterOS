@@ -1,5 +1,11 @@
 import 'server-only'
-import { datenqualitaet, letzteVersion, type Tx, type Version } from '@vermieteros/db'
+import {
+  datenqualitaet,
+  letzteVersion,
+  listeDokumente,
+  type Tx,
+  type Version,
+} from '@vermieteros/db'
 import type { Datenqualitaet } from '@vermieteros/rechenkern'
 import { sql } from 'drizzle-orm'
 
@@ -90,4 +96,15 @@ export async function ladeAkte(tx: Tx, objektId: string): Promise<Akte | null> {
     darlehen,
     qualitaet: await datenqualitaet(tx, objektId),
   }
+}
+
+/** Jüngster gültiger Kaufvertrag direkt am Objekt (für „Aus dem Kaufvertrag übernehmen“). */
+export async function gueltigerKaufvertrag(
+  tx: Tx,
+  objektId: string,
+): Promise<{ id: string; titel: string } | null> {
+  const k = (await listeDokumente(tx, { objektId })).find(
+    (d) => d.typ === 'kaufvertrag' && d.status === 'gueltig' && d.objektId === objektId,
+  )
+  return k ? { id: k.id, titel: k.titel } : null
 }
