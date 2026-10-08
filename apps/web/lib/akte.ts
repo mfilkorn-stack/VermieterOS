@@ -13,6 +13,8 @@ export type AkteMietverhaeltnis = {
   id: string
   v: Version<'mietverhaeltnis'>
   mieter: string[]
+  /** Die Personen der Mietpartei (z. B. Paar oder WG), in der Reihenfolge des Vertrags */
+  personen: Array<{ id: string; v: Version<'person'> }>
   kondition: { id: string; v: Version<'mietkondition'> } | null
 }
 export type AkteEinheit = {
@@ -60,9 +62,12 @@ export async function ladeAkte(tx: Tx, objektId: string): Promise<Akte | null> {
       const mv = await letzteVersion(tx, 'mietverhaeltnis', mid)
       if (!mv) continue
       const mieter: string[] = []
+      const personen: AkteMietverhaeltnis['personen'] = []
       for (const pid of mv.mieterIds) {
         const p = await letzteVersion(tx, 'person', pid)
-        if (p) mieter.push([p.vorname, p.nachname].filter(Boolean).join(' '))
+        if (!p) continue
+        mieter.push([p.vorname, p.nachname].filter(Boolean).join(' '))
+        personen.push({ id: pid, v: p })
       }
       const [kid] = await ids(
         tx,
@@ -73,6 +78,7 @@ export async function ladeAkte(tx: Tx, objektId: string): Promise<Akte | null> {
         id: mid,
         v: mv,
         mieter,
+        personen,
         kondition: kid && k ? { id: kid, v: k } : null,
       })
     }

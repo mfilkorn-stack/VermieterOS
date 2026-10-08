@@ -363,6 +363,17 @@ export default async function ObjektSeite({ params }: { params: Promise<{ id: st
                   </span>
                 ) : null}
               </div>
+              {schreiben &&
+              !e.mietverhaeltnisse.some((m) => !m.v.ende || m.v.ende >= heuteBerlin()) ? (
+                <p className="meta">
+                  <Link
+                    href={'/objekte/' + id + '/einheiten/' + e.id + '/vermietung'}
+                    data-testid="mieter-anlegen"
+                  >
+                    <Users size={15} aria-hidden /> Frei · Mieter anlegen
+                  </Link>
+                </p>
+              ) : null}
               {e.mietverhaeltnisse.map((m) => (
                 <p key={m.id} className="meta">
                   <span>

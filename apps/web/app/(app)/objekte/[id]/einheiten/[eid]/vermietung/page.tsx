@@ -2,10 +2,18 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
+import { MieterPersonen } from '@/components/mieter-personen'
 import { ladeAkte } from '@/lib/akte'
 import { datumAnzeige, euroAnzeige, euroText } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
-import { konditionAendern, mietverhaeltnisBeenden, vermietungAnlegen } from '../../../aktionen'
+import {
+  konditionAendern,
+  mieterAuszug,
+  mieterBearbeiten,
+  mieterEinzug,
+  mietverhaeltnisBeenden,
+  vermietungAnlegen,
+} from '../../../aktionen'
 
 const MIETARTEN = [
   ['vergleich', 'Vergleichsmiete (§ 558 BGB)'],
@@ -102,6 +110,97 @@ export default async function VermietungSeite({
               Verlauf und Dokumente
             </Link>
           </p>
+          <ul className="mietpartei" data-testid="mietpartei">
+            {m.personen.map((p) => {
+              const name = [p.v.vorname, p.v.nachname].filter(Boolean).join(' ')
+              return (
+                <li key={p.id} data-testid="mieter-person">
+                  <strong>{name}</strong>
+                  {p.v.email || p.v.telefon ? (
+                    <span className="leise">
+                      {' · ' + [p.v.email, p.v.telefon].filter(Boolean).join(' · ')}
+                    </span>
+                  ) : null}
+                  <details>
+                    <summary>Bearbeiten</summary>
+                    <Formular
+                      key={'p' + p.v.versionNr}
+                      aktion={mieterBearbeiten}
+                      knopf="Speichern"
+                      testId={'mieter-bearbeiten-' + name}
+                    >
+                      {verstecktes}
+                      <input type="hidden" name="mietverhaeltnisId" value={m.id} />
+                      <input type="hidden" name="personId" value={p.id} />
+                      <div className="zeile">
+                        <Feld label="Vorname" name="vorname" defaultValue={p.v.vorname ?? ''} />
+                        <Feld
+                          label="Nachname"
+                          name="nachname"
+                          defaultValue={p.v.nachname}
+                          required
+                        />
+                      </div>
+                      <div className="zeile">
+                        <Feld
+                          label="E-Mail"
+                          name="email"
+                          type="email"
+                          defaultValue={p.v.email ?? ''}
+                        />
+                        <Feld label="Telefon" name="telefon" defaultValue={p.v.telefon ?? ''} />
+                      </div>
+                    </Formular>
+                  </details>
+                  {!m.v.ende && m.personen.length > 1 ? (
+                    <details>
+                      <summary>Auszug</summary>
+                      <Formular
+                        aktion={mieterAuszug}
+                        knopf="Auszug speichern"
+                        testId={'mieter-auszug-' + name}
+                      >
+                        {verstecktes}
+                        <input type="hidden" name="mietverhaeltnisId" value={m.id} />
+                        <input type="hidden" name="personId" value={p.id} />
+                        <Feld label="Auszug am" name="ab" type="date" required />
+                        <label className="haken">
+                          <input type="checkbox" name="personenzahl" defaultChecked /> Personen im
+                          Haushalt um 1 verringern
+                        </label>
+                        <p className="leise">
+                          Das Mietverhältnis läuft mit den übrigen Personen weiter. Ein Zugang zum
+                          Mieterportal für diese Person wird gesperrt.
+                        </p>
+                      </Formular>
+                    </details>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ul>
+          {!m.v.ende ? (
+            <details>
+              <summary>Weitere Person zieht ein</summary>
+              <Formular aktion={mieterEinzug} knopf="Einzug speichern" testId="mieter-einzug">
+                {verstecktes}
+                <input type="hidden" name="mietverhaeltnisId" value={m.id} />
+                <div className="zeile">
+                  <Feld label="Vorname" name="vorname" />
+                  <Feld label="Nachname" name="nachname" required />
+                </div>
+                <div className="zeile">
+                  <Feld label="E-Mail" name="email" type="email" />
+                  <Feld label="Telefon" name="telefon" />
+                </div>
+                <Feld label="Einzug am" name="ab" type="date" required />
+                <label className="haken">
+                  <input type="checkbox" name="personenzahl" defaultChecked /> Personen im Haushalt
+                  um 1 erhöhen
+                </label>
+              </Formular>
+            </details>
+          ) : null}
           {m.kondition ? (
             <p>
               Kaltmiete {euroAnzeige(m.kondition.v.kaltmieteCent)} · Vorauszahlungen{' '}
@@ -112,7 +211,11 @@ export default async function VermietungSeite({
           {m.kondition ? (
             <details>
               <summary>Neue Mietkondition (Erhöhung, Anpassung)</summary>
-              <Formular aktion={konditionAendern} knopf="Kondition speichern">
+              <Formular
+                key={'k' + m.kondition.v.versionNr}
+                aktion={konditionAendern}
+                knopf="Kondition speichern"
+              >
                 {verstecktes}
                 <input type="hidden" name="konditionId" value={m.kondition.id} />
                 <input type="hidden" name="mietart" value={m.kondition.v.mietart} />
@@ -140,14 +243,7 @@ export default async function VermietungSeite({
         <h2>Neues Mietverhältnis</h2>
         <Formular aktion={vermietungAnlegen} knopf="Mietverhältnis anlegen" testId="vermietung">
           {verstecktes}
-          <div className="zeile">
-            <Feld label="Vorname" name="vorname" />
-            <Feld label="Nachname" name="nachname" required />
-          </div>
-          <div className="zeile">
-            <Feld label="E-Mail" name="email" type="email" />
-            <Feld label="Telefon" name="telefon" />
-          </div>
+          <MieterPersonen />
           <div className="zeile">
             <Feld label="Mietbeginn" name="beginn" type="date" required />
             <Feld label="Mietende (falls befristet)" name="ende" type="date" />
