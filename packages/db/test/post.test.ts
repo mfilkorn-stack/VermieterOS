@@ -431,11 +431,9 @@ describe('Telefonnotizen und Verlauf', () => {
 
 describe('Antworten aus der App', () => {
   it('Antwort steht mit Text im Verlauf; append-only; nur Nutzer; nie fremdes Mietverhältnis', async () => {
-    const nachrichtId = (
-      await withMandant(v.worker, a, (tx) =>
-        legeNachrichtAn(tx, nachricht(a, postfachA, { betreff: 'Fenster klemmt' }), SYSTEM),
-      )
-    )!
+    const nachrichtId = (await withMandant(v.worker, a, (tx) =>
+      legeNachrichtAn(tx, nachricht(a, postfachA, { betreff: 'Fenster klemmt' }), SYSTEM),
+    ))!
     const basis = {
       mandantId: a,
       nachrichtId,

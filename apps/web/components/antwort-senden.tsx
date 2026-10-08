@@ -37,8 +37,8 @@ export function AntwortSenden(p: {
       ) : null}
       {!p.darf ? null : !p.moeglich ? (
         <p className="leise">
-          Der Mailversand ist nicht eingerichtet (SMTP_HOST). Der Entwurf lässt sich im
-          Mailprogramm öffnen.
+          Der Mailversand ist nicht eingerichtet (SMTP_HOST). Der Entwurf lässt sich im Mailprogramm
+          öffnen.
         </p>
       ) : (
         <Formular aktion={antwortSenden} knopf="Antwort senden" testId="antwort-formular">

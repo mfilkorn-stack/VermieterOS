@@ -221,9 +221,9 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
     .click()
   await expect(page.getByTestId('verlauf-kopf')).toContainText(mieterin)
   await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(3)
-  await expect(
-    page.locator('[data-testid="verlauf-eintrag"][data-art="antwort"]'),
-  ).toContainText('Antwort an ' + mieterin)
+  await expect(page.locator('[data-testid="verlauf-eintrag"][data-art="antwort"]')).toContainText(
+    'Antwort an ' + mieterin,
+  )
 
   await page.getByText('Telefonnotiz erfassen').click()
   const notiz = page.getByTestId('telefonnotiz')
