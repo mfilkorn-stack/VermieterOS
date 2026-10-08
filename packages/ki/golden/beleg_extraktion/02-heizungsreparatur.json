@@ -28,10 +28,10 @@
       "seite": 1
     },
     "einordnung": {
-      "objekt_id": "o2",
       "steuerkategorie": "erhaltungsaufwand",
       "kostenart": null,
-      "umlagefaehig": false
+      "umlagefaehig": false,
+      "objekt_ids": ["o2"]
     }
   }
 }

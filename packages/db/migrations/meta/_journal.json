@@ -218,6 +218,13 @@
       "when": 1791462416631,
       "tag": "0030_handwerker_anschrift_sicht",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791463383030,
+      "tag": "0031_belege_mandanten",
+      "breakpoints": true
     }
   ]
 }

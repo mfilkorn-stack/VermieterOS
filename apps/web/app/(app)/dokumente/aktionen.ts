@@ -2,14 +2,17 @@
 
 import {
   anhangFuerDokument,
+  belegMitHash,
   fachdaten,
   ladeDokument,
   letzteVersion,
   type Tx,
 } from '@vermieteros/db'
 import {
+  BELEG_EXTRAKTION,
   bestaetigeVorschlagInTx,
   erzeugeVorschlag,
+  fuerBeleg,
   fuerDokument,
   gebaeudeanteilAus,
   KAUFVERTRAG_EXTRAKTION,
@@ -74,11 +77,17 @@ async function ablegen(
   ) {
     throw new Eingabefehler('Mietverhältnis nicht gefunden.')
   }
+  if (p.daten.typ === 'beleg') {
+    const doppelt = await belegMitHash(tx, p.datei.sha256)
+    if (doppelt) throw new Eingabefehler('Diesen Beleg gibt es schon im Belegeingang.')
+  }
   const r = await speichere(tx, k, {
     entitaet: 'dokument',
     identitaet: {
       objektId: p.bezug.objektId,
       mietverhaeltnisId: p.bezug.mietverhaeltnisId,
+      // Art „Beleg“ kommt in den Belegeingang wie ein Upload dort (Auslesen, Buchen)
+      beleg: p.daten.typ === 'beleg',
       dateiHash: p.datei.sha256,
       speicherSchluessel: p.datei.schluessel,
       dateiname: p.datei.dateiname,
@@ -112,8 +121,28 @@ async function letzteVersionDaten(tx: Tx, id: string) {
   return fachdaten('dokument', v)
 }
 
+/**
+ * Belege, die über die Dokumente oder den Posteingang abgelegt werden, gleich auslesen wie beim
+ * Sammel-Upload; ein Fehler der KI hält das Ablegen nicht auf (der Worker versucht es erneut).
+ */
+async function belegAuslesenNachAblage(id: string, typ: string): Promise<string> {
+  if (typ !== 'beleg') return `/dokumente/${id}`
+  const u = await kiUmgebung()
+  if (u) {
+    try {
+      await erzeugeVorschlag(u, BELEG_EXTRAKTION, (tx) => fuerBeleg(tx, id, objektSpeicher()))
+    } catch (e) {
+      console.warn(
+        '[beleg] Auslesen nach Ablage gescheitert: ' + (e instanceof Error ? e.message : e),
+      )
+    }
+  }
+  return `/belege/${id}`
+}
+
 export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<FormStatus> {
   let id: string
+  let typ = ''
   try {
     await verlange({ stammdaten: ['schreiben'] })
     const datei = d.get('datei')
@@ -126,6 +155,7 @@ export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<For
     if (!objektId && !mietverhaeltnisId)
       throw new Eingabefehler('Objekt oder Mietverhältnis fehlt.')
     const dokumentDaten = daten(d, upload.dateiname)
+    typ = dokumentDaten.typ
     id = await mitMandant(async (tx, k) => {
       const abgelegt = await objektSpeicher().ablegen(
         k.mandantId,
@@ -143,12 +173,13 @@ export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<For
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
-  redirect(`/dokumente/${id}`)
+  redirect(await belegAuslesenNachAblage(id, typ))
 }
 
 /** Anhang einer zugeordneten Mail als Dokument ablegen; die Datei liegt schon im Speicher. */
 export async function anhangAlsDokument(_: FormStatus, d: FormData): Promise<FormStatus> {
   let id: string
+  let typ = ''
   try {
     await verlange({ stammdaten: ['schreiben'] })
     const mietverhaeltnisId = pflicht(d, 'mietverhaeltnisId', 'Mietverhältnis')
@@ -171,17 +202,19 @@ export async function anhangAlsDokument(_: FormStatus, d: FormData): Promise<For
       } else if (!ERLAUBTE_TYPEN.has(mime)) {
         throw new Eingabefehler('Diese Dateiart wird nicht abgelegt.')
       }
+      const dokumentDaten = daten(d, datei.dateiname)
+      typ = dokumentDaten.typ
       return ablegen(tx, k, {
         bezug: { objektId: null, mietverhaeltnisId },
         datei,
-        daten: daten(d, datei.dateiname),
+        daten: dokumentDaten,
         ersetztId: null,
       })
     })
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
-  redirect(`/dokumente/${id}`)
+  redirect(await belegAuslesenNachAblage(id, typ))
 }
 
 /** Status „abgelaufen“ oder wieder „gültig“; „ersetzt“ entsteht nur beim Ersetzen. */

@@ -8,6 +8,7 @@ import type { ObjektDaten } from '@vermieteros/schema'
 import { CircleCheck, FileSearch, TriangleAlert } from 'lucide-react'
 import { Formular } from '@/components/formular'
 import { KiHinweis } from '@/components/ki-hinweis'
+import { ScanBestaetigung } from '@/components/scan-bestaetigung'
 import { Status } from '@/components/status'
 import { datumAnzeige, euroAnzeige } from '@/lib/format'
 import { kaufvertragUebernehmen, vertragAuslesen, vertragVerwerfen } from '../aktionen'
@@ -49,19 +50,6 @@ function Pruefung({ p, seite, zitat }: { p: Pruefergebnis; seite: number; zitat?
         </>
       )}
     </span>
-  )
-}
-
-/**
- * Scans haben keine Textebene, die Software kann die Fundstellen nicht prüfen. Die Werte sind
- * trotzdem vorbelegt; übernommen wird erst nach dieser ausdrücklichen Bestätigung.
- */
-export function ScanBestaetigung() {
-  return (
-    <label className="haken" data-testid="scan-bestaetigung">
-      <input type="checkbox" name="scanGeprueft" value="ja" required />
-      Das Dokument ist ein Scan. Ich habe die angehakten Werte am Dokument geprüft.
-    </label>
   )
 }
 

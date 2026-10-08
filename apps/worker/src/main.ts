@@ -1,5 +1,14 @@
-import { aktivePostfaecherAllerMandanten, createDb } from '@vermieteros/db'
-import { belegeAuslesen, kiClientAusUmgebung, sortiereNeueNachrichten } from '@vermieteros/ki'
+import {
+  aktivePostfaecherAllerMandanten,
+  createDb,
+  mandantenMitNeuenDokumenten,
+} from '@vermieteros/db'
+import {
+  BELEG_TAGE,
+  belegeAuslesen,
+  kiClientAusUmgebung,
+  sortiereNeueNachrichten,
+} from '@vermieteros/ki'
 import {
   rufeAlleAb,
   s3Speicher,
@@ -37,7 +46,9 @@ const monitor = process.env['HEALTHCHECK_ABRUF']
 const { db, close } = createDb(url, { max: 3 })
 const speicher = s3Speicher(speicherKonfigAusUmgebung())
 const ctx = { db, speicher, schluessel: schluesselAusUmgebung(), log }
-const ki = process.env['KI_SORTIERUNG'] === 'aus' ? null : kiClientAusUmgebung()
+const kiClient = kiClientAusUmgebung()
+// KI_SORTIERUNG=aus schaltet nur das Einordnen der Mails ab, nicht das Auslesen der Belege.
+const ki = process.env['KI_SORTIERUNG'] === 'aus' ? null : kiClient
 const kiLimit = Number(process.env['KI_SORTIERUNG_LIMIT'] ?? 20)
 const belegLimit = Number(process.env['KI_BELEGE_LIMIT'] ?? 10)
 
@@ -56,15 +67,21 @@ async function durchlauf(): Promise<void> {
   const neu = ergebnisse.reduce((s, e) => s + e.neu, 0)
   const fehler = ergebnisse.filter((e) => e.fehler).length
   log(`Durchlauf: ${ergebnisse.length} Postfächer, ${neu} neue Nachrichten, ${fehler} mit Fehler`)
-  if (!ki) return
+  if (!kiClient) return
   const mandantIds = (await aktivePostfaecherAllerMandanten(db)).map((p) => p.mandantId)
-  const s = await sortiereNeueNachrichten({ db, client: ki, mandantIds, limit: kiLimit, log })
-  if (s.sortiert || s.fehler) log(`Sortierung: ${s.sortiert} sortiert, ${s.fehler} gescheitert`)
+  if (ki) {
+    const s = await sortiereNeueNachrichten({ db, client: ki, mandantIds, limit: kiLimit, log })
+    if (s.sortiert || s.fehler) log(`Sortierung: ${s.sortiert} sortiert, ${s.fehler} gescheitert`)
+  }
+  // Belege auch bei Mandanten ohne Postfach (Upload, Rechnung am Ticket, Dokument-Upload)
+  const belegMandanten = [
+    ...new Set([...mandantIds, ...(await mandantenMitNeuenDokumenten(db, BELEG_TAGE))]),
+  ]
   const b = await belegeAuslesen({
     db,
-    client: ki,
+    client: kiClient,
     quelle: speicher,
-    mandantIds,
+    mandantIds: belegMandanten,
     limit: belegLimit,
     log,
   })

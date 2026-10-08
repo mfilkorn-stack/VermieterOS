@@ -81,7 +81,9 @@ Dokumente liegen wie Mails im Object Storage (`mandanten/<id>/dokument/…`), un
 
 ### Belege
 
-Eine eigene Beleg-Adresse ist ein Postfach mit Zweck „Belege“ (eigene Adresse oder eigener Ordner per Regel im Mailprogramm). Ihre Mails erscheinen nicht im Posteingang; jeder PDF- oder Bild-Anhang wird ein Beleg, dieselbe Datei nur einmal. Mit KI-Schlüssel liest der Worker neue Belege der letzten 30 Tage aus, höchstens `KI_BELEGE_LIMIT` (Standard 10) pro Durchlauf, nach zwei Fehlversuchen nicht mehr automatisch. Belege sind steuerlich aufbewahrungspflichtig (mindestens zehn Jahre); sie liegen unveränderlich im Object Storage und werden nie gelöscht, auch nicht nach „Aus dem Eingang nehmen“.
+Eine eigene Beleg-Adresse ist ein Postfach mit Zweck „Belege“ (eigene Adresse oder eigener Ordner per Regel im Mailprogramm). Ihre Mails erscheinen nicht im Posteingang; jeder PDF- oder Bild-Anhang wird ein Beleg, dieselbe Datei nur einmal. Mit KI-Schlüssel liest der Worker neue Belege der letzten 30 Tage aus, bei allen Mandanten (auch ohne Postfach) und unabhängig von `KI_SORTIERUNG`, höchstens `KI_BELEGE_LIMIT` (Standard 10) pro Durchlauf, nach zwei Fehlversuchen nicht mehr automatisch. Uploads im Belegeingang, Rechnungen am Ticket und Dokumente der Art „Beleg“ werden schon beim Hochladen ausgelesen; der Worker fängt auf, was dabei scheitert.
+
+**Vorbelegung beim Buchen:** Werte mit am PDF geprüfter Fundstelle; bei Fotos und Scans ebenfalls alle Werte, gebucht wird dann erst nach dem Haken „am Beleg geprüft“ (Herkunft „Foto oder Scan, von Hand geprüft“). Das Objekt kommt in dieser Reihenfolge: beim Hochladen gewählt oder aus dem Ticket, dann eine Anschrift oder Objektbezeichnung, die wörtlich im Beleg steht, dann der Vorschlag der KI. Betrifft ein Beleg mehrere Objekte (z. B. Steuerberatung für alle), wird gleichmäßig aufgeteilt. Belege sind steuerlich aufbewahrungspflichtig (mindestens zehn Jahre); sie liegen unveränderlich im Object Storage und werden nie gelöscht, auch nicht nach „Aus dem Eingang nehmen“.
 
 ### Mailversand
 

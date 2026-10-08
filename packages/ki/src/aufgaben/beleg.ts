@@ -16,10 +16,11 @@ export const BelegAuszug = z.object({
     'Nur wenn der Beleg sagt, wann bezahlt oder abgebucht wurde bzw. wird; sonst null',
   ),
   einordnung: z.object({
-    objekt_id: z
-      .string()
-      .nullable()
-      .describe('ID aus der Objektliste; null, wenn nicht eindeutig oder für alle Objekte'),
+    objekt_ids: z
+      .array(z.string())
+      .describe(
+        'IDs aus der Objektliste, auf die sich der Beleg bezieht; alle, wenn er ausdrücklich alle betrifft; leer, wenn unklar',
+      ),
     steuerkategorie: z.enum(STEUERKATEGORIEN_AUSGABE),
     kostenart: z
       .enum(BETRKV_KOSTENARTEN)
@@ -55,7 +56,7 @@ export type BelegFeld = (typeof BELEG_FELDER)[number]
  */
 export const BELEG_EXTRAKTION: Aufgabe<BelegKontextDaten, BelegAuszug> = {
   name: 'beleg_extraktion',
-  version: 1,
+  version: 2,
   maxTokens: 6_000,
   aufwand: 'medium',
   ablaufTage: 30,
@@ -69,7 +70,7 @@ export const BELEG_EXTRAKTION: Aufgabe<BelegKontextDaten, BelegAuszug> = {
     'Steht eine Angabe nicht auf dem Beleg, gib null zurück. Rechne nichts aus und ergänze nichts.',
     '',
     'Einordnung (Vorschlag, ein Mensch bestätigt):',
-    '- objekt_id: nur eine ID aus der mitgeschickten Objektliste. Passt die Lieferanschrift oder Verbrauchsstelle zu genau einem Objekt, nimm es. Ist die Rechnung einem Ticket zugeordnet, gilt dessen Objekt. Sonst null.',
+    '- objekt_ids: nur IDs aus der mitgeschickten Objektliste. Maßgeblich sind Leistungsort, Verbrauchsstelle, Lieferanschrift, Objektbezeichnung oder Einheit auf dem Beleg, nicht die Anschrift des Rechnungsempfängers. Ist die Rechnung einem Ticket zugeordnet, gilt dessen Objekt. Betrifft der Beleg ausdrücklich mehrere oder alle Objekte (z. B. Steuerberatung für alle Objekte, Kontoführung), alle betroffenen IDs. Ist es unklar, eine leere Liste; nicht raten.',
     '- steuerkategorie: erhaltungsaufwand (Reparatur, Instandhaltung, Ersatz gleichwertiger Teile), betriebskosten (laufende Kosten nach BetrKV: Grundsteuer, Wasser, Müll, Versicherung, Hausstrom, Wartung, Schornsteinfeger …), verwaltungskosten (Hausverwaltung, Steuerberatung, Kontoführung), schuldzinsen, geldbeschaffungskosten, herstellungskosten (Neues, Erweiterung, deutliche Verbesserung), anschaffungskosten (Kauf, Notar und Grundbuch beim Erwerb), sonstige_werbungskosten, nicht_abziehbar (privat).',
     '- kostenart: nur bei betriebskosten, sonst null.',
     '- umlagefaehig: true nur für Betriebskosten, die nach § 2 BetrKV umlegbar sind. Reparaturen und Verwaltung sind nie umlagefähig.',
@@ -95,9 +96,11 @@ export const BELEG_EXTRAKTION: Aufgabe<BelegKontextDaten, BelegAuszug> = {
   pruefe: (a, d) => {
     const befunde: string[] = []
     const e = a.einordnung
-    if (e.objekt_id && !d.objekte.some((o) => o.id === e.objekt_id)) {
-      befunde.push(`Objekt ${e.objekt_id} steht nicht in der Objektliste`)
+    for (const id of e.objekt_ids) {
+      if (!d.objekte.some((o) => o.id === id))
+        befunde.push(`Objekt ${id} steht nicht in der Objektliste`)
     }
+    if (new Set(e.objekt_ids).size !== e.objekt_ids.length) befunde.push('Objekt doppelt genannt')
     if (e.kostenart && e.steuerkategorie !== 'betriebskosten') {
       befunde.push('Kostenart ohne Betriebskosten')
     }
@@ -140,4 +143,15 @@ export function werteBelegAus(a: BelegAuszug, seiten: string[]): BelegAuswertung
     })
   }
   return out
+}
+
+/**
+ * Objekte aus einem gespeicherten Vorschlag. Version 1 kannte nur ein Objekt (`objekt_id`);
+ * ältere Vorschläge in der Datenbank bleiben so lesbar.
+ */
+export function vorgeschlageneObjekte(e: unknown): string[] {
+  const x = e as { objekt_ids?: unknown; objekt_id?: unknown } | null | undefined
+  if (Array.isArray(x?.objekt_ids))
+    return x.objekt_ids.filter((i): i is string => typeof i === 'string')
+  return typeof x?.objekt_id === 'string' ? [x.objekt_id] : []
 }

@@ -25,7 +25,8 @@ import { groesseText, mietverhaeltnisText } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { aktuelleVertragsdaten, dokumentSeiten } from '@/lib/vertrag'
 import { dokumentStatus, vertragAuslesen, vertragUebernehmen, vertragVerwerfen } from '../aktionen'
-import { KaufvertragKarte, ScanBestaetigung } from './kaufvertrag'
+import { ScanBestaetigung } from '@/components/scan-bestaetigung'
+import { KaufvertragKarte } from './kaufvertrag'
 import { KiHinweis } from '@/components/ki-hinweis'
 
 const FELD_TEXT: Record<Auswertung['feld'], string> = {

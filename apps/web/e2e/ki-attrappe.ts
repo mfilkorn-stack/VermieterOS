@@ -34,7 +34,8 @@ function beleg(a: Anfrage): unknown {
       leistung_bis: null,
       zahlungsdatum: null,
       einordnung: {
-        objekt_id: null,
+        // „alle Objekte“ laut Rechnung: alle IDs aus der Liste
+        objekt_ids: kontext.objekte.map((o) => o.id),
         steuerkategorie: 'verwaltungskosten',
         kostenart: null,
         umlagefaehig: false,
@@ -55,7 +56,7 @@ function beleg(a: Anfrage): unknown {
     leistung_bis: f('31.12.2025', 'bis 31.12.2025'),
     zahlungsdatum: f('15.01.2026', 'am 15.01.2026 von Ihrem Konto abgebucht'),
     einordnung: {
-      objekt_id: objekt?.id ?? null,
+      objekt_ids: objekt ? [objekt.id] : [],
       steuerkategorie: 'betriebskosten',
       kostenart: 'wasserversorgung',
       umlagefaehig: true,

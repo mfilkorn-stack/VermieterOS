@@ -23,6 +23,8 @@ import { BELEG_FELD_TEXT, KOSTENART_TEXT, STEUERKATEGORIE_TEXT } from '@/lib/jou
 import { kiEingerichtet } from '@/lib/ki'
 import { groesseText } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { ScanBestaetigung } from '@/components/scan-bestaetigung'
+import { objektVorschlag } from '@/lib/beleg-objekte'
 import { dokumentSeiten } from '@/lib/vertrag'
 import {
   belegAuslesen,
@@ -69,35 +71,41 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
       vorschlag && (vorschlag.status === 'offen' || vorschlag.status === 'bestaetigt')
         ? vorschlag
         : null
-    const auswertung = aktiv
-      ? werteBelegAus(aktiv.ausgabe as BelegAuszug, await dokumentSeiten(tx, id))
-      : []
+    const seiten = await dokumentSeiten(tx, id)
+    const auswertung = aktiv ? werteBelegAus(aktiv.ausgabe as BelegAuszug, seiten) : []
     return {
       b,
       vorschlag,
       aktiv,
       auswertung,
+      seiten,
       objekte: await objekteFuerBeleg(tx),
       buchungen: await buchungenZuBeleg(tx, id),
       ticket: b.ticketId ? await ladeTicket(tx, b.ticketId) : null,
     }
   })
   if (!daten) notFound()
-  const { b, vorschlag, aktiv, auswertung, objekte, buchungen, ticket } = daten
+  const { b, vorschlag, aktiv, auswertung, seiten, objekte, buchungen, ticket } = daten
   const auszug = aktiv?.ausgabe as BelegAuszug | undefined
   const gebucht = buchungen.find((x) => !x.storno)
 
-  // Vorbelegung nur aus Werten, die am PDF belegt sind; die Einordnung aus dem Vorschlag.
-  const belegt = new Map<BelegFeld, BelegAuswertung>(
-    auswertung.filter((w) => w.pruefung === 'belegt').map((w) => [w.feld, w]),
+  // Vorbelegung aus Werten, die am PDF belegt sind, und aus Fotos/Scans (dann mit Pflicht-Haken
+  // „am Beleg geprüft“); nie aus Werten, deren Zitat nicht im PDF steht. Einordnung aus dem Vorschlag.
+  const vorbelegt = new Map<BelegFeld, BelegAuswertung>(
+    auswertung
+      .filter((w) => w.pruefung === 'belegt' || w.pruefung === 'scan')
+      .map((w) => [w.feld, w]),
   )
-  const wert = (f: BelegFeld) => belegt.get(f)?.normiert ?? null
+  const scan = auswertung.some((w) => w.pruefung === 'scan')
+  const wert = (f: BelegFeld) => vorbelegt.get(f)?.normiert ?? null
   const e = auszug?.einordnung
-  const objektId =
-    (e?.objekt_id && objekte.some((o) => o.id === e.objekt_id) ? e.objekt_id : null) ??
-    b.objektId ??
-    ticket?.objektId ??
-    null
+  const objekt = objektVorschlag({
+    objekte,
+    objektId: b.objektId ?? ticket?.objektId ?? null,
+    ticket: ticket ? { titel: ticket.titel, objekt: ticket.objekt } : null,
+    seiten,
+    einordnung: e,
+  })
   const vorgabe: BuchungVorgabe = {
     richtung: 'ausgabe',
     gegenpartei: (wert('lieferant') as string | null) ?? ticket?.auftragnehmer ?? null,
@@ -111,7 +119,7 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
     steuerkategorie: e?.steuerkategorie ?? null,
     kostenart: e?.kostenart ?? null,
     umlagefaehig: e?.umlagefaehig ?? false,
-    objektId,
+    objektIds: objekt?.ids ?? [],
     beschreibung: ticket ? `Ticket: ${ticket.titel}` : null,
   }
   const hinweise: Partial<Record<keyof BuchungVorgabe, string>> = {}
@@ -120,7 +128,7 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
       e.kostenart ? `, ${KOSTENART_TEXT[e.kostenart]}` : ''
     }${e.umlagefaehig ? ', umlagefähig' : ''}. ${e.begruendung}`
   }
-  if (ticket) hinweise.objektId = `Aus dem Ticket „${ticket.titel}“ (${ticket.objekt}).`
+  if (objekt) hinweise.objektId = objekt.hinweis
 
   const pdf = b.mime === 'application/pdf'
 
@@ -257,8 +265,9 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
                   </ul>
                 ) : null}
                 <p className="leise">
-                  Nur Werte mit Fundstelle sind unten vorbelegt. Alles andere bitte selbst
-                  eintragen.
+                  {scan
+                    ? 'Foto oder Scan: Die Werte sind unten vorbelegt, bitte am Beleg prüfen und bestätigen.'
+                    : 'Werte mit Fundstelle sind unten vorbelegt; nicht belegte Werte bitte selbst eintragen.'}
                 </p>
                 {aktiv.status === 'offen' && schreiben && !gebucht ? (
                   <Formular
@@ -286,6 +295,7 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
                   richtungWaehlbar={false}
                   hinweise={hinweise}
                 />
+                {scan ? <ScanBestaetigung /> : null}
               </Formular>
             </div>
           ) : null}

@@ -30,7 +30,7 @@ const AUSZUG: BelegAuszug = {
   // erfunden: steht so nicht auf dem Beleg
   zahlungsdatum: { wert: '16.01.2026', seite: 1, zitat: 'abgebucht am 16.01.2026' },
   einordnung: {
-    objekt_id: null,
+    objekt_ids: [],
     steuerkategorie: 'betriebskosten',
     kostenart: 'wasserversorgung',
     umlagefaehig: true,
@@ -65,8 +65,8 @@ describe('Beleg: Fundstellen und Einordnung', () => {
         { ...AUSZUG, einordnung: { ...AUSZUG.einordnung, ...e } },
         daten as unknown as BelegKontextDaten,
       )
-    expect(pruefe({ objekt_id: 'o1' })).toEqual([])
-    expect(pruefe({ objekt_id: 'erfunden' })).toEqual([
+    expect(pruefe({ objekt_ids: ['o1'] })).toEqual([])
+    expect(pruefe({ objekt_ids: ['erfunden'] })).toEqual([
       'Objekt erfunden steht nicht in der Objektliste',
     ])
     expect(pruefe({ steuerkategorie: 'erhaltungsaufwand' })).toEqual([
@@ -127,7 +127,7 @@ describe('Beleglauf im Worker', () => {
   it('liest neue Belege mit der Worker-Rolle aus; die KI sieht PDF und Objektliste', async () => {
     const client = new FakeKiClient({
       ...AUSZUG,
-      einordnung: { ...AUSZUG.einordnung, objekt_id: objekt },
+      einordnung: { ...AUSZUG.einordnung, objekt_ids: [objekt] },
     })
     const lauf = (c: FakeKiClient) =>
       belegeAuslesen({
@@ -146,6 +146,6 @@ describe('Beleglauf im Worker', () => {
     const v = await withMandant(app.db, mandant, (tx) =>
       geltendeKiVorschlaege(tx, 'beleg_extraktion', [beleg]),
     )
-    expect(v.get(beleg)?.ausgabe).toMatchObject({ einordnung: { objekt_id: objekt } })
+    expect(v.get(beleg)?.ausgabe).toMatchObject({ einordnung: { objekt_ids: [objekt] } })
   })
 })
