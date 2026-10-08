@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { EinheitFormular } from '@/components/einheit-formular'
 import { ladeAkte } from '@/lib/akte'
@@ -9,9 +10,18 @@ export default async function EinheitNeuSeite({ params }: { params: Promise<{ id
   const akte = await mitMandant((tx) => ladeAkte(tx, id))
   if (!akte) notFound()
   return (
-    <div className="karte">
-      <h1>Einheit anlegen · {akte.objekt.bezeichnung}</h1>
-      <EinheitFormular objektId={id} giltAb={akte.bestandSeit} />
-    </div>
+    <>
+      <nav className="brotkrumen" aria-label="Pfad">
+        <Link href={'/objekte'}>Objekte</Link>
+        <span aria-hidden>/</span>
+        <Link href={`/objekte/${id}`}>{akte.objekt.bezeichnung}</Link>
+        <span aria-hidden>/</span>
+        <span>Einheit anlegen</span>
+      </nav>
+      <div className="karte">
+        <h1>Einheit anlegen</h1>
+        <EinheitFormular objektId={id} giltAb={akte.bestandSeit} />
+      </div>
+    </>
   )
 }

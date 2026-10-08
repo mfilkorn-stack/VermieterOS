@@ -30,7 +30,11 @@ test('Steuer: Anlage V vorbereiten, Paket festschreiben und herunterladen', asyn
   await eh.getByLabel('Wohnfläche m²').fill('50')
   await eh.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByTestId('einheitenliste')).toContainText('OG')
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Nachname').fill('Beispiel')
   await v.getByLabel('Mietbeginn').fill(`${jahr}-01-01`)

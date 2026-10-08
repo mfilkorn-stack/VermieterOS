@@ -8,6 +8,7 @@ export const ZUORDNUNG_TEXT: Record<ZuordnungArt, string> = {
   absender_betreff: 'automatisch über Absender und Betreff',
   manuell: 'von Hand',
   aufgehoben: 'Zuordnung aufgehoben',
+  erledigt: 'erledigt ohne Zuordnung',
 }
 
 /** „Wohnung Nr. 1 · ETW mit Stellplatz · Max Mieter · seit 01.09.2021“ */

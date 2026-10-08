@@ -209,6 +209,25 @@ export type PortalNachricht = {
   email: string
 }
 
+export type PortalNachrichtMitAntworten = PortalNachricht & {
+  antworten: Array<{ id: string; text: string; gesendetAm: string }>
+}
+
+/** Für das Portal: eigene Nachrichten mit den Antworten der Verwaltung, jüngste zuerst. */
+export async function portalNachrichtenMitAntworten(
+  tx: Tx,
+  mietverhaeltnisId: string,
+): Promise<PortalNachrichtMitAntworten[]> {
+  return tx.execute<PortalNachrichtMitAntworten>(sql`
+    SELECT n.id, n.betreff, n.text, n.erstellt_am AS "erstelltAm", z.email,
+           coalesce((SELECT json_agg(json_build_object('id', w.id, 'text', w.text, 'gesendetAm', w.gesendet_am)
+                                     ORDER BY w.gesendet_am)
+                     FROM antworten w WHERE w.portal_nachricht_id = n.id), '[]'::json) AS antworten
+    FROM portal_nachrichten n JOIN portal_zugaenge z ON z.id = n.zugang_id
+    WHERE n.mietverhaeltnis_id = ${mietverhaeltnisId}
+    ORDER BY n.erstellt_am DESC`)
+}
+
 export async function portalNachrichtenZuMv(
   tx: Tx,
   mietverhaeltnisId: string,

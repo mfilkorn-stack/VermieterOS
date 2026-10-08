@@ -22,7 +22,7 @@ export default async function PortalStart({
     <>
       <div className="karte" data-testid="portal-wohnung">
         <div className="zeile">
-          <h1>Ihre Wohnung</h1>
+          <h1>{u.titel}</h1>
           <form action={abmelden}>
             <button type="submit" className="zweit" data-testid="portal-abmelden">
               <LogOut size={16} aria-hidden /> Abmelden
@@ -33,38 +33,6 @@ export default async function PortalStart({
           {u.wohnung.anschrift.join(', ')}
           {u.wohnung.lage ? ` · ${u.wohnung.lage}` : ''}
         </p>
-        <dl className="kopfdaten">
-          <dt>Mieter</dt>
-          <dd>{u.mieter.join(', ')}</dd>
-          <dt>Vermieter</dt>
-          <dd>{[u.vermieter.name, ...u.vermieter.anschrift].filter(Boolean).join(', ')}</dd>
-          <dt>Mietbeginn</dt>
-          <dd>{datumAnzeige(u.beginn)}</dd>
-          {u.ende ? (
-            <>
-              <dt>Mietende</dt>
-              <dd>{datumAnzeige(u.ende)}</dd>
-            </>
-          ) : null}
-          {k ? (
-            <>
-              <dt>Kaltmiete</dt>
-              <dd data-testid="portal-kaltmiete">{euroAnzeige(k.kaltmieteCent)}</dd>
-              <dt>Vorauszahlungen</dt>
-              <dd>
-                {euroAnzeige(k.vorauszahlungBkCent + k.vorauszahlungHkCent)} (Betriebskosten{' '}
-                {euroAnzeige(k.vorauszahlungBkCent)}, Heizung {euroAnzeige(k.vorauszahlungHkCent)})
-              </dd>
-              <dt>Monatlich gesamt</dt>
-              <dd>
-                <strong>
-                  {euroAnzeige(k.kaltmieteCent + k.vorauszahlungBkCent + k.vorauszahlungHkCent)}
-                </strong>{' '}
-                <span className="leise">seit {datumAnzeige(k.gueltigAb)}</span>
-              </dd>
-            </>
-          ) : null}
-        </dl>
       </div>
 
       {q.gemeldet ? (
@@ -108,6 +76,70 @@ export default async function PortalStart({
           </ul>
         </div>
       ) : null}
+
+      <div className="karte" data-testid="portal-vertrag">
+        <h2>Ihr Vertrag</h2>
+        <dl className="kopfdaten">
+          <dt>Mieter</dt>
+          <dd>{u.mieter.join(', ')}</dd>
+          <dt>Vermieter</dt>
+          <dd>{[u.vermieter.name, ...u.vermieter.anschrift].filter(Boolean).join(', ')}</dd>
+          <dt>Mietbeginn</dt>
+          <dd>{datumAnzeige(u.beginn)}</dd>
+          {u.ende ? (
+            <>
+              <dt>Mietende</dt>
+              <dd>{datumAnzeige(u.ende)}</dd>
+            </>
+          ) : null}
+          {k ? (
+            <>
+              <dt>Kaltmiete</dt>
+              <dd data-testid="portal-kaltmiete">{euroAnzeige(k.kaltmieteCent)}</dd>
+              <dt>Vorauszahlungen</dt>
+              <dd>
+                {euroAnzeige(k.vorauszahlungBkCent + k.vorauszahlungHkCent)} (Betriebskosten{' '}
+                {euroAnzeige(k.vorauszahlungBkCent)}, Heizung {euroAnzeige(k.vorauszahlungHkCent)})
+              </dd>
+              <dt>Monatlich gesamt</dt>
+              <dd>
+                <strong>
+                  {euroAnzeige(k.kaltmieteCent + k.vorauszahlungBkCent + k.vorauszahlungHkCent)}
+                </strong>{' '}
+                <span className="leise">seit {datumAnzeige(k.gueltigAb)}</span>
+              </dd>
+            </>
+          ) : null}
+        </dl>
+      </div>
+
+      <div className="karte" data-testid="portal-nachrichten">
+        <h2>Ihre Nachrichten</h2>
+        {u.nachrichten.length === 0 ? (
+          <p className="leise">Noch keine Nachrichten.</p>
+        ) : (
+          <ul className="liste-schlicht">
+            {u.nachrichten.map((n) => (
+              <li key={n.id}>
+                <strong>{n.betreff}</strong>
+                <span className="leise"> · {zeitpunktAnzeige(n.erstelltAm)}</span>
+                <p className="auszug" style={{ whiteSpace: 'pre-wrap' }}>
+                  {n.text}
+                </p>
+                {n.antworten.map((a) => (
+                  <p key={a.id} className="antwort" style={{ whiteSpace: 'pre-wrap' }}>
+                    <strong>Antwort Ihres Vermieters</strong>
+                    <span className="leise"> · {zeitpunktAnzeige(a.gesendetAm)}</span>
+                    <br />
+                    {a.text}
+                  </p>
+                ))}
+                {n.antworten.length === 0 ? <p className="leise">Noch unbeantwortet.</p> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="karte" data-testid="portal-tickets">
         <h2>Ihre Meldungen</h2>

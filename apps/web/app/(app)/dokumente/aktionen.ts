@@ -37,6 +37,8 @@ import { redirect } from 'next/navigation'
 import { DATEI_FEHLER, ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
 import { datum, Eingabefehler, pflicht, text, zodText } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
+import { setzeHinweis } from '@/lib/hinweis'
+import { sicheresZiel } from '@/lib/ziel'
 import { kiUmgebung } from '@/lib/ki'
 import { mitMandant, verlange, type MandantKontext } from '@/lib/sitzung'
 import { speichere } from '@/lib/speichern'
@@ -191,7 +193,13 @@ export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<For
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
-  redirect(await auslesenNachAblage(id))
+  const ziel = await auslesenNachAblage(id)
+  const zurueck = text(d, 'zurueck')
+  if (zurueck) {
+    await setzeHinweis('Dokument abgelegt.')
+    redirect(sicheresZiel(zurueck, ziel))
+  }
+  redirect(ziel)
 }
 
 /**

@@ -9,11 +9,14 @@ export function DokumentFormular({
   mietverhaeltnisId,
   ersetztId,
   typ,
+  zurueck,
 }: {
   objektId?: string | undefined
   mietverhaeltnisId?: string | undefined
   ersetztId?: string | undefined
   typ?: string | undefined
+  /** Nach dem Upload hierhin statt zum Dokument (z. B. Jahresabschluss) */
+  zurueck?: string | undefined
 }) {
   return (
     <Formular aktion={dokumentHochladen} knopf="Hochladen" testId="dokument-hochladen">
@@ -22,6 +25,7 @@ export function DokumentFormular({
         <input type="hidden" name="mietverhaeltnisId" value={mietverhaeltnisId} />
       ) : null}
       {ersetztId ? <input type="hidden" name="ersetztId" value={ersetztId} /> : null}
+      {zurueck ? <input type="hidden" name="zurueck" value={zurueck} /> : null}
       <label>
         Datei (PDF, JPG, PNG, WebP, HEIC; bis 20 MB)
         <input type="file" name="datei" accept={DATEI_ACCEPT} required />

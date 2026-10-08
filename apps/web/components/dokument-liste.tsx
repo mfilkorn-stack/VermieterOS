@@ -17,9 +17,11 @@ export function DokumentListe({ dokumente }: { dokumente: DokumentZeile[] }) {
             <FileText size={20} strokeWidth={1.75} aria-hidden />
           )}
           <span className="text">
-            <Link href={`/dokumente/${d.id}`}>{d.titel}</Link>
+            <Link href={d.beleg || d.typ === 'beleg' ? `/belege/${d.id}` : `/dokumente/${d.id}`}>
+              {d.titel}
+            </Link>
             <span className="leise">
-              {DOKUMENT_TYP_TEXT[d.typ]}
+              {d.beleg || d.typ === 'beleg' ? 'Beleg' : DOKUMENT_TYP_TEXT[d.typ]}
               {d.dokumentdatum ? ` · ${datumAnzeige(d.dokumentdatum)}` : ''}
             </span>
           </span>

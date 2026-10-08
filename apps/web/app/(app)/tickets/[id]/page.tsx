@@ -10,6 +10,7 @@ import { Mail, MapPin, ReceiptText } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BelegImport } from '@/components/beleg-import'
+import { DokumentListe } from '@/components/dokument-liste'
 import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
@@ -22,8 +23,15 @@ import { belegAuslesenDirekt, belegHochladen } from '../../belege/aktionen'
 import { ticketAktualisieren } from '../aktionen'
 import { KiHinweis } from '@/components/ki-hinweis'
 
-export default async function TicketSeite({ params }: { params: Promise<{ id: string }> }) {
+export default async function TicketSeite({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ gebucht?: string }>
+}) {
   const { id } = await params
+  const gebucht = (await searchParams).gebucht === '1'
   const d = await mitMandant(async (tx) => {
     const t = await ladeTicket(tx, id)
     if (!t) return null
@@ -34,13 +42,16 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
       fotos: (await listeDokumente(tx, { ticketId: id })).filter(
         (x) => x.typ === 'mangelfoto' && x.status === 'gueltig',
       ),
+      dateien: (await listeDokumente(tx, { ticketId: id })).filter(
+        (x) => x.typ !== 'mangelfoto' && x.typ !== 'beleg' && !x.beleg && x.status === 'gueltig',
+      ),
       handwerker: (await listeHandwerker(tx)).filter(
         (h) => h.objektIds.length === 0 || h.objektIds.includes(t.objektId),
       ),
     }
   })
   if (!d) notFound()
-  const { t, verlauf, handwerker, rechnungen, fotos } = d
+  const { t, verlauf, handwerker, rechnungen, fotos, dateien } = d
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const auftragnehmer = handwerker.find((h) => h.id === t.auftragnehmerId)
   const ort = t.einheit ? `${t.objekt} · ${t.einheit}` : t.objekt
@@ -57,6 +68,11 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
 
   return (
     <>
+      {gebucht ? (
+        <p className="karte" data-testid="gebucht-hinweis">
+          Rechnung gebucht; sie steht im Journal und unter Belegen.
+        </p>
+      ) : null}
       <nav className="brotkrumen" aria-label="Pfad">
         <Link href="/tickets">Tickets</Link>
         <span aria-hidden>/</span>
@@ -98,6 +114,12 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
               </div>
             </div>
           ) : null}
+          {dateien.length ? (
+            <div className="karte" data-testid="ticket-dateien">
+              <h2>Dateien</h2>
+              <DokumentListe dokumente={dateien} />
+            </div>
+          ) : null}
           <div className="karte">
             <h2>Verlauf</h2>
             <ol className="befunde" data-testid="ticket-verlauf">
@@ -116,10 +138,10 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
         <div>
           {schreiben ? (
             <div className="karte">
-              <h2>Weiter bearbeiten</h2>
+              <h2>Status und Auftrag</h2>
               <Formular
                 aktion={ticketAktualisieren}
-                knopf="Speichern"
+                knopf="Änderungen speichern"
                 testId="ticket-aktualisieren"
               >
                 <input type="hidden" name="ticketId" value={t.id} />
@@ -188,8 +210,8 @@ export default async function TicketSeite({ params }: { params: Promise<{ id: st
               </ul>
             ) : (
               <p className="leise">
-                Die Rechnung des Handwerkers hier ablegen: Sie landet als Beleg im Belegeingang, mit
-                Objekt und Handwerker aus dem Ticket.
+                Die Rechnung des Handwerkers hier ablegen: Sie landet unter Belegen, mit Objekt und
+                Handwerker aus dem Ticket.
               </p>
             )}
             {schreiben ? (

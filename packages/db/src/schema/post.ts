@@ -1,4 +1,5 @@
 import type { AkteurArt } from './ereignisse'
+import { portalNachrichten } from './portal'
 import type { GespraechRichtung, PostfachZweck, ZuordnungArt } from '@vermieteros/schema'
 import {
   bigint,
@@ -101,8 +102,10 @@ export const nachrichtZuordnungen = pgTable(
     nachrichtId: uuid('nachricht_id')
       .notNull()
       .references(() => nachrichten.id),
-    /** null bei `aufgehoben` */
+    /** Ziel: genau eines von Mietverhältnis, Objekt oder Handwerker; keins bei `aufgehoben`/`erledigt` */
     mietverhaeltnisId: uuid('mietverhaeltnis_id'),
+    objektId: uuid('objekt_id'),
+    handwerkerId: uuid('handwerker_id'),
     art: text('art').$type<ZuordnungArt>().notNull(),
     begruendung: text('begruendung'),
     akteurArt: text('akteur_art').$type<AkteurArt>().notNull(),
@@ -112,6 +115,38 @@ export const nachrichtZuordnungen = pgTable(
       .defaultNow(),
   },
   (t) => [index('nachricht_zuordnungen_nachricht_idx').on(t.nachrichtId, t.erfasstAm)],
+)
+
+/**
+ * Antworten aus der App auf eingegangene Mails, append-only. Versand über den zentralen SMTP mit
+ * Reply-To auf das Postfach, damit die Rückantwort wieder im Posteingang landet. Der Text bleibt
+ * hier, damit der Verlauf des Mietverhältnisses beide Richtungen zeigt.
+ */
+export const antworten = pgTable(
+  'antworten',
+  {
+    id: uuid('id').primaryKey(),
+    mandantId: uuid('mandant_id').notNull(),
+    /** Genau eines von beiden: Antwort auf eine Mail oder auf eine Nachricht aus dem Mieterportal */
+    nachrichtId: uuid('nachricht_id').references(() => nachrichten.id),
+    portalNachrichtId: uuid('portal_nachricht_id').references(() => portalNachrichten.id),
+    /** Zuordnung der Mail zum Zeitpunkt des Versands; null bei einer nicht zugeordneten Mail */
+    mietverhaeltnisId: uuid('mietverhaeltnis_id'),
+    an: text('an').array().notNull(),
+    betreff: text('betreff').notNull(),
+    text: text('text').notNull(),
+    messageId: text('message_id').notNull(),
+    gesendetAm: timestamp('gesendet_am', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+    akteurArt: text('akteur_art').$type<AkteurArt>().notNull(),
+    akteurId: text('akteur_id').notNull(),
+  },
+  (t) => [
+    index('antworten_nachricht_idx').on(t.nachrichtId, t.gesendetAm),
+    index('antworten_portal_idx').on(t.portalNachrichtId, t.gesendetAm),
+    index('antworten_mv_gesendet_idx').on(t.mietverhaeltnisId, t.gesendetAm),
+  ],
 )
 
 /**

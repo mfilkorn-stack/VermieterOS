@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import nodemailer from 'nodemailer'
 import { musterRechnung } from '../../../packages/ki/src/testpdf'
 import { konto, registrieren, workerEinmal } from './hilfen'
+import { warteAufMailKopf } from './postfach'
 import { E2E } from './umgebung'
 
 /**
@@ -40,7 +41,11 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await e.getByLabel('Bezeichnung').fill('EG links')
   await e.getByLabel('Wohnfläche m²').fill('70,00')
   await e.getByRole('button', { name: 'Speichern' }).click()
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Nachname').fill('Mieterin')
   await v.getByLabel('E-Mail').fill(mieterin)
@@ -88,15 +93,23 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   const offen = page.getByTestId('nachricht')
   await expect(offen).toHaveCount(1)
   await expect(offen.first()).toHaveAttribute('data-betreff', 'Baum an der Grundstücksgrenze')
-  await expect(offen.first().getByTestId('zuordnung')).toContainText('Offen')
+  await expect(offen.first().getByTestId('zuordnung')).toContainText('Nicht zugeordnet')
   // Das Menü zählt offene Mails (Amber-Zähler)
   const menuePost = page
     .getByRole('navigation', { name: 'Hauptmenü' })
     .getByRole('link', { name: /Posteingang/ })
-  await expect(menuePost).toContainText('1 offen')
+  await expect(menuePost).toContainText('1 nicht zugeordnet')
+  // UX-2: die Übersicht zeigt dieselben Zähler als „Zu erledigen“
+  await page.goto('/')
+  await expect(page.getByTestId('zu-erledigen')).toContainText('Posteingang · nicht zugeordnet')
+  await page
+    .getByTestId('zu-erledigen')
+    .getByRole('link', { name: /Posteingang/ })
+    .click()
+  await expect(page).toHaveURL(/\/posteingang$/)
+  await page.getByRole('link', { name: 'Alle' }).click()
 
   // Alle: die Mail der Mieterin ist über den Absender zugeordnet, mit Anhang
-  await page.getByRole('link', { name: 'Alle' }).click()
   const heizung = page.locator('[data-testid="nachricht"][data-betreff="Heizung kalt"]')
   await expect(heizung.getByTestId('zuordnung')).toContainText('EG links · Haus am Park · Mieterin')
   await expect(heizung.getByTestId('zuordnung')).toContainText('automatisch über den Absender')
@@ -117,24 +130,53 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   )
   const z = baum.getByTestId('zuordnen')
   await z
-    .getByLabel('Mietverhältnis')
+    .getByLabel('Zuordnen zu')
     .selectOption({ label: await z.locator('option', { hasText: 'EG links' }).innerText() })
   await z.getByLabel('Notiz zur Zuordnung').fill('betrifft Garten der Mieterin')
-  await z.getByRole('button', { name: 'Speichern' }).click()
+  await z.getByRole('button', { name: 'Zuordnen' }).click()
   await expect(page.getByTestId('posteingang-leer')).toHaveText(
     'Nichts offen. Alle Nachrichten sind zugeordnet.',
   )
   // Zähler verschwindet ohne Neuladen (Layout wird nach der Aktion neu gerendert)
-  await expect(menuePost).not.toContainText('offen')
+  await expect(menuePost).not.toContainText('nicht zugeordnet')
   await page.goto('/posteingang?alle=1')
   await expect(baum.getByTestId('zuordnung')).toContainText('(von Hand)')
 
-  // Zweiter Abruf bringt nichts doppelt; das Postfach zeigt den Abrufzeitpunkt
+  // Zweiter Abruf bringt nichts doppelt, nur die neue Handwerker-Mail; Abrufzeitpunkt am Postfach
+  const smtp2 = nodemailer.createTransport({ ...E2E.smtp, secure: false, ignoreTLS: true })
+  await smtp2.sendMail({
+    from: 'Dachdecker Muster <info@dachdecker.example>',
+    to: postfach,
+    subject: 'Angebot Dachrinne',
+    text: 'Anbei unser Angebot für die Dachrinne.',
+  })
+  smtp2.close()
   workerEinmal()
   await page.goto('/posteingang?alle=1')
-  await expect(page.getByTestId('nachricht')).toHaveCount(2)
+  await expect(page.getByTestId('nachricht')).toHaveCount(3)
   await page.goto('/postfaecher')
   await expect(page.getByTestId('letzter-abruf')).not.toHaveText('noch nie')
+
+  // UX-3: Mail vom Handwerker gehört zum Objekt, nicht zu einem Mietverhältnis
+  await page.goto('/posteingang?q=Dachrinne')
+  await page.getByRole('link', { name: 'Angebot Dachrinne' }).click()
+  // Brotkrume führt zurück in die Suche
+  await expect(page.getByRole('navigation', { name: 'Pfad' }).getByRole('link')).toHaveAttribute(
+    'href',
+    '/posteingang?q=Dachrinne',
+  )
+  const zObjekt = page.getByTestId('zuordnung').getByTestId('zuordnen')
+  await zObjekt.getByLabel('Zuordnen zu').selectOption({ label: 'Haus am Park' })
+  await zObjekt.getByRole('button', { name: 'Zuordnen' }).click()
+  await expect(page.getByTestId('zuordnung')).toContainText('Objekt')
+  await expect(
+    page.getByTestId('zuordnung').getByRole('link', { name: 'Haus am Park' }),
+  ).toBeVisible()
+  await page.getByTestId('zuordnung').getByRole('link', { name: 'Haus am Park' }).click()
+  await expect(page.getByTestId('objekt-post')).toContainText('Angebot Dachrinne')
+  await expect(
+    page.getByRole('navigation', { name: 'Hauptmenü' }).getByRole('link', { name: /Posteingang/ }),
+  ).not.toContainText('nicht zugeordnet')
 
   // WP 1.2: Suche, Detail, Downloads mit Prüfsumme, Verlauf, Telefonnotiz mit Korrektur
   await page.goto('/posteingang?q=thermostat')
@@ -159,7 +201,21 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(antwort).toContainText('Termin mit dem Handwerker abstimmen')
   await page.getByTestId('antwort-uebernehmen').getByRole('button').click()
   await expect(antwort).toContainText('übernommen')
-  await expect(page.getByTestId('antwort-mailto')).toHaveAttribute('href', /^mailto:/)
+  await expect(page.getByTestId('antwort-weiter')).toHaveAttribute('href', '#antworten')
+
+  // Antwort direkt aus der App: Entwurf vorbefüllt, Reply-To auf das Postfach, im Thread
+  const senden = page.getByTestId('antwort-formular')
+  await expect(senden.getByLabel(/^An /)).toHaveValue(mieterin)
+  await expect(senden.getByLabel('Betreff')).toHaveValue('Re: Heizung kalt')
+  await expect(senden.getByLabel('Text')).toHaveValue(/Guten Tag Mieterin,/)
+  await senden.getByLabel('Text').fill('Guten Tag Mieterin, der Monteur kommt Mittwoch.')
+  await senden.getByRole('button', { name: 'Antwort senden' }).click()
+  await expect(page.getByTestId('antwort-gesendet')).toContainText('an ' + mieterin)
+  await expect(senden.getByLabel('Text')).toHaveValue('')
+  const gesendet = await warteAufMailKopf(mieterin, /^Re: Heizung kalt$/)
+  expect(gesendet.text).toContain('der Monteur kommt Mittwoch.')
+  expect(gesendet.replyTo).toBe(postfach)
+  expect(gesendet.inReplyTo).toBeTruthy()
 
   // WP 1.6: Ticket aus der Mail, vorbefüllt aus Zuordnung und Einschätzung
   await page.getByTestId('nachricht-ticket-neu').click()
@@ -173,7 +229,7 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
 
   // WP 1.7: Anhang als Dokument am Mietverhältnis ablegen, ohne zweiten Upload
   const nachrichtUrl = page.url()
-  await page.getByText('Als Dokument ablegen').click()
+  await page.getByText('Ablegen als Beleg oder Dokument').click()
   const ablage = page.getByTestId('ablegen-thermostat.jpg')
   await ablage.getByLabel('Art').selectOption('sonstiges')
   await ablage.getByRole('button', { name: 'Ablegen' }).click()
@@ -205,7 +261,10 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
     .getByRole('link', { name: /EG links/ })
     .click()
   await expect(page.getByTestId('verlauf-kopf')).toContainText(mieterin)
-  await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(2)
+  await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(3)
+  await expect(page.locator('[data-testid="verlauf-eintrag"][data-art="antwort"]')).toContainText(
+    'Antwort an ' + mieterin,
+  )
 
   await page.getByText('Telefonnotiz erfassen').click()
   const notiz = page.getByTestId('telefonnotiz')
@@ -216,7 +275,7 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
     .fill('Monteur kommt Mittwoch zwischen 8 und 10 Uhr.')
   await notiz.getByRole('button', { name: 'Notiz speichern' }).click()
   const eintraege = page.getByTestId('verlauf-eintrag')
-  await expect(eintraege).toHaveCount(3)
+  await expect(eintraege).toHaveCount(4)
   const telefon = page.locator('[data-testid="verlauf-eintrag"][data-art="telefonnotiz"]')
   await expect(telefon).toContainText('Anruf von Mieterin')
   await expect(telefon).toContainText('06.10.2026, 09:15')
@@ -285,6 +344,7 @@ test('Mail-Anhang als Beleg auslesen', async ({ page }) => {
   await page.getByRole('link', { name: 'Ihre Jahresrechnung' }).click()
   await expect(page.getByTestId('nachricht-betreff')).toHaveText('Ihre Jahresrechnung')
   const mailUrl = page.url()
+  await page.getByText('Ablegen als Beleg oder Dokument').click()
   await page.getByTestId('als-beleg-rechnung.pdf').getByRole('button').click()
   await expect(page).toHaveURL(/\/belege\/[0-9a-f-]{36}$/)
   const b = page.getByTestId('beleg-buchen')

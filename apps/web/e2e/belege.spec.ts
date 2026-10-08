@@ -182,19 +182,10 @@ test('Belege: Foto mit Bestätigung, Beleg über Dokument-Upload', async ({ page
   await f.getByRole('button', { name: 'Bestätigen und buchen' }).click()
   await expect(page.getByTestId('belege-fertig')).toBeVisible()
 
-  // Beleg über „Dokument hochladen“ am Objekt: ausgelesen, im Belegeingang
+  // UX-5: Belege sind keine Dokumentart; das Dokumentformular verweist auf die Belege
   await page.goto('/dokumente/neu?objekt=' + objektId + '&typ=beleg')
   const d = page.getByTestId('dokument-hochladen')
-  await d.getByLabel(/Datei/).setInputFiles({
-    name: 'rechnung.pdf',
-    mimeType: 'application/pdf',
-    buffer: Buffer.from(musterRechnung()),
-  })
-  await d.getByLabel('Titel').fill('Wasser per Dokument')
-  await d.getByRole('button', { name: 'Hochladen' }).click()
-  await expect(page).toHaveURL(/\/belege\/[0-9a-f-]{36}$/)
-  await expect(page.getByTestId('beleg-buchen').getByLabel('Betrag (brutto, €)')).toHaveValue(
-    '481,50',
-  )
-  await expect(page.getByTestId('scan-bestaetigung')).toHaveCount(0)
+  await expect(d.getByLabel('Art')).toHaveValue('sonstiges')
+  await expect(d.locator('option[value="beleg"]')).toHaveCount(0)
+  await expect(d.getByRole('link', { name: 'Beleg hochladen' })).toHaveAttribute('href', '/belege')
 })

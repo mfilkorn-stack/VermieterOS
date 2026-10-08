@@ -57,7 +57,7 @@ export default async function EigentuemerSeite() {
               {schreiben ? (
                 <details>
                   <summary>Anteil ändern</summary>
-                  <Formular aktion={anteilAendern} knopf="Speichern">
+                  <Formular aktion={anteilAendern} knopf="Änderungen speichern">
                     <input type="hidden" name="anteilId" value={e.id} />
                     <div className="zeile">
                       <Feld label="Anteil Zähler" name="zaehler" defaultValue={z} />
@@ -87,7 +87,7 @@ export default async function EigentuemerSeite() {
       {schreiben ? (
         <div className="karte">
           <h2>Eigentümer hinzufügen</h2>
-          <Formular aktion={eigentuemerAnlegen} knopf="Hinzufügen" testId="eigentuemer">
+          <Formular aktion={eigentuemerAnlegen} knopf="Eigentümer anlegen" testId="eigentuemer">
             <div className="zeile">
               <Feld label="Vorname" name="vorname" />
               <Feld label="Nachname" name="nachname" required />

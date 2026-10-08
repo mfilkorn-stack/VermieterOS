@@ -14,6 +14,7 @@ export default async function Jahresabschluss({
   if (!(await darf({ stammdaten: ['lesen'] }))) redirect('/')
   const laufend = Number(heuteBerlin().slice(0, 4))
   const sp = await searchParams
+  const schreiben = await darf({ stammdaten: ['schreiben'] })
   const jahr = sp.jahr === String(laufend) ? laufend : laufend - 1
   const objekte = await mitMandant((tx) => ladeAbschluss(tx, jahr))
   return (
@@ -60,7 +61,9 @@ export default async function Jahresabschluss({
                 >
                   <Status ton={STAND_TON[p.stand]}>{STAND_TEXT[p.stand]}</Status>{' '}
                   <strong>{p.titel}</strong> <span className="leise">{p.text}</span>
-                  {p.stand === 'offen' ? (
+                  {p.stand === 'offen' &&
+                  (schreiben ||
+                    !abschlussLink(p, roh.objektId, jahr).startsWith('/dokumente/neu')) ? (
                     <>
                       {' '}
                       <Link href={abschlussLink(p, roh.objektId, jahr)}>erledigen</Link>

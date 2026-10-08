@@ -32,14 +32,17 @@ function Herkunft({ b }: { b: BelegZeile }) {
 export default async function BelegeSeite({
   searchParams,
 }: {
-  searchParams: Promise<{ gebucht?: string }>
+  searchParams: Promise<{ gebucht?: string; aussortiert?: string }>
 }) {
-  const fertig = (await searchParams).gebucht === '1'
+  const sp = await searchParams
+  const fertig = sp.gebucht === '1'
+  const zeigeAussortiert = sp.aussortiert === '1'
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const ki = kiEingerichtet()
-  const { offen, gebucht, objekte } = await mitMandant(async (tx) => ({
+  const { offen, gebucht, aussortiert, objekte } = await mitMandant(async (tx) => ({
     offen: await listeBelege(tx, { status: 'offen' }),
     gebucht: await listeBelege(tx, { status: 'gebucht', limit: 15 }),
+    aussortiert: zeigeAussortiert ? await listeBelege(tx, { status: 'aussortiert' }) : [],
     objekte: await objekteFuerBeleg(tx),
   }))
 
@@ -47,7 +50,7 @@ export default async function BelegeSeite({
     <>
       <div className="seitenkopf">
         <div>
-          <h1>Belegeingang</h1>
+          <h1>Belege</h1>
           <p className="leise">
             Rechnungen und Bescheide: hochladen, an die Beleg-Adresse weiterleiten oder am Ticket
             ablegen. Die KI liest aus, du bestätigst, dann steht der Beleg im Journal.
@@ -64,11 +67,50 @@ export default async function BelegeSeite({
       ) : null}
       <div className="raster-2">
         <section>
-          <h2>
-            <Inbox size={18} aria-hidden style={{ verticalAlign: '-3px', marginRight: 6 }} />
-            Offen ({offen.length})
-          </h2>
-          {offen.length === 0 ? (
+          <div className="zeile">
+            <h2>
+              <Inbox size={18} aria-hidden style={{ verticalAlign: '-3px', marginRight: 6 }} />
+              {zeigeAussortiert ? 'Aussortiert' : `Offen (${offen.length})`}
+            </h2>
+            <nav className="reiter" aria-label="Belegstand">
+              <Link href="/belege" aria-current={zeigeAussortiert ? undefined : 'page'}>
+                Offen
+              </Link>
+              <Link
+                href="/belege?aussortiert=1"
+                aria-current={zeigeAussortiert ? 'page' : undefined}
+              >
+                Aussortiert
+              </Link>
+            </nav>
+          </div>
+          {zeigeAussortiert ? (
+            aussortiert.length === 0 ? (
+              <p className="leise" data-testid="belege-aussortiert-leer">
+                Nichts aussortiert.
+              </p>
+            ) : (
+              <ul className="liste" data-testid="belege-aussortiert">
+                {aussortiert.map((b) => (
+                  <li
+                    key={b.id}
+                    className="karte nachricht"
+                    data-testid="beleg"
+                    data-titel={b.titel}
+                  >
+                    <div className="nachricht-kopf">
+                      <Link href={`/belege/${b.id}`}>{b.titel}</Link>
+                    </div>
+                    <p className="meta">
+                      <Herkunft b={b} />
+                      <span>{datumAnzeige(b.erstelltAm.slice(0, 10))}</span>
+                      <span className="leise">{b.dateiname}</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : offen.length === 0 ? (
             <p className="leise" data-testid="belege-leer">
               Keine offenen Belege.
             </p>
@@ -114,7 +156,12 @@ export default async function BelegeSeite({
             </div>
           ) : null}
           <div className="karte">
-            <h2>Zuletzt gebucht</h2>
+            <div className="zeile">
+              <h2>Zuletzt gebucht</h2>
+              <Link href="/journal" className="leise">
+                Alle im Journal
+              </Link>
+            </div>
             {gebucht.length === 0 ? (
               <p className="leise">Noch nichts gebucht.</p>
             ) : (

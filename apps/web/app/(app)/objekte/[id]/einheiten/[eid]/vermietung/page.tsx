@@ -6,6 +6,7 @@ import { MieterPersonen } from '@/components/mieter-personen'
 import { ladeAkte } from '@/lib/akte'
 import { datumAnzeige, euroAnzeige, euroText } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { heuteBerlin } from '@/lib/zeit'
 import {
   konditionAendern,
   mieterAuszug,
@@ -77,14 +78,18 @@ function Konditionsfelder({
 
 export default async function VermietungSeite({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; eid: string }>
+  searchParams: Promise<{ neu?: string }>
 }) {
   const { id, eid } = await params
+  const neu = (await searchParams).neu === '1'
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect(`/objekte/${id}`)
   const akte = await mitMandant((tx) => ladeAkte(tx, id))
   const einheit = akte?.einheiten.find((e) => e.id === eid)
   if (!akte || !einheit) notFound()
+  const laufend = einheit.mietverhaeltnisse.some((m) => !m.v.ende || m.v.ende >= heuteBerlin())
   const verstecktes = (
     <>
       <input type="hidden" name="objektId" value={id} />
@@ -94,10 +99,14 @@ export default async function VermietungSeite({
 
   return (
     <>
-      <p className="leise">
+      <nav className="brotkrumen" aria-label="Pfad">
+        <Link href="/">Objekte</Link>
+        <span aria-hidden>/</span>
         <Link href={`/objekte/${id}`}>{akte.objekt.bezeichnung}</Link>
-      </p>
-      <h1>Vermietung · {einheit.v.bezeichnung}</h1>
+        <span aria-hidden>/</span>
+        <span>{einheit.v.bezeichnung} · Mietverhältnisse</span>
+      </nav>
+      <h1>Mietverhältnisse · {einheit.v.bezeichnung}</h1>
 
       {einheit.mietverhaeltnisse.map((m) => (
         <div key={m.id} className="karte" data-testid="mietverhaeltnis">
@@ -107,7 +116,7 @@ export default async function VermietungSeite({
           </h2>
           <p>
             <Link href={`/mietverhaeltnisse/${m.id}`} data-testid="verlauf-link">
-              Verlauf und Dokumente
+              Zum Mietverhältnis (Verlauf, Dokumente, Portal)
             </Link>
           </p>
           <ul className="mietpartei" data-testid="mietpartei">
@@ -126,7 +135,7 @@ export default async function VermietungSeite({
                     <Formular
                       key={'p' + p.v.versionNr}
                       aktion={mieterBearbeiten}
-                      knopf="Speichern"
+                      knopf="Änderungen speichern"
                       testId={'mieter-bearbeiten-' + name}
                     >
                       {verstecktes}
@@ -239,8 +248,18 @@ export default async function VermietungSeite({
         </div>
       ))}
 
-      <div className="karte">
-        <h2>Neues Mietverhältnis</h2>
+      {neu ? (
+        <p className="karte" data-testid="einheit-neu-hinweis">
+          Einheit angelegt. Jetzt das Mietverhältnis erfassen, oder später über „Mietverhältnisse“
+          an der Einheit.
+        </p>
+      ) : null}
+      <details className="karte" open={!laufend} data-testid="neues-mietverhaeltnis">
+        <summary>
+          <h2 style={{ display: 'inline', margin: 0 }}>
+            {laufend ? 'Nachmieter anlegen' : 'Neues Mietverhältnis'}
+          </h2>
+        </summary>
         <Formular aktion={vermietungAnlegen} knopf="Mietverhältnis anlegen" testId="vermietung">
           {verstecktes}
           <MieterPersonen />
@@ -271,7 +290,7 @@ export default async function VermietungSeite({
             />
           </div>
         </Formular>
-      </div>
+      </details>
     </>
   )
 }

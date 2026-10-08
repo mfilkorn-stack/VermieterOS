@@ -94,7 +94,7 @@ export function EinschaetzungKarte({
           <p className="leise">
             {v
               ? STATUS_TEXT[v.status]
-              : 'Noch keine Einschätzung. Neue Mails sortiert der Worker automatisch.'}
+              : 'Noch keine Einschätzung. Neue Mails werden automatisch eingeordnet.'}
           </p>
           {darf ? (
             <Knopf
@@ -120,6 +120,13 @@ function gerendert(text: string, fakten: Fakten): { text: string; fehlend: strin
   }
 }
 
+/** Übernommener Entwurf mit eingesetzten Fakten, zum Vorbefüllen der Antwort; sonst null. */
+export function entwurfText(v: KiVorschlag | null, fakten: Fakten): string | null {
+  if (!v || v.status !== 'bestaetigt') return null
+  const r = gerendert((v.ausgabe as Antwortvorschlag).entwurf, fakten)
+  return r.fehlend.length ? null : r.text
+}
+
 /** Antwortentwurf: Fakten setzt der Code beim Anzeigen ein, Zusagen sind markiert. */
 export function AntwortKarte({
   nachrichtId,
@@ -128,6 +135,7 @@ export function AntwortKarte({
   darf,
   an,
   betreff,
+  mailprogramm = true,
 }: {
   nachrichtId: string
   v: KiVorschlag | null
@@ -135,6 +143,8 @@ export function AntwortKarte({
   darf: boolean
   an: string
   betreff: string
+  /** Ohne Mailversand in der App bleibt nur der Weg über das Mailprogramm */
+  mailprogramm?: boolean
 }) {
   const a =
     v && (v.status === 'offen' || v.status === 'bestaetigt')
@@ -194,10 +204,15 @@ export function AntwortKarte({
           {v!.status === 'bestaetigt' ? (
             <div className="aktionen">
               <Status ton="gruen">übernommen</Status>
-              {r.fehlend.length === 0 ? (
+              {r.fehlend.length === 0 && mailprogramm ? (
                 <a className="knopf" href={mailto} data-testid="antwort-mailto">
                   <Mail size={16} aria-hidden />
                   Im Mailprogramm öffnen
+                </a>
+              ) : r.fehlend.length === 0 ? (
+                <a className="knopf" href="#antworten" data-testid="antwort-weiter">
+                  <Mail size={16} aria-hidden />
+                  Zur Antwort
                 </a>
               ) : null}
               {darf ? (
@@ -216,7 +231,7 @@ export function AntwortKarte({
                 aktion={kiUebernehmen}
                 nachrichtId={nachrichtId}
                 vorschlagId={v!.id}
-                text="Übernehmen"
+                text={mailprogramm ? 'Übernehmen' : 'In Antwort übernehmen'}
                 testId="antwort-uebernehmen"
               />
               <Knopf

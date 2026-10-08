@@ -1,0 +1,16 @@
+{
+  "beschreibung": "Mängelmeldung: Heizkörper im Bad bleibt kalt, Terminwunsch",
+  "synthetisch": true,
+  "datei": "01-heizung.pdf",
+  "daten": {
+    "titel": "Mängelmeldung",
+    "typ": "sonstiges",
+    "dateiname": "01-heizung.pdf",
+    "mime": "application/pdf",
+    "mietverhaeltnis": null
+  },
+  "erwartet": {
+    "prioritaet": "hoch",
+    "kategorie": "heizung_wasser"
+  }
+}
