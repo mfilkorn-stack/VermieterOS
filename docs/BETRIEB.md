@@ -109,6 +109,8 @@ Objekt anlegen, Stammdaten und Eigentümer haben ein Feld „Adresse suchen“. 
 
 Die Vorschläge kommen von Photon (OpenStreetMap, betrieben von komoot in Deutschland, ohne Schlüssel und ohne Vertrag; die öffentliche Instanz ist für faire, geringe Nutzung gedacht). Die App fragt vom Server aus an und schickt nur den Suchtext, nie Nutzer, Mandant oder IP des Browsers. `ADRESSSUCHE=aus` blendet das Feld aus, `ADRESSSUCHE_URL` zeigt auf einen eigenen Photon-Server. Ist der Dienst nicht erreichbar, sagt das Formular es und die Felder bleiben normal ausfüllbar.
 
+**Firmensuche (Handwerker):** Das Handwerker-Formular hat ein Feld „Firma suchen“. Vorschläge sind OpenStreetMap-Einträge mit Namen über Photon, Handwerksbetriebe zuerst; die Auswahl füllt Firma, Anschrift und, wo eindeutig, das Gewerk. Telefon, E-Mail und Webseite holt die App erst nach der Auswahl, einmal pro Firma, von Nominatim (Nutzungsregeln: kein Abruf beim Tippen, höchstens einer pro Sekunde) und trägt sie nur in leere Felder ein. Nicht jeder Betrieb steht in OpenStreetMap; „Im Internet suchen“ öffnet dann eine Websuche im eigenen Browser. `FIRMENSUCHE=aus` schaltet ab, `FIRMENSUCHE_DETAILS_URL` zeigt auf ein eigenes Nominatim.
+
 ### Registrierung
 
 In Produktion legt nicht jeder ein Konto an, der die Domain kennt. Erlaubt sind die Adressen in `REGISTRIERUNG_ERLAUBT` (kommagetrennt, typischerweise nur die eigene) und Adressen mit offener Einladung in einen Mandanten. Alle anderen bekommen „Registrierung nur mit Einladung“. Mieter brauchen kein Konto, sie nutzen das Portal. `REGISTRIERUNG=offen` hebt die Sperre auf (Tests, lokale Entwicklung; dort ist sie ohnehin aus).

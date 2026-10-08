@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Formular } from '@/components/formular'
 import { HandwerkerFormular } from '@/components/handwerker-formular'
+import { adresssucheAn } from '@/lib/adresse'
+import { firmensucheAn } from '@/lib/firma'
 import { objektliste } from '@/lib/objekte'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { heuteBerlin } from '@/lib/zeit'
@@ -29,7 +31,13 @@ export default async function HandwerkerBearbeiten({
       </nav>
       <div className="karte">
         <h1>{h.firma}</h1>
-        <HandwerkerFormular h={h} objekte={objekte} heute={heuteBerlin()} />
+        <HandwerkerFormular
+          h={h}
+          objekte={objekte}
+          heute={heuteBerlin()}
+          firmensuche={firmensucheAn()}
+          adresssuche={adresssucheAn()}
+        />
       </div>
       <div className="karte">
         <h2>Aus dem Verzeichnis entfernen</h2>

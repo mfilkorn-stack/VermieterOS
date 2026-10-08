@@ -1,5 +1,6 @@
 import 'server-only'
 import { adresssucheAn } from './adresse'
+import { firmensucheAn } from './firma'
 import { kiEingerichtet } from './ki'
 import { mailEingerichtet } from './mail'
 
@@ -55,12 +56,20 @@ export function empfaenger(): Empfaenger[] {
       ort: 'USA; Übermittlung auf Grundlage der EU-Standardvertragsklauseln',
     })
   }
-  if (adresssucheAn()) {
+  if (adresssucheAn() || firmensucheAn()) {
     liste.push({
       name: 'komoot GmbH (Photon, OpenStreetMap)',
-      aufgabe: 'Vorschläge bei der Eingabe von Anschriften',
+      aufgabe: 'Vorschläge bei der Eingabe von Anschriften und Handwerksbetrieben',
       daten: 'nur der eingegebene Suchtext, ohne Name oder Konto',
       ort: 'Deutschland',
+    })
+  }
+  if (firmensucheAn()) {
+    liste.push({
+      name: 'OpenStreetMap Foundation (Nominatim)',
+      aufgabe: 'Telefon, E-Mail und Webseite zu einem ausgewählten Handwerksbetrieb',
+      daten: 'nur die Kennung des gewählten OpenStreetMap-Eintrags',
+      ort: 'Vereinigtes Königreich (Angemessenheitsbeschluss der EU)',
     })
   }
   return liste

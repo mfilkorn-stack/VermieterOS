@@ -38,6 +38,11 @@ export const handwerkerVersionen = pgTable(
     telefon: text('telefon'),
     notdienstTelefon: text('notdienst_telefon'),
     email: text('email'),
+    strasse: text('strasse'),
+    hausnummer: text('hausnummer'),
+    plz: text('plz'),
+    ort: text('ort'),
+    webseite: text('webseite'),
     notdienst: boolean('notdienst').notNull().default(false),
     /** Leer = für alle Objekte */
     objektIds: uuid('objekt_ids').array().notNull().default([]),
