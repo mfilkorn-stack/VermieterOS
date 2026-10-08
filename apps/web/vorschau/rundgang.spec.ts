@@ -201,7 +201,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     await f.getByLabel('Anteil Zähler').fill('1')
     await f.getByLabel('Nenner').fill('2')
     await f.getByLabel('Gilt ab').fill('2021-07-01')
-    await f.getByRole('button', { name: 'Hinzufügen' }).click()
+    await f.getByRole('button', { name: 'Eigentümer anlegen' }).click()
     await expect(page.getByTestId('eigentuemerliste')).toContainText(nachname)
   }
   await bild(
@@ -419,6 +419,10 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
     .getByTestId('beleg-buchen')
     .getByRole('button', { name: 'Bestätigen und buchen' })
     .click()
+  // Aus dem Ticket gebucht: zurück zum Ticket, dann der nächste offene Beleg
+  await expect(page.getByTestId('gebucht-hinweis')).toBeVisible()
+  await page.goto('/belege')
+  await page.getByTestId('belege-offen').getByRole('link', { name: 'Steuerberatung 2025' }).click()
   await expect(page.getByTestId('beleg-titel')).toHaveText('Steuerberatung 2025')
   const zweiter = page.getByTestId('beleg-buchen')
   await zweiter.getByLabel('Zahlungsdatum').fill('2026-03-25')
