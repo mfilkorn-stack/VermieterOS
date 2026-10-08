@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import nodemailer from 'nodemailer'
 import { musterRechnung } from '../../../packages/ki/src/testpdf'
 import { konto, registrieren, workerEinmal } from './hilfen'
+import { warteAufMailKopf } from './postfach'
 import { E2E } from './umgebung'
 
 /**
@@ -161,6 +162,20 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(antwort).toContainText('übernommen')
   await expect(page.getByTestId('antwort-mailto')).toHaveAttribute('href', /^mailto:/)
 
+  // Antwort direkt aus der App: Entwurf vorbefüllt, Reply-To auf das Postfach, im Thread
+  const senden = page.getByTestId('antwort-formular')
+  await expect(senden.getByLabel('An', { exact: true })).toHaveValue(mieterin)
+  await expect(senden.getByLabel('Betreff')).toHaveValue('Re: Heizung kalt')
+  await expect(senden.getByLabel('Text')).toHaveValue(/Guten Tag Mieterin,/)
+  await senden.getByLabel('Text').fill('Guten Tag Mieterin, der Monteur kommt Mittwoch.')
+  await senden.getByRole('button', { name: 'Antwort senden' }).click()
+  await expect(page.getByTestId('antwort-gesendet')).toContainText('an ' + mieterin)
+  await expect(senden.getByLabel('Text')).toHaveValue('')
+  const gesendet = await warteAufMailKopf(mieterin, /^Re: Heizung kalt$/)
+  expect(gesendet.text).toContain('der Monteur kommt Mittwoch.')
+  expect(gesendet.replyTo).toBe(postfach)
+  expect(gesendet.inReplyTo).toBeTruthy()
+
   // WP 1.6: Ticket aus der Mail, vorbefüllt aus Zuordnung und Einschätzung
   await page.getByTestId('nachricht-ticket-neu').click()
   const neu = page.getByTestId('ticket-anlegen')
@@ -205,7 +220,10 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
     .getByRole('link', { name: /EG links/ })
     .click()
   await expect(page.getByTestId('verlauf-kopf')).toContainText(mieterin)
-  await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(2)
+  await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(3)
+  await expect(
+    page.locator('[data-testid="verlauf-eintrag"][data-art="antwort"]'),
+  ).toContainText('Antwort an ' + mieterin)
 
   await page.getByText('Telefonnotiz erfassen').click()
   const notiz = page.getByTestId('telefonnotiz')
@@ -216,7 +234,7 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
     .fill('Monteur kommt Mittwoch zwischen 8 und 10 Uhr.')
   await notiz.getByRole('button', { name: 'Notiz speichern' }).click()
   const eintraege = page.getByTestId('verlauf-eintrag')
-  await expect(eintraege).toHaveCount(3)
+  await expect(eintraege).toHaveCount(4)
   const telefon = page.locator('[data-testid="verlauf-eintrag"][data-art="telefonnotiz"]')
   await expect(telefon).toContainText('Anruf von Mieterin')
   await expect(telefon).toContainText('06.10.2026, 09:15')

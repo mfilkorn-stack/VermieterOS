@@ -120,6 +120,13 @@ function gerendert(text: string, fakten: Fakten): { text: string; fehlend: strin
   }
 }
 
+/** Übernommener Entwurf mit eingesetzten Fakten, zum Vorbefüllen der Antwort; sonst null. */
+export function entwurfText(v: KiVorschlag | null, fakten: Fakten): string | null {
+  if (!v || v.status !== 'bestaetigt') return null
+  const r = gerendert((v.ausgabe as Antwortvorschlag).entwurf, fakten)
+  return r.fehlend.length ? null : r.text
+}
+
 /** Antwortentwurf: Fakten setzt der Code beim Anzeigen ein, Zusagen sind markiert. */
 export function AntwortKarte({
   nachrichtId,

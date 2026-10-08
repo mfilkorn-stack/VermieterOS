@@ -9,6 +9,7 @@ import {
   ladePosteingang,
   ladeVerlauf,
   ladeZuordnungsKandidaten,
+  legeAntwortAn,
   legeTelefonnotizAn,
   legeNachrichtAn,
   legePostfachAn,
@@ -425,5 +426,51 @@ describe('Telefonnotizen und Verlauf', () => {
       /gehört nicht zum Mandanten/,
     )
     expect(await withMandant(v.app, b, (tx) => ladeVerlauf(tx, mvA))).toEqual([])
+  })
+})
+
+describe('Antworten aus der App', () => {
+  it('Antwort steht mit Text im Verlauf; append-only; nur Nutzer; nie fremdes Mietverhältnis', async () => {
+    const nachrichtId = (
+      await withMandant(v.worker, a, (tx) =>
+        legeNachrichtAn(tx, nachricht(a, postfachA, { betreff: 'Fenster klemmt' }), SYSTEM),
+      )
+    )!
+    const basis = {
+      mandantId: a,
+      nachrichtId,
+      mietverhaeltnisId: mvA,
+      an: ['mieterin@example.org'],
+      betreff: 'Re: Fenster klemmt',
+      text: 'Der Handwerker kommt Dienstag.',
+      messageId: '<antwort-1@example.org>',
+      akteur: NUTZER,
+    }
+    const id = await withMandant(v.app, a, (tx) => legeAntwortAn(tx, basis))
+    const verlauf = await withMandant(v.app, a, (tx) => ladeVerlauf(tx, mvA))
+    expect(verlauf.find((e) => e.art === 'antwort')).toMatchObject({
+      id,
+      nachrichtId,
+      betreff: 'Re: Fenster klemmt',
+      an: ['mieterin@example.org'],
+      text: 'Der Handwerker kommt Dienstag.',
+    })
+    await erwarteFehler(
+      () => v.owner.execute(sql`update antworten set text = 'x' where id = ${id}`),
+      /append-only|erlaubt kein/,
+    )
+    await erwarteFehler(
+      () => withMandant(v.app, a, (tx) => legeAntwortAn(tx, { ...basis, akteur: SYSTEM })),
+      /antworten_akteur_chk/,
+    )
+    await erwarteFehler(
+      () => withMandant(v.app, a, (tx) => legeAntwortAn(tx, { ...basis, mietverhaeltnisId: mvB })),
+      /gehört nicht zum Mandanten/,
+    )
+    expect(
+      (await withMandant(v.app, b, (tx) => ladeVerlauf(tx, mvA))).filter(
+        (e) => e.art === 'antwort',
+      ),
+    ).toEqual([])
   })
 })

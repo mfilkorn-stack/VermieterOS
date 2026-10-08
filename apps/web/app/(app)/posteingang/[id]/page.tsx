@@ -1,4 +1,5 @@
 import {
+  antwortenZuNachricht,
   dokumenteZuAnhaengen,
   juengsterKiVorschlag,
   ladeNachricht,
@@ -10,7 +11,8 @@ import { nachrichtFakten } from '@vermieteros/ki'
 import { CircleDot, Download, FileText, Link2, Mail, Wrench } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { AntwortKarte, EinschaetzungKarte } from '@/components/ki-karten'
+import { AntwortSenden } from '@/components/antwort-senden'
+import { AntwortKarte, EinschaetzungKarte, entwurfText } from '@/components/ki-karten'
 import { TicketStatusBadge } from '@/components/ticket-badges'
 import { Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
@@ -24,6 +26,7 @@ import { groesseText, mietverhaeltnisText, ZUORDNUNG_TEXT } from '@/lib/post-tex
 import { darf, mitMandant } from '@/lib/sitzung'
 import { KiHinweis } from '@/components/ki-hinweis'
 import { kiEingerichtet } from '@/lib/ki'
+import { absenderAdresse, mailEingerichtet } from '@/lib/mail'
 
 export default async function NachrichtSeite({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -42,10 +45,12 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
       tickets: await listeTickets(tx, { nachrichtId: id }),
       abgelegt: await dokumenteZuAnhaengen(tx, id),
       objekte: await objekteFuerBeleg(tx),
+      antworten: await antwortenZuNachricht(tx, id),
     }
   })
   if (!daten) notFound()
-  const { n, kandidaten, sortierung, antwort, fakten, tickets, abgelegt, objekte } = daten
+  const { n, kandidaten, sortierung, antwort, fakten, tickets, abgelegt, objekte, antworten } =
+    daten
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const kandidatNach = new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k]))
   const aktuell = n.zuordnungen.at(-1)
@@ -167,6 +172,17 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
             betreff={n.betreff}
           />
           {kiEingerichtet() ? <KiHinweis was="Der Inhalt dieser Mail" /> : null}
+          <AntwortSenden
+            nachrichtId={n.id}
+            an={n.vonAdresse}
+            betreff={n.betreff}
+            entwurf={entwurfText(antwort, fakten)}
+            gesendet={antworten}
+            darf={zuordnen}
+            moeglich={mailEingerichtet()}
+            absender={absenderAdresse()}
+            postfachAdresse={n.postfachAdresse}
+          />
 
           <div className="karte">
             <h2>Dateien</h2>
