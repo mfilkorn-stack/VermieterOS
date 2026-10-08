@@ -85,3 +85,24 @@ export async function anhangFuerDokument(
     FROM anhaenge WHERE id = ${anhangId}`)
   return r ?? null
 }
+
+/** Posteingang: welche Anhänge einer Mail schon als Dokument oder Beleg abgelegt sind. */
+export async function dokumenteZuAnhaengen(
+  tx: Tx,
+  nachrichtId: string,
+): Promise<Array<{ anhangId: string; dokumentId: string; beleg: boolean; typ: string }>> {
+  return tx
+    .execute(
+      sql`${SELECT}
+    WHERE d.anhang_id IN (SELECT id FROM anhaenge WHERE nachricht_id = ${nachrichtId})
+    ORDER BY d.erstellt_am`,
+    )
+    .then((rows) =>
+      (rows as unknown as DokumentZeile[]).map((r) => ({
+        anhangId: r.anhangId!,
+        dokumentId: r.id,
+        beleg: r.beleg || r.typ === 'beleg',
+        typ: r.typ,
+      })),
+    )
+}

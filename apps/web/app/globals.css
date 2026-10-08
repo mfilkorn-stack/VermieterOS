@@ -1324,3 +1324,7 @@ img.vorschau {
   align-items: center;
   gap: 4px;
 }
+.knopf.klein {
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+}

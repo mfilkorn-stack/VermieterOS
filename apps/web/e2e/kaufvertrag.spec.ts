@@ -42,7 +42,7 @@ test('Kaufvertrag: Hochladen, Auslesen, Übernahme in Kauf und Grundbuch', async
   await expect(page.getByTestId('dokument-titel')).toHaveText('Kaufvertrag Musterwohnung')
   const dokument = page.url()
 
-  await page.getByTestId('kaufvertrag').getByTestId('vertrag-auslesen').getByRole('button').click()
+  // Nach dem Hochladen sofort ausgelesen
   const werte = page.getByTestId('kaufvertrag-werte')
   await expect(werte.locator('tr[data-feld="kaufpreis"]')).toContainText('187.000,00 €')
   await expect(werte.locator('tr[data-feld="kaufpreis"]')).toContainText('S. 3')

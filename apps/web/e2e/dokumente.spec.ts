@@ -53,7 +53,7 @@ test('Mietvertrag: Upload, Auslesen mit Fundstellen, Übernahme, Ersetzen', asyn
   expect((await dl.body()).subarray(0, 5).toString()).toBe('%PDF-')
 
   // Auslesen: belegte Werte mit Seite, die erfundene Kaution ist nicht belegt
-  await page.getByTestId('vertrag-auslesen').getByRole('button').click()
+  // Nach dem Hochladen sofort ausgelesen
   const werte = page.getByTestId('vertrag-werte')
   await expect(werte.locator('tr[data-feld="kaltmiete"]')).toContainText('650,00 €')
   await expect(werte.locator('tr[data-feld="kaltmiete"]')).toContainText('S. 2')

@@ -318,7 +318,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   })
   await up.getByLabel('Titel').fill('Mietvertrag Wohnung Nr. 1')
   await up.getByRole('button', { name: 'Hochladen' }).click()
-  await page.getByTestId('vertrag-auslesen').getByRole('button').click()
+  // Nach dem Hochladen sofort ausgelesen
   await expect(page.getByTestId('vertrag-werte')).toBeVisible()
   await bild(
     page,
