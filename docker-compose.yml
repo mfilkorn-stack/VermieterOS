@@ -16,10 +16,6 @@ services:
       timeout: 3s
       retries: 10
 
-  redis:
-    image: redis:7-alpine
-    ports: ['6379:6379']
-
   # S3-kompatibel (MinIO veröffentlicht keine freien Images mehr). Zugang: dev / dev-geheim
   s3:
     image: rclone/rclone:1.71
@@ -34,10 +30,6 @@ services:
     environment:
       GREENMAIL_OPTS: -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled
     ports: ['3025:3025', '3143:3143']
-
-  gotenberg:
-    image: gotenberg/gotenberg:8
-    ports: ['3001:3000']
 
 volumes:
   pgdata:
