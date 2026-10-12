@@ -85,3 +85,4 @@ export {
   type KaufvertragFeld,
 } from './aufgaben/kaufvertrag'
 export { objekteImText, type ObjektReferenz, type ObjektTreffer } from './objektabgleich'
+export { TICKET_EXTRAKTION, TicketAuszug } from './aufgaben/ticket'

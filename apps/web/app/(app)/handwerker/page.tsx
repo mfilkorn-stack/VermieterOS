@@ -22,7 +22,16 @@ export default async function HandwerkerSeite() {
           </Link>
         ) : null}
       </div>
-      {liste.length === 0 ? <p className="leise">Noch keine Handwerker erfasst.</p> : null}
+      {liste.length === 0 ? (
+        <p className="leise" data-testid="handwerker-leer">
+          Noch keine Handwerker erfasst.{' '}
+          {schreiben ? (
+            <Link href="/handwerker/neu">Ersten Handwerker anlegen</Link>
+          ) : (
+            'Sie erscheinen auf der Notfallkarte und bei Tickets.'
+          )}
+        </p>
+      ) : null}
       <ul className="liste" data-testid="handwerkerliste">
         {liste.map((h) => (
           <li key={h.id} className="karte objektkarte">

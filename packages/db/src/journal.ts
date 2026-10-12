@@ -279,12 +279,16 @@ const BELEG = sql`
  */
 export async function listeBelege(
   tx: Tx,
-  o: { status: 'offen' | 'gebucht'; limit?: number },
+  o: { status: 'offen' | 'gebucht' | 'aussortiert'; limit?: number },
 ): Promise<BelegZeile[]> {
   const gebucht = sql`EXISTS (SELECT 1 FROM journal_gueltig g WHERE g.dokument_id = d.id)`
+  // Aussortiert: aus dem Eingang genommen (Status abgelaufen), bleibt unveränderlich abgelegt
+  const stand =
+    o.status === 'aussortiert'
+      ? sql`a.status <> 'gueltig'`
+      : sql`a.status = 'gueltig' AND ${o.status === 'offen' ? sql`NOT ${gebucht}` : gebucht}`
   return tx.execute<BelegZeile>(sql`${BELEG}
-    WHERE a.typ = 'beleg' AND a.status = 'gueltig'
-      AND ${o.status === 'offen' ? sql`NOT ${gebucht}` : gebucht}
+    WHERE a.typ = 'beleg' AND ${stand}
     ORDER BY d.erstellt_am ${o.status === 'offen' ? sql`ASC` : sql`DESC`}, d.id
     LIMIT ${o.limit ?? 200}`)
 }

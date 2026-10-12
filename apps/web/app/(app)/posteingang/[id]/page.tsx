@@ -1,32 +1,45 @@
 import {
+  antwortenZuNachricht,
   dokumenteZuAnhaengen,
   juengsterKiVorschlag,
   ladeNachricht,
-  objekteFuerBeleg,
   ladeZuordnungsKandidaten,
+  listeHandwerker,
   listeTickets,
 } from '@vermieteros/db'
 import { nachrichtFakten } from '@vermieteros/ki'
-import { CircleDot, Download, FileText, Link2, Mail, Wrench } from 'lucide-react'
+import { Download, FileText, Mail, Wrench } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { AntwortKarte, EinschaetzungKarte } from '@/components/ki-karten'
+import { AntwortSenden } from '@/components/antwort-senden'
+import { AntwortKarte, EinschaetzungKarte, entwurfText } from '@/components/ki-karten'
 import { TicketStatusBadge } from '@/components/ticket-badges'
 import { Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { DokumentArtAuswahl } from '@/components/dokument-art-auswahl'
 import { ablegbar } from '@/lib/upload'
 import { anhangAlsDokument } from '../../dokumente/aktionen'
-import { Status } from '@/components/status'
-import { ZuordnenFormular } from '@/components/zuordnen-formular'
+import { ZuordnenFormular, zielWert } from '@/components/zuordnen-formular'
+import { ZuordnungAnzeige } from '@/components/zuordnung-anzeige'
 import { zeitpunktAnzeige } from '@/lib/format'
+import { objektliste } from '@/lib/objekte'
 import { groesseText, mietverhaeltnisText, ZUORDNUNG_TEXT } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { sicheresZiel } from '@/lib/ziel'
 import { KiHinweis } from '@/components/ki-hinweis'
 import { kiEingerichtet } from '@/lib/ki'
+import { absenderAdresse, mailEingerichtet } from '@/lib/mail'
 
-export default async function NachrichtSeite({ params }: { params: Promise<{ id: string }> }) {
+export default async function NachrichtSeite({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ zurueck?: string }>
+}) {
   const { id } = await params
+  // Zurück in die Liste mit Filter oder Suchbegriff, wie der Nutzer sie verlassen hat
+  const zurueck = sicheresZiel((await searchParams).zurueck ?? null, '/posteingang')
   if (!(await darf({ post: ['lesen'] }))) redirect('/')
   const zuordnen = await darf({ post: ['zuordnen'] })
   const daten = await mitMandant(async (tx) => {
@@ -41,20 +54,40 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
       fakten: await nachrichtFakten(tx, id),
       tickets: await listeTickets(tx, { nachrichtId: id }),
       abgelegt: await dokumenteZuAnhaengen(tx, id),
-      objekte: await objekteFuerBeleg(tx),
+      objekte: await objektliste(tx),
+      handwerker: await listeHandwerker(tx),
+      antworten: await antwortenZuNachricht(tx, id),
     }
   })
   if (!daten) notFound()
-  const { n, kandidaten, sortierung, antwort, fakten, tickets, abgelegt, objekte } = daten
+  const {
+    n,
+    kandidaten,
+    sortierung,
+    antwort,
+    fakten,
+    tickets,
+    abgelegt,
+    objekte,
+    handwerker,
+    antworten,
+  } = daten
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const kandidatNach = new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k]))
-  const aktuell = n.zuordnungen.at(-1)
+  const namen = {
+    kandidaten: kandidatNach,
+    objekte: new Map(objekte.map((o) => [o.id, o.bezeichnung])),
+    handwerker: new Map(handwerker.map((h) => [h.id, h.firma])),
+  }
+  const aktuell = n.zuordnungen.at(-1) ?? null
   const mv = aktuell?.mietverhaeltnisId ? kandidatNach.get(aktuell.mietverhaeltnisId) : undefined
+  const zugeordnet = Boolean(aktuell && zielWert(aktuell))
+  const mailApp = mailEingerichtet()
 
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href="/posteingang">Posteingang</Link>
+        <Link href={zurueck}>Posteingang</Link>
         <span aria-hidden>/</span>
         <span>Nachricht</span>
       </nav>
@@ -75,98 +108,12 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
               {zeitpunktAnzeige(n.empfangenAm)} · Postfach {n.postfach}
             </dd>
           </dl>
-
-          <div className="karte" data-testid="zuordnung">
-            <h2>Zuordnung</h2>
-            {mv && aktuell ? (
-              <p className="meta">
-                <Status ton="gruen" icon={Link2}>
-                  Zugeordnet
-                </Status>
-                <Link href={`/mietverhaeltnisse/${mv.mietverhaeltnisId}`}>
-                  {mietverhaeltnisText(mv)}
-                </Link>
-                <span>({ZUORDNUNG_TEXT[aktuell.art]})</span>
-              </p>
-            ) : (
-              <p className="meta">
-                <Status ton="gelb" icon={CircleDot}>
-                  Offen
-                </Status>
-              </p>
-            )}
-            {zuordnen ? (
-              <details open={!mv}>
-                <summary>{mv ? 'Zuordnung ändern' : 'Zuordnen'}</summary>
-                <ZuordnenFormular
-                  nachrichtId={n.id}
-                  aktuell={mv?.mietverhaeltnisId ?? null}
-                  kandidaten={kandidaten}
-                  zurueck={`/posteingang/${n.id}`}
-                />
-              </details>
-            ) : null}
-            {n.zuordnungen.length > 0 ? (
-              <details>
-                <summary>Verlauf der Zuordnung</summary>
-                <ol className="leise" data-testid="zuordnungsverlauf">
-                  {n.zuordnungen.map((z, i) => {
-                    const k = z.mietverhaeltnisId
-                      ? kandidatNach.get(z.mietverhaeltnisId)
-                      : undefined
-                    return (
-                      <li key={i}>
-                        {zeitpunktAnzeige(z.erfasstAm)}: {k ? mietverhaeltnisText(k) : 'keins'} ·{' '}
-                        {ZUORDNUNG_TEXT[z.art]}
-                        {z.akteurArt === 'system' ? '' : ' · Nutzer'}
-                        {z.begruendung ? ` · „${z.begruendung}“` : ''}
-                      </li>
-                    )
-                  })}
-                </ol>
-              </details>
-            ) : null}
-          </div>
-        </div>
-        <div>
-          <EinschaetzungKarte nachrichtId={n.id} v={sortierung} darf={zuordnen} />
-          {tickets.length || schreiben ? (
-            <div className="karte" data-testid="nachricht-tickets">
-              <h2>Tickets</h2>
-              {tickets.map((t) => (
-                <p key={t.id} className="meta">
-                  <Link href={`/tickets/${t.id}`}>{t.titel}</Link>
-                  <TicketStatusBadge status={t.status} />
-                </p>
-              ))}
-              {schreiben ? (
-                <Link
-                  className="knopf zweit"
-                  href={`/tickets/neu?nachricht=${n.id}`}
-                  data-testid="nachricht-ticket-neu"
-                >
-                  <Wrench size={16} aria-hidden />
-                  Ticket anlegen
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
           <div className="karte">
             <h2>Text</h2>
             <pre className="mailtext" data-testid="nachricht-text">
               {n.text || '(kein Textteil; die vollständige Mail steht in der .eml)'}
             </pre>
           </div>
-
-          <AntwortKarte
-            nachrichtId={n.id}
-            v={antwort}
-            fakten={fakten}
-            darf={zuordnen}
-            an={n.vonAdresse}
-            betreff={n.betreff}
-          />
-          {kiEingerichtet() ? <KiHinweis was="Der Inhalt dieser Mail" /> : null}
 
           <div className="karte">
             <h2>Dateien</h2>
@@ -198,7 +145,8 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
                   {schreiben &&
                   ablegbar(a.mimeTyp, a.dateiname) &&
                   !abgelegt.some((x) => x.anhangId === a.id) ? (
-                    <>
+                    <details className="ablegen">
+                      <summary>Ablegen als Beleg oder Dokument</summary>
                       <Formular
                         aktion={anhangAlsDokument}
                         knopf={kiEingerichtet() ? 'Als Beleg auslesen' : 'Als Beleg übernehmen'}
@@ -216,48 +164,42 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
                           />
                         ) : null}
                       </Formular>
-                      <details className="ablegen">
-                        <summary>Als Dokument ablegen</summary>
-                        <Formular
-                          aktion={anhangAlsDokument}
-                          knopf={kiEingerichtet() ? 'Ablegen und auslesen' : 'Ablegen'}
-                          testId={'ablegen-' + a.dateiname}
-                        >
-                          <input type="hidden" name="anhangId" value={a.id} />
-                          {mv ? (
-                            <input
-                              type="hidden"
-                              name="mietverhaeltnisId"
-                              value={mv.mietverhaeltnisId}
-                            />
-                          ) : (
-                            <label>
-                              Objekt
-                              <select name="objektId" required defaultValue="">
-                                <option value="" disabled>
-                                  Bitte wählen
-                                </option>
-                                {objekte.map((o) => (
-                                  <option key={o.id} value={o.id}>
-                                    {o.bezeichnung}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          )}
-                          <DokumentArtAuswahl
-                            defaultValue={
-                              a.mimeTyp === 'application/pdf'
-                                ? mv
-                                  ? 'mietvertrag'
-                                  : 'kaufvertrag'
-                                : 'sonstiges'
-                            }
+                      <p className="leise">Oder als Dokument an Mietverhältnis oder Objekt:</p>
+                      <Formular
+                        aktion={anhangAlsDokument}
+                        knopf={kiEingerichtet() ? 'Ablegen und auslesen' : 'Ablegen'}
+                        testId={'ablegen-' + a.dateiname}
+                      >
+                        <input type="hidden" name="anhangId" value={a.id} />
+                        {mv ? (
+                          <input
+                            type="hidden"
+                            name="mietverhaeltnisId"
+                            value={mv.mietverhaeltnisId}
                           />
-                          <Feld label="Titel" name="titel" defaultValue={a.dateiname} />
-                        </Formular>
-                      </details>
-                    </>
+                        ) : (
+                          <label>
+                            Objekt
+                            <select name="objektId" required defaultValue="">
+                              <option value="" disabled>
+                                Bitte wählen
+                              </option>
+                              {objekte.map((o) => (
+                                <option key={o.id} value={o.id}>
+                                  {o.bezeichnung}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                        <DokumentArtAuswahl
+                          defaultValue={
+                            a.mimeTyp === 'application/pdf' && mv ? 'mietvertrag' : 'sonstiges'
+                          }
+                        />
+                        <Feld label="Titel" name="titel" defaultValue={a.dateiname} />
+                      </Formular>
+                    </details>
                   ) : null}
                 </li>
               ))}
@@ -275,6 +217,94 @@ export default async function NachrichtSeite({ params }: { params: Promise<{ id:
               </li>
             </ul>
           </div>
+        </div>
+        <div>
+          <EinschaetzungKarte nachrichtId={n.id} v={sortierung} darf={zuordnen} />
+          <div className="karte" data-testid="zuordnung">
+            <h2>Zuordnung</h2>
+            <p className="meta">
+              <ZuordnungAnzeige z={aktuell} namen={namen} />
+            </p>
+            {zuordnen ? (
+              <details open={!zugeordnet}>
+                <summary>{zugeordnet ? 'Zuordnung ändern' : 'Zuordnen'}</summary>
+                <ZuordnenFormular
+                  nachrichtId={n.id}
+                  aktuell={aktuell ? zielWert(aktuell) : ''}
+                  ziele={{ kandidaten, objekte, handwerker }}
+                  zurueck={`/posteingang/${n.id}`}
+                />
+              </details>
+            ) : null}
+            {n.zuordnungen.length > 0 ? (
+              <details>
+                <summary>Verlauf der Zuordnung</summary>
+                <ol className="leise" data-testid="zuordnungsverlauf">
+                  {n.zuordnungen.map((z, i) => {
+                    const k = z.mietverhaeltnisId
+                      ? kandidatNach.get(z.mietverhaeltnisId)
+                      : undefined
+                    const ziel = k
+                      ? mietverhaeltnisText(k)
+                      : z.objektId
+                        ? (namen.objekte.get(z.objektId) ?? 'Objekt')
+                        : z.handwerkerId
+                          ? (namen.handwerker.get(z.handwerkerId) ?? 'Handwerker')
+                          : 'keins'
+                    return (
+                      <li key={i}>
+                        {zeitpunktAnzeige(z.erfasstAm)}: {ziel} · {ZUORDNUNG_TEXT[z.art]}
+                        {z.akteurArt === 'system' ? '' : ' · Nutzer'}
+                        {z.begruendung ? ` · „${z.begruendung}“` : ''}
+                      </li>
+                    )
+                  })}
+                </ol>
+              </details>
+            ) : null}
+          </div>
+          {tickets.length || schreiben ? (
+            <div className="karte" data-testid="nachricht-tickets">
+              <h2>Tickets</h2>
+              {tickets.map((t) => (
+                <p key={t.id} className="meta">
+                  <Link href={`/tickets/${t.id}`}>{t.titel}</Link>
+                  <TicketStatusBadge status={t.status} />
+                </p>
+              ))}
+              {schreiben ? (
+                <Link
+                  className="knopf zweit"
+                  href={`/tickets/neu?nachricht=${n.id}`}
+                  data-testid="nachricht-ticket-neu"
+                >
+                  <Wrench size={16} aria-hidden />
+                  Ticket anlegen
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+          <AntwortKarte
+            nachrichtId={n.id}
+            v={antwort}
+            fakten={fakten}
+            darf={zuordnen}
+            an={n.vonAdresse}
+            betreff={n.betreff}
+            mailprogramm={!mailApp}
+          />
+          {kiEingerichtet() ? <KiHinweis was="Der Inhalt dieser Mail" /> : null}
+          <AntwortSenden
+            nachrichtId={n.id}
+            an={n.vonAdresse}
+            betreff={n.betreff}
+            entwurf={entwurfText(antwort, fakten)}
+            gesendet={antworten}
+            darf={zuordnen}
+            moeglich={mailApp}
+            absender={absenderAdresse()}
+            postfachAdresse={n.postfachAdresse}
+          />
         </div>
       </div>
     </>

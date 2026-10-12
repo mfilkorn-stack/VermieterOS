@@ -85,4 +85,27 @@ test('Mietpartei: WG mit mehreren Personen, Einzug und Auszug', async ({ page })
   await page.goto(objektUrl)
   await expect(page.getByText('Ben Beispiel, Clara Muster seit')).toBeVisible()
   await expect(page.getByTestId('mieter-anlegen')).toHaveCount(0)
+
+  // UX-1: Mieterliste mit Suche, Mietername in der Akte führt zum Mietverhältnis
+  await page.getByTestId('mietverhaeltnis-link').click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+    'Mietverhältnis · Ben Beispiel, Clara Muster',
+  )
+  await expect(page.getByTestId('mv-konditionen')).toContainText('1.200,00')
+  await page
+    .getByRole('navigation', { name: 'Hauptmenü' })
+    .getByRole('link', { name: 'Mieter' })
+    .click()
+  await expect(page.getByTestId('mieter-zeile')).toHaveCount(1)
+  await expect(page.getByTestId('mieter-zeile')).toContainText('Musterweg 1 · 2. OG')
+  await page.getByRole('search').getByRole('searchbox').fill('Niemand')
+  await page.getByRole('search').getByRole('searchbox').press('Enter')
+  await expect(page.getByTestId('mieter-leer')).toContainText('Kein Mietverhältnis passt')
+  await page.getByRole('search').getByRole('searchbox').fill('clara')
+  await page.getByRole('search').getByRole('searchbox').press('Enter')
+  await page
+    .getByTestId('mieter-zeile')
+    .getByRole('link', { name: 'Ben Beispiel, Clara Muster' })
+    .click()
+  await expect(page.getByTestId('mv-konditionen')).toBeVisible()
 })

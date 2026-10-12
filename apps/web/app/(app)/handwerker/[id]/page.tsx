@@ -1,10 +1,11 @@
-import { listeHandwerker } from '@vermieteros/db'
+import { ladePosteingang, listeHandwerker } from '@vermieteros/db'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Formular } from '@/components/formular'
 import { HandwerkerFormular } from '@/components/handwerker-formular'
 import { adresssucheAn } from '@/lib/adresse'
 import { firmensucheAn } from '@/lib/firma'
+import { zeitpunktAnzeige } from '@/lib/format'
 import { objektliste } from '@/lib/objekte'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { heuteBerlin } from '@/lib/zeit'
@@ -17,9 +18,11 @@ export default async function HandwerkerBearbeiten({
 }) {
   const { id } = await params
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect('/handwerker')
-  const { h, objekte } = await mitMandant(async (tx) => ({
+  const post = await darf({ post: ['lesen'] })
+  const { h, objekte, postMails } = await mitMandant(async (tx) => ({
     h: (await listeHandwerker(tx)).find((x) => x.id === id),
     objekte: await objektliste(tx),
+    postMails: post ? await ladePosteingang(tx, { handwerkerId: id, limit: 10 }) : [],
   }))
   if (!h) notFound()
   return (
@@ -39,6 +42,23 @@ export default async function HandwerkerBearbeiten({
           adresssuche={adresssucheAn()}
         />
       </div>
+      {post ? (
+        <div className="karte">
+          <h2>Post</h2>
+          {postMails.length === 0 ? (
+            <p className="leise">Keine Mails diesem Handwerker zugeordnet.</p>
+          ) : (
+            <ul className="liste-schlicht" data-testid="handwerker-post">
+              {postMails.map((m) => (
+                <li key={m.id} className="zeile">
+                  <Link href={`/posteingang/${m.id}`}>{m.betreff || '(ohne Betreff)'}</Link>
+                  <span className="leise">{zeitpunktAnzeige(m.gesendetAm ?? m.empfangenAm)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
       <div className="karte">
         <h2>Aus dem Verzeichnis entfernen</h2>
         <p className="leise">

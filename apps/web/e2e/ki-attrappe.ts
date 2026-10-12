@@ -69,6 +69,17 @@ function beleg(a: Anfrage): unknown {
 function antwort(a: Anfrage): unknown {
   const system = a.system.map((s) => s.text).join('\n')
   if (system.includes('Rechnungen und Bescheide')) return beleg(a)
+  if (system.includes('Mängelmeldungen')) {
+    // Passt zum Muster-PDF in den E2E-Tests (Heizung im Bad)
+    return {
+      titel: 'Heizung im Bad bleibt kalt',
+      beschreibung:
+        'Seit Montagabend bleibt der Heizkörper im Bad kalt, die übrigen werden warm. Thermostat auf 5, Entlüften ohne Erfolg. Terminwunsch vormittags.',
+      prioritaet: 'hoch',
+      kategorie: 'heizung_wasser',
+      hinweise: [],
+    }
+  }
   if (system.includes('Immobilienkaufverträge')) {
     // Passt zu musterKaufvertrag(); die Fläche des Stellplatzes ist absichtlich falsch,
     // das zweite Grundbuchblatt darf deshalb nicht übernehmbar sein.

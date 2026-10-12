@@ -4,6 +4,7 @@ import { BELEG_EXTRAKTION } from './beleg'
 import { KAUFVERTRAG_EXTRAKTION } from './kaufvertrag'
 import { MIETVERTRAG_EXTRAKTION } from './mietvertrag'
 import { SORTIERUNG } from './sortierung'
+import { TICKET_EXTRAKTION } from './ticket'
 
 /**
  * Prompt-Register: alle produktiven Aufgaben. Das Golden-Set läuft für jede Aufgabe hier,
@@ -16,4 +17,5 @@ export const AUFGABEN: Array<Aufgabe<any, any>> = [
   MIETVERTRAG_EXTRAKTION,
   BELEG_EXTRAKTION,
   KAUFVERTRAG_EXTRAKTION,
+  TICKET_EXTRAKTION,
 ]

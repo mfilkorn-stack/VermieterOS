@@ -372,8 +372,10 @@ export async function belegBuchen(_: FormStatus, d: FormData): Promise<FormStatu
         vorschlagId,
         herkunft: herkunftFuer(daten, dokumentId, vorschlagId, auswertung, auszug, objekt),
       })
+      // Aus einem Ticket heraus gebucht: zurück zum Ticket; sonst zum nächsten offenen Beleg
+      if (b.ticketId) return `/tickets/${b.ticketId}?gebucht=1`
       const n = await naechsterOffenerBeleg(tx, dokumentId)
-      return n ? `/belege/${n}` : '/belege?gebucht=1'
+      return n ? `/belege/${n}?gebucht=1` : '/belege?gebucht=1'
     })
   } catch (e) {
     return { fehler: fehlertext(e) }

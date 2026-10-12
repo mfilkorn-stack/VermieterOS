@@ -225,6 +225,48 @@
       "when": 1791463383030,
       "tag": "0031_belege_mandanten",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791466106331,
+      "tag": "0032_antworten",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791466107525,
+      "tag": "0033_antworten_regeln",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791469293312,
+      "tag": "0034_zuordnung_ziele",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791469294753,
+      "tag": "0035_zuordnung_ziele_regeln",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791470542853,
+      "tag": "0036_antworten_portal",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791470544214,
+      "tag": "0037_antworten_portal_regeln",
+      "breakpoints": true
     }
   ]
 }

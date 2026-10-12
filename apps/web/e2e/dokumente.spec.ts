@@ -24,7 +24,11 @@ test('Mietvertrag: Upload, Auslesen mit Fundstellen, Übernahme, Ersetzen', asyn
   const e = page.getByTestId('einheit')
   await e.getByLabel('Bezeichnung').fill('Wohnung 1')
   await e.getByRole('button', { name: 'Speichern' }).click()
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Nachname').fill('Beispiel')
   await v.getByLabel('Mietbeginn').fill('2021-09-01')

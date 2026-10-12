@@ -20,7 +20,7 @@ export function EinheitFormular({
       : null,
   )
   return (
-    <Formular aktion={einheitSpeichern} knopf="Speichern" testId="einheit">
+    <Formular aktion={einheitSpeichern} knopf="Einheit speichern" testId="einheit">
       <input type="hidden" name="objektId" value={objektId} />
       {einheit ? <input type="hidden" name="einheitId" value={einheit.id} /> : null}
       <Feld label="Bezeichnung" name="bezeichnung" defaultValue={v?.bezeichnung ?? ''} required />

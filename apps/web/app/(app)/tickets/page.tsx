@@ -41,7 +41,8 @@ export default async function TicketsSeite({
       </nav>
       {tickets.length === 0 ? (
         <p className="leise" data-testid="tickets-leer">
-          {alle ? 'Noch keine Tickets.' : 'Keine offenen Tickets.'}
+          {alle ? 'Noch keine Tickets.' : 'Keine offenen Tickets.'}{' '}
+          {schreiben ? <Link href="/tickets/neu">Ticket anlegen</Link> : null}
         </p>
       ) : null}
       <ul className="liste" data-testid="ticketliste">

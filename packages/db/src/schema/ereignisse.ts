@@ -16,6 +16,7 @@ export const EREIGNIS_TYPEN = [
   'nachricht_eingegangen',
   'nachricht_zugeordnet',
   'telefonnotiz_erfasst',
+  'antwort_gesendet',
   'journal_gebucht',
   'portal_zugang_angelegt',
   'portal_zugang_widerrufen',

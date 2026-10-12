@@ -14,6 +14,7 @@ export function Feld({ label, name, hinweis, ...rest }: FeldProps) {
     <div className="feld">
       <label>
         {label}
+        {rest.required ? <Pflicht /> : null}
         <input name={name} aria-describedby={hinweis ? hinweisId : undefined} {...rest} />
       </label>
       {hinweis ? (
@@ -25,12 +26,23 @@ export function Feld({ label, name, hinweis, ...rest }: FeldProps) {
   )
 }
 
+/** Kennzeichen für Pflichtfelder; der Screenreader liest „Pflichtfeld“, nicht den Stern. */
+export function Pflicht() {
+  return (
+    <span className="pflicht" title="Pflichtfeld">
+      <span aria-hidden> *</span>
+      <span className="sr-only"> (Pflichtfeld)</span>
+    </span>
+  )
+}
+
 export function Auswahl({
   label,
   name,
   optionen,
   defaultValue,
   leer,
+  required,
 }: {
   label: string
   name: string
@@ -38,12 +50,15 @@ export function Auswahl({
   defaultValue?: string | null | undefined
   /** Text für eine leere Auswahl; ohne Angabe gibt es keine. */
   leer?: string
+  required?: boolean
 }) {
   return (
     <label>
       {label}
+      {required ? <Pflicht /> : null}
       <select
         name={name}
+        required={required}
         defaultValue={defaultValue ?? (leer !== undefined ? '' : optionen[0]?.[0])}
       >
         {leer !== undefined ? <option value="">{leer}</option> : null}

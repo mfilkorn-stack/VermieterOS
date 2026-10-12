@@ -56,7 +56,7 @@ export default async function JournalSeite({
         {schreiben ? (
           <div className="aktionen">
             <Link className="knopf zweit" href="/belege">
-              Belegeingang
+              Belege
             </Link>
             <Link className="knopf" href="/journal/neu" data-testid="journal-neu">
               <Plus size={18} aria-hidden />
@@ -192,7 +192,9 @@ export default async function JournalSeite({
                   <td>
                     {e.gegenpartei}{' '}
                     {e.dokumentId ? (
-                      <Paperclip size={13} aria-label="mit Beleg" />
+                      <Link href={`/belege/${e.dokumentId}`} title="Beleg öffnen">
+                        <Paperclip size={13} aria-label="mit Beleg" />
+                      </Link>
                     ) : e.richtung === 'ausgabe' ? (
                       <span className="leise">(ohne Beleg)</span>
                     ) : null}

@@ -2,6 +2,8 @@ import { ArrowLeftRight, Building2, FileLock, LogOut, ShieldCheck } from 'lucide
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { NavGruppe, TabLeiste } from '@/components/navigation'
+import { Hinweis } from '@/components/hinweis'
+import { HINWEIS_COOKIE, liesHinweis } from '@/lib/hinweis'
 import { ladeNavigation } from '@/lib/navigation'
 import { erfordereGesicherteSitzung } from '@/lib/sitzung'
 import { abmelden } from '../(oeffentlich)/aktionen'
@@ -18,6 +20,7 @@ function initialen(name: string): string {
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const s = await erfordereGesicherteSitzung()
   const nav = await ladeNavigation()
+  const hinweis = await liesHinweis()
   return (
     <div className="shell">
       <aside className="seitenleiste">
@@ -74,7 +77,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           {nav.mandant?.name ?? 'Mandant wählen'}
         </Link>
       </header>
-      <main className="inhalt">{children}</main>
+      <main className="inhalt">
+        {hinweis ? <Hinweis text={hinweis} cookie={HINWEIS_COOKIE} /> : null}
+        {children}
+      </main>
       <TabLeiste eintraege={nav.tabs} />
     </div>
   )

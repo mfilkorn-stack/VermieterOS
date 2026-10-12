@@ -200,6 +200,8 @@ export const ZUORDNUNG_ARTEN = [
   'absender_betreff',
   'manuell',
   'aufgehoben',
+  /** bewusst ohne Ziel abgeschlossen (Werbung, erledigt am Telefon) */
+  'erledigt',
 ] as const
 export type ZuordnungArt = (typeof ZUORDNUNG_ARTEN)[number]
 

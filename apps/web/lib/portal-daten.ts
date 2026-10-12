@@ -5,6 +5,7 @@ import {
   listeDokumente,
   listeTickets,
   listeWissen,
+  portalNachrichtenMitAntworten,
   type PortalSitzung,
   type Tx,
 } from '@vermieteros/db'
@@ -20,11 +21,17 @@ import { schreibDaten } from './schreiben'
 export async function portalUebersicht(tx: Tx, s: PortalSitzung) {
   const d = await schreibDaten(tx, s.mietverhaeltnisId)
   if (!d) return null
-  const [ort] = await tx.execute<{ objekt_id: string; kondition_id: string | null }>(sql`
-    SELECT e.objekt_id,
+  const [ort] = await tx.execute<{
+    objekt_id: string
+    kondition_id: string | null
+    typ: string
+  }>(sql`
+    SELECT e.objekt_id, ea.typ,
            (SELECT k.id FROM mietkonditionen k WHERE k.mietverhaeltnis_id = m.id
             ORDER BY k.erstellt_am LIMIT 1) AS kondition_id
-    FROM mietverhaeltnisse m JOIN einheiten e ON e.id = m.einheit_id
+    FROM mietverhaeltnisse m
+    JOIN einheiten e ON e.id = m.einheit_id
+    JOIN einheiten_aktuell ea ON ea.einheit_id = e.id
     WHERE m.id = ${s.mietverhaeltnisId}`)
   const objektId = ort!.objekt_id
   // Heute geltende Miete; eine angekündigte Erhöhung erscheint erst ab ihrem Datum.
@@ -47,7 +54,14 @@ export async function portalUebersicht(tx: Tx, s: PortalSitzung) {
   }))
   const wissen = (await listeWissen(tx, objektId)).filter((w) => w.mieterSichtbar)
   const notfall = await ladeNotfallkarte(tx, objektId)
+  const TITEL: Record<string, string> = {
+    wohnung: 'Ihre Wohnung',
+    gewerbe: 'Ihre Gewerbeeinheit',
+    stellplatz: 'Ihr Stellplatz',
+  }
   return {
+    titel: TITEL[ort!.typ] ?? 'Ihre Einheit',
+    nachrichten: await portalNachrichtenMitAntworten(tx, s.mietverhaeltnisId),
     mieter: d.mieter,
     vermieter: d.vermieter,
     wohnung: d.wohnung,

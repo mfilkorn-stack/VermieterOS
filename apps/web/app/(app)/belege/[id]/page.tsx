@@ -57,8 +57,15 @@ function Fundstelle({ w }: { w: BelegAuswertung }) {
   )
 }
 
-export default async function BelegSeite({ params }: { params: Promise<{ id: string }> }) {
+export default async function BelegSeite({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ gebucht?: string }>
+}) {
   const { id } = await params
+  const vorherGebucht = (await searchParams).gebucht === '1'
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const daten = await mitMandant(async (tx) => {
     const b = await ladeBeleg(tx, id)
@@ -134,8 +141,13 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
 
   return (
     <>
+      {vorherGebucht ? (
+        <p className="karte" data-testid="gebucht-hinweis">
+          Gebucht. Weiter mit dem nächsten offenen Beleg.
+        </p>
+      ) : null}
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href="/belege">Belegeingang</Link>
+        <Link href="/belege">Belege</Link>
         <span aria-hidden>/</span>
         <span>Beleg</span>
       </nav>
@@ -235,7 +247,7 @@ export default async function BelegSeite({ params }: { params: Promise<{ id: str
                     </>
                   ) : (
                     <p className="leise">
-                      Die KI ist nicht eingerichtet (ANTHROPIC_API_KEY). Bitte von Hand buchen.
+                      Die KI ist in dieser Installation nicht eingerichtet. Bitte von Hand buchen.
                     </p>
                   )
                 ) : null}

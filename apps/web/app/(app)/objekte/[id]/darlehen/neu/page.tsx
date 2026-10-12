@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { DarlehenFormular } from '@/components/darlehen-formular'
 import { ladeAkte } from '@/lib/akte'
@@ -9,9 +10,18 @@ export default async function DarlehenNeuSeite({ params }: { params: Promise<{ i
   const akte = await mitMandant((tx) => ladeAkte(tx, id))
   if (!akte) notFound()
   return (
-    <div className="karte">
-      <h1>Darlehen anlegen · {akte.objekt.bezeichnung}</h1>
-      <DarlehenFormular objektId={id} giltAb={akte.bestandSeit} />
-    </div>
+    <>
+      <nav className="brotkrumen" aria-label="Pfad">
+        <Link href={'/objekte'}>Objekte</Link>
+        <span aria-hidden>/</span>
+        <Link href={`/objekte/${id}`}>{akte.objekt.bezeichnung}</Link>
+        <span aria-hidden>/</span>
+        <span>Darlehen anlegen</span>
+      </nav>
+      <div className="karte">
+        <h1>Darlehen anlegen</h1>
+        <DarlehenFormular objektId={id} giltAb={akte.bestandSeit} />
+      </div>
+    </>
   )
 }

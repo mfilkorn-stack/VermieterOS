@@ -26,7 +26,10 @@ export default async function BetriebskostenUebersicht() {
       </div>
       <div className="karte tabelle-scroll">
         {fristen.length === 0 ? (
-          <p className="leise">Keine Abrechnungen fällig.</p>
+          <p className="leise">
+            Keine Abrechnungen fällig. Fristen erscheinen hier, sobald eine Einheit vermietet ist
+            und ein Abrechnungsjahr abgeschlossen ist.
+          </p>
         ) : (
           <table className="vergleich" data-testid="bk-fristen">
             <thead>
@@ -60,7 +63,7 @@ export default async function BetriebskostenUebersicht() {
                     {f.abrechnungId ? (
                       <Link href={`/betriebskosten/${f.abrechnungId}`}>Öffnen</Link>
                     ) : schreiben ? (
-                      <Formular aktion={bkAnlegen} knopf="Anlegen" zweit>
+                      <Formular aktion={bkAnlegen} knopf="Abrechnung anlegen" zweit>
                         <input type="hidden" name="einheitId" value={f.einheitId} />
                         <input type="hidden" name="jahr" value={f.jahr} />
                       </Formular>

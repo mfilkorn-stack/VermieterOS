@@ -219,7 +219,7 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
                       <KiHinweis was="Der Vertrag" />
                     </>
                   ) : (
-                    <p className="leise">Die KI ist nicht eingerichtet (ANTHROPIC_API_KEY).</p>
+                    <p className="leise">Die KI ist in dieser Installation nicht eingerichtet.</p>
                   )
                 ) : null}
               </>

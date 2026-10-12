@@ -10,6 +10,12 @@ import nodemailer, { type Transporter } from 'nodemailer'
  */
 let transport: Transporter | undefined
 
+/** Nur die Adresse aus MAIL_ABSENDER („Name <adresse>“ oder „adresse“). */
+export function absenderAdresse(): string {
+  const roh = process.env['MAIL_ABSENDER'] ?? 'noreply@localhost'
+  return /<([^>]+)>/.exec(roh)?.[1] ?? roh
+}
+
 export function mailEingerichtet(): boolean {
   return Boolean(process.env['SMTP_HOST'])
 }
@@ -40,6 +46,11 @@ export async function sendeMail(m: {
   betreff: string
   text: string
   anhaenge?: Array<{ dateiname: string; inhalt: Buffer; mime: string }>
+  /** Antworten: eigene Message-ID (vor dem Versand vermerkt), Bezug und Rückantwort-Adresse */
+  messageId?: string
+  inReplyTo?: string | null
+  referenzen?: string[]
+  replyTo?: string | null
 }): Promise<boolean> {
   if (!mailEingerichtet()) {
     if (process.env.NODE_ENV !== 'production') console.log(`[mail:${m.art}] ${m.an}: ${m.text}`)
@@ -52,6 +63,10 @@ export async function sendeMail(m: {
       to: m.an,
       subject: m.betreff,
       text: m.text,
+      ...(m.messageId ? { messageId: m.messageId } : {}),
+      ...(m.inReplyTo ? { inReplyTo: m.inReplyTo } : {}),
+      ...(m.referenzen?.length ? { references: m.referenzen } : {}),
+      ...(m.replyTo ? { replyTo: m.replyTo } : {}),
       ...(m.anhaenge
         ? {
             attachments: m.anhaenge.map((a) => ({

@@ -35,7 +35,7 @@ export default async function NotfallkarteSeite({ params }: { params: Promise<{ 
           Wen Mieter im Notfall anrufen. Steht im Mieterportal und fließt in Antwortentwürfe der KI
           ein; die Telefonnummern setzt die Software selbst ein.
         </p>
-        <Formular aktion={notfallkarteSpeichern} knopf="Speichern" testId="notfallkarte">
+        <Formular aktion={notfallkarteSpeichern} knopf="Änderungen speichern" testId="notfallkarte">
           <input type="hidden" name="objektId" value={id} />
           <NotfallkarteEditor
             name="eintraege"

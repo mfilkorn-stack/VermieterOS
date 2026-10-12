@@ -27,12 +27,14 @@ export async function offeneAbschlussPunkte(tx: Tx): Promise<number> {
 }
 
 export function abschlussLink(p: AbschlussPunkt, objektId: string, jahr: number): string {
-  const neu = (typ: string) => '/dokumente/neu?objekt=' + objektId + '&typ=' + typ
+  const zurueck = encodeURIComponent('/jahresabschluss?jahr=' + jahr)
+  const neu = (typ: string) =>
+    '/dokumente/neu?objekt=' + objektId + '&typ=' + typ + '&zurueck=' + zurueck
   switch (p.code) {
-    case 'belege':
-      return '/belege'
     case 'buchungen':
       return '/journal?jahr=' + jahr + '&objekt=' + objektId
+    case 'belege':
+      return '/belege'
     case 'grundsteuer':
       return neu('grundsteuer')
     case 'hausgeld':

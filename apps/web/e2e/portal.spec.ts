@@ -41,7 +41,11 @@ test('Mieterportal: Einladung, Anmeldung, Mangel, Nachricht, Sperren', async ({
   const eh = page.getByTestId('einheit')
   await eh.getByLabel('Bezeichnung').fill('Wohnung 1')
   await eh.getByRole('button', { name: 'Speichern' }).click()
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Vorname').first().fill('Mia')
   await v.getByLabel('Nachname').fill('Beispiel')
@@ -129,6 +133,25 @@ test('Mieterportal: Einladung, Anmeldung, Mangel, Nachricht, Sperren', async ({
   expect(hinweis).toContain('Heizung im Bad bleibt kalt')
   await page.goto(verlauf)
   await expect(page.locator('[data-art="portal"]')).toContainText('Wann kommt der Schornsteinfeger')
+
+  // UX-4: Antwort aus dem Posteingang; der Mieter sieht sie im Portal und bekommt sie per Mail
+  await page.goto('/posteingang')
+  await page
+    .getByTestId('portal-nachrichten')
+    .getByRole('link', { name: 'Schornsteinfeger' })
+    .click()
+  const pf = page.getByTestId('antwort-formular')
+  await expect(pf.getByLabel(/^An /)).toHaveValue(mieterMail)
+  await pf.getByLabel('Text').fill('Der Schornsteinfeger kommt im Mai.')
+  await pf.getByRole('button', { name: 'Antwort senden' }).click()
+  await expect(page.getByTestId('antwort-gesendet')).toContainText(mieterMail)
+  expect(await warteAufMail(mieterMail, /^Re: Schornsteinfeger/)).toContain('kommt im Mai')
+  await mieter.goto('/portal')
+  await expect(mieter.getByTestId('portal-nachrichten')).toContainText(
+    'Der Schornsteinfeger kommt im Mai.',
+  )
+  await page.goto('/posteingang')
+  await expect(page.getByTestId('portal-nachrichten')).toHaveCount(0)
   await page.goto('/tickets')
   await page.getByRole('link', { name: 'Heizung im Bad bleibt kalt' }).click()
   await expect(page.getByTestId('ticket-status')).toHaveText('gemeldet')

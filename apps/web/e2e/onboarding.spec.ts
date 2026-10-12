@@ -118,7 +118,11 @@ test('ETW mit Stellplatz: Onboarding bis alle Ampeln grün', async ({ page }) =>
   await expect(page.getByTestId('einheitenliste')).toContainText('Stellplatz')
 
   // Vermietung der Wohnung (Annahme)
-  await page.getByTestId('einheitenliste').getByRole('link', { name: 'Vermietung' }).first().click()
+  await page
+    .getByTestId('einheitenliste')
+    .getByRole('link', { name: 'Mietverhältnisse' })
+    .first()
+    .click()
   const v = page.getByTestId('vermietung')
   await v.getByLabel('Nachname').fill('Mieterin')
   await v.getByLabel('Mietbeginn').fill('2021-09-01')
@@ -142,7 +146,7 @@ test('ETW mit Stellplatz: Onboarding bis alle Ampeln grün', async ({ page }) =>
     await f.getByLabel('Anteil Zähler').fill('1')
     await f.getByLabel('Nenner').fill('2')
     await f.getByLabel('Gilt ab').fill('2021-07-01')
-    await f.getByRole('button', { name: 'Hinzufügen' }).click()
+    await f.getByRole('button', { name: 'Eigentümer anlegen' }).click()
     await expect(page.getByTestId('eigentuemerliste')).toContainText(nachname)
   }
   await expect(page.getByTestId('anteile-summe')).toHaveText('Summe der Anteile: 1/1')

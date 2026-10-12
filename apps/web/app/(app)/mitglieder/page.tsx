@@ -52,8 +52,8 @@ export default async function MitgliederSeite() {
             <>
               <h2>Offene Einladungen</h2>
               <p className="leise">
-                Bis der Mailversand steht (Phase 1), den Link selbst weitergeben. Er gilt nur für
-                die eingeladene E-Mail-Adresse.
+                Die Einladung geht per Mail raus; der Link gilt nur für die eingeladene
+                E-Mail-Adresse und lässt sich hier auch selbst weitergeben.
               </p>
               <ul className="liste">
                 {offen.map((i) => (

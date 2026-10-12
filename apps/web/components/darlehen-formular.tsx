@@ -15,7 +15,7 @@ export function DarlehenFormular({
 }) {
   const v = darlehen?.v
   return (
-    <Formular aktion={darlehenSpeichern} knopf="Speichern" testId="darlehen">
+    <Formular aktion={darlehenSpeichern} knopf="Darlehen speichern" testId="darlehen">
       <input type="hidden" name="objektId" value={objektId} />
       {darlehen ? <input type="hidden" name="darlehenId" value={darlehen.id} /> : null}
       <div className="zeile">

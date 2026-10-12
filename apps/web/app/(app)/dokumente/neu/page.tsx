@@ -15,6 +15,7 @@ export default async function DokumentNeu({
     mietverhaeltnis?: string
     ersetzt?: string
     typ?: string
+    zurueck?: string
   }>
 }) {
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect('/')
@@ -50,6 +51,7 @@ export default async function DokumentNeu({
           mietverhaeltnisId={d.mvId ?? undefined}
           ersetztId={d.alt?.id}
           typ={d.alt?.typ ?? (DokumentTyp.safeParse(sp.typ).data || undefined)}
+          zurueck={sp.zurueck}
         />
       </div>
     </>

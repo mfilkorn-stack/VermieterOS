@@ -491,6 +491,81 @@ code {
   display: grid;
   gap: 14px;
 }
+.objektkarte.klickbar {
+  position: relative;
+}
+.objektkarte.klickbar .objektkarte-titel > a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.objektkarte.klickbar:hover {
+  border-color: var(--akzent);
+}
+
+.schritte {
+  margin: 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: 6px;
+}
+.schritte .erledigt {
+  color: var(--leise);
+  text-decoration: line-through;
+}
+.pflicht {
+  color: var(--gelb-text);
+}
+.hinweis-toast {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 14px;
+  background: var(--gruen-fl, var(--fl));
+  color: var(--gruen-text, var(--text));
+  border: 1px solid var(--gruen, var(--linie));
+  border-radius: 999px;
+  box-shadow: var(--schatten);
+  font-size: 0.9rem;
+}
+
+/* Kacheln „Zu erledigen“ (Startseite) */
+.kacheln {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.kachel {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  min-height: 92px;
+  background: var(--fl);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+.kachel:hover {
+  border-color: var(--akzent);
+}
+.kachel strong {
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--gelb-text);
+}
+.kachel span {
+  font-size: 0.85rem;
+  color: var(--leise);
+}
 .objektkarte-kopf {
   display: flex;
   flex-wrap: wrap;

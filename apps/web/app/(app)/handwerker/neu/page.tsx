@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { HandwerkerFormular } from '@/components/handwerker-formular'
 import { adresssucheAn } from '@/lib/adresse'
@@ -10,14 +11,21 @@ export default async function HandwerkerNeu() {
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect('/handwerker')
   const objekte = await mitMandant((tx) => objektliste(tx))
   return (
-    <div className="karte">
-      <h1>Handwerker anlegen</h1>
-      <HandwerkerFormular
-        objekte={objekte}
-        heute={heuteBerlin()}
-        firmensuche={firmensucheAn()}
-        adresssuche={adresssucheAn()}
-      />
-    </div>
+    <>
+      <nav className="brotkrumen" aria-label="Pfad">
+        <Link href={'/handwerker'}>Handwerker</Link>
+        <span aria-hidden>/</span>
+        <span>Handwerker anlegen</span>
+      </nav>
+      <div className="karte">
+        <h1>Handwerker anlegen</h1>
+        <HandwerkerFormular
+          objekte={objekte}
+          heute={heuteBerlin()}
+          firmensuche={firmensucheAn()}
+          adresssuche={adresssucheAn()}
+        />
+      </div>
+    </>
   )
 }
