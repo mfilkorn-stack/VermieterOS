@@ -46,7 +46,7 @@ export default async function MehrSeite() {
         <li>
           <Link href="/mandanten">
             <ArrowLeftRight size={20} strokeWidth={1.75} aria-hidden />
-            <span className="label">Mandant wechseln</span>
+            <span className="label">Eigentümerschaft wechseln</span>
             <ChevronRight size={16} aria-hidden />
           </Link>
         </li>

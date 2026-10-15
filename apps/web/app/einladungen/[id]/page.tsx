@@ -46,7 +46,7 @@ export default async function EinladungSeite({ params }: { params: Promise<{ id:
         {einladung ? (
           <>
             <p>
-              <strong>{einladung.inviterEmail}</strong> lädt dich in den Mandanten{' '}
+              <strong>{einladung.inviterEmail}</strong> lädt dich in die Eigentümerschaft{' '}
               <strong>{einladung.organizationName}</strong> ein, als{' '}
               {istRolle(einladung.role) ? ROLLEN_TEXT[einladung.role] : einladung.role}.
             </p>

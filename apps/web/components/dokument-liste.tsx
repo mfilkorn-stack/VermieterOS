@@ -5,7 +5,12 @@ import { DOKUMENT_STATUS_TEXT, DOKUMENT_TYP_TEXT } from '@/lib/dokument-text'
 import { datumAnzeige } from '@/lib/format'
 import { Status } from './status'
 
-export function DokumentListe({ dokumente }: { dokumente: DokumentZeile[] }) {
+/** Dokumente als Liste; `ort` (Objekt · Einheit) erscheint, wenn gesetzt, z. B. in der Gesamtliste. */
+export function DokumentListe({
+  dokumente,
+}: {
+  dokumente: Array<DokumentZeile & { ort?: string | null }>
+}) {
   if (dokumente.length === 0) return <p className="leise">Noch keine Dokumente.</p>
   return (
     <ul className="dateien" data-testid="dokumentliste">
@@ -23,6 +28,7 @@ export function DokumentListe({ dokumente }: { dokumente: DokumentZeile[] }) {
             <span className="leise">
               {d.beleg || d.typ === 'beleg' ? 'Beleg' : DOKUMENT_TYP_TEXT[d.typ]}
               {d.dokumentdatum ? ` · ${datumAnzeige(d.dokumentdatum)}` : ''}
+              {d.ort ? ' · ' + d.ort : ''}
             </span>
           </span>
           {d.status === 'gueltig' ? null : (

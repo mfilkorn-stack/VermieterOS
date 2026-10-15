@@ -1403,3 +1403,12 @@ img.vorschau {
   padding: 4px 10px;
   font-size: 0.8125rem;
 }
+
+/* Filterleiste über Listen (Dokumente): Felder nebeneinander, auf dem Handy untereinander */
+.filter {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 16px;
+}

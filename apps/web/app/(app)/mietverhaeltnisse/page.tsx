@@ -54,7 +54,7 @@ export default async function MieterSeite({
             Alle
           </Link>
         </nav>
-        <form action="/mietverhaeltnisse" role="search" className="suche">
+        <form key={suche} action="/mietverhaeltnisse" role="search" className="suche">
           <label>
             <span className="sr-only">Suche</span>
             <span className="suchfeld">

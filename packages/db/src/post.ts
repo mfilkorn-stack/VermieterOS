@@ -711,9 +711,11 @@ export async function legeTelefonnotizAn(tx: Tx, n: NeueTelefonnotiz): Promise<s
 
 export type NeueAntwort = {
   mandantId: string
-  /** Antwort auf eine Mail oder auf eine Nachricht aus dem Mieterportal (genau eines) */
+  /** Genau ein Bezug: Mail, Nachricht aus dem Mieterportal oder Ticket (Handwerkerauftrag) */
   nachrichtId: string | null
   portalNachrichtId?: string | null
+  ticketId?: string | null
+  handwerkerId?: string | null
   mietverhaeltnisId: string | null
   an: string[]
   betreff: string
@@ -730,6 +732,8 @@ export async function legeAntwortAn(tx: Tx, a: NeueAntwort): Promise<string> {
     mandantId: a.mandantId,
     nachrichtId: a.nachrichtId,
     portalNachrichtId: a.portalNachrichtId ?? null,
+    ticketId: a.ticketId ?? null,
+    handwerkerId: a.handwerkerId ?? null,
     mietverhaeltnisId: a.mietverhaeltnisId,
     an: a.an,
     betreff: a.betreff.trim(),
@@ -747,6 +751,8 @@ export async function legeAntwortAn(tx: Tx, a: NeueAntwort): Promise<string> {
     payload: {
       nachrichtId: a.nachrichtId,
       portalNachrichtId: a.portalNachrichtId ?? null,
+      ticketId: a.ticketId ?? null,
+      handwerkerId: a.handwerkerId ?? null,
       mietverhaeltnisId: a.mietverhaeltnisId,
       an: a.an,
     },
@@ -773,6 +779,21 @@ export async function antwortenZuPortalNachricht(tx: Tx, id: string): Promise<An
     })
     .from(antworten)
     .where(eq(antworten.portalNachrichtId, id))
+    .orderBy(antworten.gesendetAm)
+}
+
+/** Handwerkeraufträge, die aus einem Ticket verschickt wurden (P8), älteste zuerst. */
+export async function auftraegeZuTicket(tx: Tx, id: string): Promise<Antwort[]> {
+  return tx
+    .select({
+      id: antworten.id,
+      an: antworten.an,
+      betreff: antworten.betreff,
+      text: antworten.text,
+      gesendetAm: antworten.gesendetAm,
+    })
+    .from(antworten)
+    .where(eq(antworten.ticketId, id))
     .orderBy(antworten.gesendetAm)
 }
 

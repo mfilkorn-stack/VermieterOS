@@ -18,16 +18,17 @@ export default async function MandantenSeite() {
   return (
     <>
       <div className="zeile">
-        <h1>Mandanten</h1>
+        <h1>Eigentümerschaften</h1>
         <Link className="knopf" href="/mandanten/neu" data-testid="mandant-neu">
-          Mandant anlegen
+          Eigentümerschaft anlegen
         </Link>
       </div>
       <p className="leise">
-        Ein Mandant ist eine Eigentümerschaft: du allein, ein Ehepaar, eine Bruchteilsgemeinschaft
-        oder eine GbR. Jeder Mandant hat seine eigenen Objekte, Belege und Mitglieder.
+        Eine Eigentümerschaft bist du allein, ein Ehepaar, eine Bruchteilsgemeinschaft oder eine
+        GbR. Jede hat ihre eigenen Objekte, Belege und Zugänge; Daten anderer Eigentümerschaften
+        sind darin nie sichtbar.
       </p>
-      {mandanten.length === 0 ? <p>Du bist noch in keinem Mandanten.</p> : null}
+      {mandanten.length === 0 ? <p>Du gehörst noch zu keiner Eigentümerschaft.</p> : null}
       <ul className="liste" data-testid="mandantenliste">
         {mandanten.map((m) => (
           <li key={m.id} className="karte zeile">
@@ -48,8 +49,8 @@ export default async function MandantenSeite() {
       </ul>
       {!s.user.emailVerified ? (
         <p className="leise" data-testid="email-unbestaetigt">
-          Einladungen in andere Mandanten erscheinen erst nach Bestätigung deiner E-Mail-Adresse.{' '}
-          <Link href="/sicherheit">Jetzt bestätigen</Link>
+          Einladungen in andere Eigentümerschaften erscheinen erst nach Bestätigung deiner
+          E-Mail-Adresse. <Link href="/sicherheit">Jetzt bestätigen</Link>
         </p>
       ) : null}
       {offen.length > 0 ? (

@@ -2,6 +2,8 @@
 
 Bezeichner im Code, in der Datenbank und in Prompts verwenden genau diese Formen. Umlaute ausgeschrieben.
 
+**Oberfläche und Code (T1):** In der Oberfläche heißt der Mandant „Eigentümerschaft“, die Mitglieder heißen „Zugänge“. Code, Datenbank, Tests und Doku behalten `mandant` und `mitglied`; die Umbenennung betrifft nur sichtbare Texte. Die Art (allein, Ehepaar, Bruchteil, GbR) heißt in der Oberfläche „Art der Eigentümerschaft“. Portal-Zugänge der Mieter sind davon getrennt und stehen immer mit „Mieterportal“.
+
 | Begriff                             | Bezeichner            | Bedeutung                                                                                  |
 | ----------------------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
 | Mandant                             | `mandant`             | Eigentümerschaft als abgeschlossener Datenbereich (ADR 0002)                               |

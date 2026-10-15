@@ -95,6 +95,7 @@ function eintraege(daten: Zaehler, post: boolean) {
     icon: 'belege',
     zaehler: { n: daten.belege, art: 'handlung', text: 'offen' },
   }
+  const dokumente: NavEintrag = { href: '/dokumente', label: 'Dokumente', icon: 'dokumente' }
   const journal: NavEintrag = { href: '/journal', label: 'Journal', icon: 'journal' }
   const betriebskosten: NavEintrag = {
     href: '/betriebskosten',
@@ -127,6 +128,7 @@ function eintraege(daten: Zaehler, post: boolean) {
       ...posteingang,
       tickets,
       belege,
+      dokumente,
       betriebskosten,
       journal,
       steuer,
@@ -148,7 +150,7 @@ export async function ladeNavigation(): Promise<Navigation> {
       mandant: null,
       haupt: [],
       verwaltung: [],
-      tabs: [{ href: '/mandanten', label: 'Mandanten', icon: 'mandanten' }],
+      tabs: [{ href: '/mandanten', label: 'Eigentümerschaften', icon: 'mandanten' }],
     }
   }
   const rolle = roles[k.rolle]
@@ -163,7 +165,7 @@ export async function ladeNavigation(): Promise<Navigation> {
   const verwaltung: NavEintrag[] = [
     { href: '/handwerker', label: 'Handwerker', icon: 'handwerker' },
     { href: '/eigentuemer', label: 'Eigentümer', icon: 'eigentuemer' },
-    { href: '/mitglieder', label: 'Mitglieder', icon: 'mitglieder' },
+    { href: '/mitglieder', label: 'Zugänge', icon: 'mitglieder' },
     ...(postfaecher
       ? [{ href: '/postfaecher', label: 'Postfächer', icon: 'postfaecher' } as const]
       : []),

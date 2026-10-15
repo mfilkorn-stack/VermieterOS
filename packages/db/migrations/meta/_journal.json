@@ -267,6 +267,20 @@
       "when": 1791470544214,
       "tag": "0037_antworten_portal_regeln",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792032116232,
+      "tag": "0038_antworten_ticket",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792032117484,
+      "tag": "0039_antworten_ticket_regeln",
+      "breakpoints": true
     }
   ]
 }

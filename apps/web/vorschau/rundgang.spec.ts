@@ -78,8 +78,8 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await m.getByLabel('Art der Eigentümerschaft').selectOption('bruchteil')
   await bild(
     page,
-    'Mandant anlegen',
-    'Ein Mandant ist eine Eigentümerschaft: allein, Ehepaar, Bruchteil oder GbR.',
+    'Eigentümerschaft anlegen',
+    'Allein, Ehepaar, Bruchteil oder GbR: jede Eigentümerschaft ist ein abgeschlossener Datenbereich.',
   )
   await m.getByRole('button', { name: 'Anlegen' }).click()
 
