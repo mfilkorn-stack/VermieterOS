@@ -96,7 +96,7 @@ export function BelegImport({
       </label>
       {objekte && objekte.length > 0 ? (
         <label>
-          Objekt, falls schon klar
+          Immobilie, falls schon klar
           <select name="objektId" defaultValue="">
             <option value="">erst beim Buchen</option>
             {objekte.map((o) => (

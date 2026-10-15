@@ -96,7 +96,7 @@ export function pruefeDatenqualitaet(o: ObjektStand, heute: string = heuteIso())
     objekt('fehler', 'stammdaten', 'OBJ_ADRESSE', 'Adresse unvollständig (Straße, PLZ, Ort)')
   }
   if (o.einheiten.length === 0) {
-    objekt('fehler', 'stammdaten', 'OBJ_KEINE_EINHEITEN', 'Objekt hat keine Einheit')
+    objekt('fehler', 'stammdaten', 'OBJ_KEINE_EINHEITEN', 'Noch keine Einheit angelegt')
   }
   if (ob.art === 'etw' && o.einheiten.filter((e) => e.daten.typ === 'wohnung').length > 1) {
     objekt(

@@ -37,7 +37,7 @@ export default async function BetriebskostenUebersicht() {
             <thead>
               <tr>
                 <th>Jahr</th>
-                <th>Objekt · Einheit</th>
+                <th>Immobilie · Einheit</th>
                 <th>Stand</th>
                 <th>Frist</th>
                 <th />

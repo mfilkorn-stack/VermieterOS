@@ -7,8 +7,9 @@ import type { Rechte } from './sitzung'
 export type BereichSeite = { href: string; label: string; recht?: Rechte }
 
 export const BEREICHE = {
-  objekte: [
-    { href: '/objekte', label: 'Objekte' },
+  // Häuser und Eigentumswohnungen stehen direkt auf der Übersicht, ihre Akten unter /objekte/…
+  bestand: [
+    { href: '/', label: 'Übersicht' },
     { href: '/mietverhaeltnisse', label: 'Mieter', recht: { stammdaten: ['lesen'] } },
     { href: '/dokumente', label: 'Dokumente', recht: { stammdaten: ['lesen'] } },
   ],

@@ -230,7 +230,7 @@ export const DokumentIdentitaet = z
     anhangId: Uuid.nullish(),
   })
   .refine((d) => d.objektId || d.mietverhaeltnisId || d.beleg, {
-    message: 'Dokument hängt am Objekt oder am Mietverhältnis',
+    message: 'Dokument hängt an einer Immobilie oder am Mietverhältnis',
   })
 export type DokumentIdentitaet = z.infer<typeof DokumentIdentitaet>
 

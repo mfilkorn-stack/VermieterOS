@@ -80,7 +80,7 @@ export function HandwerkerFormular({
       </div>
       {objekte.length > 1 ? (
         <fieldset>
-          <legend>Zuständig für (keine Auswahl: alle Objekte)</legend>
+          <legend>Zuständig für (keine Auswahl: alle Immobilien)</legend>
           <div className="haken-gruppe">
             {objekte.map((o) => (
               <label key={o.id} className="haken">

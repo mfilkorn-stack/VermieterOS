@@ -1453,3 +1453,11 @@ button.dezent:hover {
   font-size: 0.75rem;
   font-weight: 400;
 }
+/* Löschen: eingeklappt am Seitenende, in Rot */
+details.loeschen > summary {
+  color: var(--rot-text);
+}
+details.loeschen button[type='submit'] {
+  background: var(--rot);
+  border-color: var(--rot);
+}

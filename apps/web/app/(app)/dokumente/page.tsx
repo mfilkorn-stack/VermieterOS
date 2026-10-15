@@ -9,7 +9,7 @@ import { darf, mitMandant } from '@/lib/sitzung'
 import { BereichReiter } from '@/components/bereich-reiter'
 
 /**
- * Alle Dokumente über alle Objekte (N2): Suche nach Titel und Dateiname, Filter nach Objekt und
+ * Alle Dokumente über alle Immobilien (N2): Suche nach Titel und Dateiname, Filter nach Objekt und
  * Art. Standard sind die gültigen; ersetzte und abgelaufene auf Wunsch. Belege stehen unter Belegen.
  */
 export default async function DokumenteSeite({
@@ -40,7 +40,7 @@ export default async function DokumenteSeite({
 
   return (
     <>
-      <BereichReiter bereich="objekte" aktiv="/dokumente" />
+      <BereichReiter bereich="bestand" aktiv="/dokumente" />
       <div className="seitenkopf">
         <div>
           <h1>Dokumente</h1>
@@ -53,7 +53,7 @@ export default async function DokumenteSeite({
                   ? sichtbar.length === 1
                     ? ' passt zum Filter.'
                     : ' passen zum Filter.'
-                  : ' über alle Objekte.') +
+                  : ' über alle Immobilien.') +
                 ' Belege stehen unter '}
             {zeilen.length ? <Link href="/belege">Belegen</Link> : null}
             {zeilen.length ? '.' : null}
@@ -89,9 +89,9 @@ export default async function DokumenteSeite({
           </span>
         </label>
         <label>
-          Objekt
+          Immobilie
           <select name="objekt" defaultValue={objekt}>
-            <option value="">alle Objekte</option>
+            <option value="">alle Immobilien</option>
             {objekte.map(([id, name]) => (
               <option key={id} value={id}>
                 {name}
@@ -121,8 +121,8 @@ export default async function DokumenteSeite({
       </form>
       {zeilen.length === 0 ? (
         <p className="leise" data-testid="dokumente-leer">
-          Dokumente legst du in der Objektakte oder am Mietverhältnis ab; aus dem Posteingang lassen
-          sich Anhänge übernehmen.
+          Dokumente legst du in der Akte eines Hauses oder einer Wohnung oder am Mietverhältnis ab;
+          aus dem Posteingang lassen sich Anhänge übernehmen.
         </p>
       ) : sichtbar.length === 0 ? (
         <p className="leise" data-testid="dokumente-leer">

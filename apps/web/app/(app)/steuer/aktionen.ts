@@ -11,7 +11,7 @@ import { steuerFestschreiben as festschreiben } from '@/lib/steuer-paket'
 import { heuteBerlin } from '@/lib/zeit'
 
 function ziel(d: FormData): { objektId: string; jahr: number } {
-  const objektId = pflicht(d, 'objektId', 'Objekt')
+  const objektId = pflicht(d, 'objektId', 'Immobilie')
   const jahr = Number(pflicht(d, 'jahr', 'Jahr'))
   if (!Number.isInteger(jahr) || jahr < 2000 || jahr > 2100)
     throw new Eingabefehler('Jahr zwischen 2000 und 2100.')
@@ -79,7 +79,7 @@ export async function steuerFestschreiben(_: FormStatus, d: FormData): Promise<F
     z = ziel(d)
     await mitMandant(async (tx, k) => {
       const s = await ladeSteuerSeite(tx, z.objektId, z.jahr)
-      if (!s) throw new Eingabefehler('Objekt nicht gefunden.')
+      if (!s) throw new Eingabefehler('Immobilie nicht gefunden.')
       await festschreiben(tx, k, s, { befundeBestaetigt: haken(d, 'bestaetigt') })
     })
   } catch (e) {

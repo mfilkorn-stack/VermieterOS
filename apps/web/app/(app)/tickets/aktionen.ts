@@ -56,14 +56,15 @@ async function einheitGehoertZumObjekt(tx: Tx, objektId: string, einheitId: stri
     .select({ objektId: schema.einheiten.objektId })
     .from(schema.einheiten)
     .where(eq(schema.einheiten.id, einheitId))
-  if (!e || e.objektId !== objektId) throw new Eingabefehler('Die Einheit gehört nicht zum Objekt.')
+  if (!e || e.objektId !== objektId)
+    throw new Eingabefehler('Die Einheit gehört nicht zur Immobilie.')
 }
 
 export async function ticketAnlegen(_: FormStatus, d: FormData): Promise<FormStatus> {
   let id: string
   try {
     await verlange({ stammdaten: ['schreiben'] })
-    const [objektId, einheitId] = pflicht(d, 'ort', 'Objekt').split('|')
+    const [objektId, einheitId] = pflicht(d, 'ort', 'Immobilie').split('|')
     const p = TicketDaten.safeParse({
       titel: text(d, 'titel'),
       beschreibung: text(d, 'beschreibung'),
@@ -73,7 +74,7 @@ export async function ticketAnlegen(_: FormStatus, d: FormData): Promise<FormSta
     if (!p.success) throw new Eingabefehler(zodText(p.error, LABELS))
     id = await mitMandant(async (tx, k) => {
       if (!objektId || !(await letzteVersion(tx, 'objekt', objektId))) {
-        throw new Eingabefehler('Objekt nicht gefunden.')
+        throw new Eingabefehler('Immobilie nicht gefunden.')
       }
       await einheitGehoertZumObjekt(tx, objektId, einheitId || null)
       const r = await speichere(tx, k, {
@@ -164,7 +165,7 @@ async function dateiAnsTicket(
   const alt = await ladeDokument(tx, dokumentId)
   const v = await letzteVersion(tx, 'dokument', dokumentId)
   if (!alt || !v || alt.objektId !== objektId || alt.ticketId)
-    throw new Eingabefehler('Die Datei gehört nicht zu diesem Objekt.')
+    throw new Eingabefehler('Die Datei gehört nicht zu dieser Immobilie.')
   const daten = fachdaten('dokument', v)
   const neu = await speichere(tx, k, {
     entitaet: 'dokument',
@@ -206,11 +207,11 @@ export async function ticketAusDatei(_: FormStatus, d: FormData): Promise<FormSt
       throw new Eingabefehler('Bitte eine Datei wählen.')
     if (datei.size > MAX_GROESSE) throw new Eingabefehler('Die Datei ist größer als 20 MB.')
     const upload = await uploadVorbereiten(datei, ERLAUBTE_TYPEN, DATEI_FEHLER)
-    const ort = pflicht(d, 'ort', 'Objekt')
+    const ort = pflicht(d, 'ort', 'Immobilie')
     const [objektId] = ort.split('|')
     const id = await mitMandant(async (tx, k) => {
       if (!objektId || !(await letzteVersion(tx, 'objekt', objektId)))
-        throw new Eingabefehler('Objekt nicht gefunden.')
+        throw new Eingabefehler('Immobilie nicht gefunden.')
       const abgelegt = await objektSpeicher().ablegen(
         k.mandantId,
         'dokument',

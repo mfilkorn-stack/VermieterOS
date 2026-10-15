@@ -24,7 +24,8 @@ export default async function JournalNeuSeite() {
       </p>
       {objekte.length === 0 ? (
         <p>
-          Zuerst ein <Link href="/objekte/neu">Objekt anlegen</Link>.
+          Zuerst auf der <Link href="/">Übersicht</Link> ein Haus oder eine Eigentumswohnung
+          anlegen.
         </p>
       ) : (
         <div className="karte">

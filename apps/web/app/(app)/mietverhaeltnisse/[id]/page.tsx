@@ -310,7 +310,7 @@ export default async function VerlaufSeite({ params }: { params: Promise<{ id: s
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href="/">Objekte</Link>
+        <Link href="/">Übersicht</Link>
         <span aria-hidden>/</span>
         <Link href={`/objekte/${kopf.objektId}`}>{kopf.objekt}</Link>
         <span aria-hidden>/</span>

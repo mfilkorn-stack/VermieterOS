@@ -21,11 +21,14 @@ export function ObjektListe({
   if (objekte.length === 0)
     return (
       <p className="leise" data-testid="objekte-leer">
-        Noch keine Objekte.{' '}
+        Noch keine Häuser oder Wohnungen.{' '}
         {schreiben ? (
-          <Link href="/objekte/neu">Lege das erste Objekt an</Link>
+          <>
+            <Link href="/objekte/neu?art=haus">Haus</Link> oder{' '}
+            <Link href="/objekte/neu?art=etw">Eigentumswohnung</Link> anlegen.
+          </>
         ) : (
-          'Ein Eigentümer legt das erste Objekt an.'
+          'Ein Eigentümer legt sie an.'
         )}
       </p>
     )

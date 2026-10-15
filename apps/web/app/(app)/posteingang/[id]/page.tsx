@@ -196,7 +196,7 @@ export default async function NachrichtSeite({
                           />
                         ) : null}
                       </Formular>
-                      <p className="leise">Oder als Dokument an Mietverhältnis oder Objekt:</p>
+                      <p className="leise">Oder als Dokument an Mietverhältnis oder Immobilie:</p>
                       <Formular
                         aktion={anhangAlsDokument}
                         knopf={kiEingerichtet() ? 'Ablegen und auslesen' : 'Ablegen'}
@@ -211,7 +211,7 @@ export default async function NachrichtSeite({
                           />
                         ) : (
                           <label>
-                            Objekt
+                            Immobilie
                             <select name="objektId" required defaultValue="">
                               <option value="" disabled>
                                 Bitte wählen
@@ -279,7 +279,7 @@ export default async function NachrichtSeite({
                     const ziel = k
                       ? mietverhaeltnisText(k)
                       : z.objektId
-                        ? (namen.objekte.get(z.objektId) ?? 'Objekt')
+                        ? (namen.objekte.get(z.objektId) ?? 'Immobilie')
                         : z.handwerkerId
                           ? (namen.handwerker.get(z.handwerkerId) ?? 'Handwerker')
                           : 'keins'

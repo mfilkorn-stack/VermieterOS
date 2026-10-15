@@ -210,13 +210,13 @@ export function BuchungFelder({
       ) : null}
 
       <fieldset data-testid="buchung-aufteilung">
-        <legend>Objekt{zeilen.length > 1 ? 'e' : ''}</legend>
+        <legend>Immobilie{zeilen.length > 1 ? 'n' : ''}</legend>
         {zeilen.map((z, i) => {
           const o = objekte.find((x) => x.id === z.objektId)
           return (
             <div className="feldreihe" key={z.schluessel} data-testid="anteil">
               <label>
-                Objekt
+                Immobilie
                 <select
                   name="anteilObjekt"
                   value={z.objektId}
@@ -239,7 +239,7 @@ export function BuchungFelder({
                     value={z.einheitId}
                     onChange={(e) => aendere(i, { einheitId: e.target.value })}
                   >
-                    <option value="">ganzes Objekt</option>
+                    <option value="">ganze Immobilie</option>
                     {o.einheiten.map((e) => (
                       <option key={e.id} value={e.id}>
                         {e.bezeichnung}
@@ -295,7 +295,7 @@ export function BuchungFelder({
             }
             data-testid="anteil-hinzu"
           >
-            <Plus size={16} aria-hidden /> Auf weiteres Objekt aufteilen
+            <Plus size={16} aria-hidden /> Auf weitere Immobilie aufteilen
           </button>
         ) : null}
       </fieldset>

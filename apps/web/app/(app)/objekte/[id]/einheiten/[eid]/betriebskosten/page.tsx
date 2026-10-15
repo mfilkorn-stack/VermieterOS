@@ -25,7 +25,7 @@ export default async function BetriebskostenListe({
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href={`/objekte/${id}`}>Objektakte</Link>
+        <Link href={`/objekte/${id}`}>Akte</Link>
         <span aria-hidden>/</span>
         <span>{d.einheit.bezeichnung}</span>
       </nav>

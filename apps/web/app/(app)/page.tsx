@@ -1,6 +1,7 @@
 import { schema } from '@vermieteros/db'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
+import { BereichReiter } from '@/components/bereich-reiter'
 import { NavIcon } from '@/components/navigation'
 import { ObjektListe } from '@/components/objekt-liste'
 import { Status } from '@/components/status'
@@ -11,7 +12,7 @@ import { ladeObjektKacheln } from '@/lib/objekte'
 import { ROLLEN_TEXT, roles } from '@/lib/rechte'
 import { darf, mitMandant } from '@/lib/sitzung'
 
-/** Übersicht (UX-2): was wartet, welche Fristen laufen, dann die Objekte mit Ampeln. */
+/** Übersicht: was wartet, welche Fristen laufen, dann Häuser und Wohnungen mit Ampeln. */
 export default async function Startseite() {
   const { mandant, rolle, objekte, fristen, zaehler } = await mitMandant(async (tx, k) => {
     const [m] = await tx.select().from(schema.mandanten)
@@ -29,16 +30,23 @@ export default async function Startseite() {
 
   return (
     <>
+      <BereichReiter bereich="bestand" aktiv="/" />
       <div className="seitenkopf">
         <div>
           <h1 data-testid="mandant-name">{mandant?.name}</h1>
           <p className="leise">Deine Rolle: {ROLLEN_TEXT[rolle]}</p>
         </div>
         {schreiben ? (
-          <Link className="knopf" href="/objekte/neu" data-testid="objekt-neu">
-            <Plus size={18} aria-hidden />
-            Objekt anlegen
-          </Link>
+          <div className="aktionen">
+            <Link className="knopf" href="/objekte/neu?art=haus" data-testid="objekt-neu">
+              <Plus size={18} aria-hidden />
+              Haus anlegen
+            </Link>
+            <Link className="knopf" href="/objekte/neu?art=etw" data-testid="etw-neu">
+              <Plus size={18} aria-hidden />
+              Eigentumswohnung anlegen
+            </Link>
+          </div>
         ) : null}
       </div>
 
@@ -100,8 +108,9 @@ export default async function Startseite() {
               <span className="leise"> · für die Steuer je Person</span>
             </li>
             <li>
-              <Link href="/objekte/neu">Erstes Objekt anlegen</Link>
-              <span className="leise"> · danach Einheiten und Mieter in der Objektakte</span>
+              <Link href="/objekte/neu?art=haus">Haus</Link> oder{' '}
+              <Link href="/objekte/neu?art=etw">Eigentumswohnung</Link> anlegen
+              <span className="leise"> · danach Einheiten und Mieter in der Akte</span>
             </li>
             <li>
               <Link href="/postfaecher">Postfach verbinden</Link>
@@ -110,14 +119,7 @@ export default async function Startseite() {
           </ol>
         </div>
       ) : null}
-      <div className="zeile">
-        <h2>Objekte</h2>
-        {objekte.length > 0 ? (
-          <Link href="/objekte" className="leise">
-            Alle Objekte
-          </Link>
-        ) : null}
-      </div>
+      <h2>Häuser und Wohnungen</h2>
       <ObjektListe objekte={objekte} schreiben={schreiben} />
     </>
   )

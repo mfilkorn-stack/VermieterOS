@@ -98,7 +98,8 @@ export default async function TicketNeu({
         <h1>Ticket anlegen</h1>
         {d.liste.length === 0 ? (
           <p className="leise">
-            Zuerst ein Objekt anlegen: <Link href="/objekte/neu">Objekt anlegen</Link>
+            Zuerst auf der <Link href="/">Übersicht</Link> ein Haus oder eine Eigentumswohnung
+            anlegen.
           </p>
         ) : (
           // Nach dem Redirect aus „Aus Datei anlegen“ bleibt dieselbe Route; der key baut das
@@ -128,7 +129,7 @@ export default async function TicketNeu({
               <input type="hidden" name="mietverhaeltnisId" value={v.mietverhaeltnisId} />
             ) : null}
             <Auswahl
-              label="Objekt / Einheit"
+              label="Immobilie / Einheit"
               name="ort"
               optionen={d.liste.map((o) => [o.wert, o.text] as const)}
               defaultValue={ort}
@@ -162,7 +163,7 @@ export default async function TicketNeu({
             testId="ticket-aus-datei"
           >
             <Auswahl
-              label="Objekt / Einheit"
+              label="Immobilie / Einheit"
               name="ort"
               optionen={d.liste.map((o) => [o.wert, o.text] as const)}
               defaultValue={ort}

@@ -86,9 +86,9 @@ export default async function JournalSeite({
       >
         <input type="hidden" name="jahr" value={jahr} />
         <label>
-          Objekt
+          Immobilie
           <select name="objekt" defaultValue={objektId ?? ''}>
-            <option value="">alle Objekte</option>
+            <option value="">alle Immobilien</option>
             {objekte.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.bezeichnung}
@@ -175,7 +175,7 @@ export default async function JournalSeite({
                 <th>Bezahlt</th>
                 <th>Gegenpartei</th>
                 <th>Kategorie</th>
-                <th>Objekt</th>
+                <th>Immobilie</th>
                 <th className="betrag">Betrag</th>
               </tr>
             </thead>

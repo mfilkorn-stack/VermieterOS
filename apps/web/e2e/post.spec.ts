@@ -168,7 +168,7 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   const zObjekt = page.getByTestId('zuordnung').getByTestId('zuordnen')
   await zObjekt.getByLabel('Zuordnen zu').selectOption({ label: 'Haus am Park' })
   await zObjekt.getByRole('button', { name: 'Zuordnen' }).click()
-  await expect(page.getByTestId('zuordnung')).toContainText('Objekt')
+  await expect(page.getByTestId('zuordnung')).toContainText('Immobilie')
   await expect(
     page.getByTestId('zuordnung').getByRole('link', { name: 'Haus am Park' }),
   ).toBeVisible()

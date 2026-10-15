@@ -123,12 +123,12 @@ export default async function TicketSeite({
       <div className="raster-2">
         <div>
           <dl className="karte kopfdaten" data-testid="ticket-wo">
-            <dt>Objekt</dt>
+            <dt>Immobilie</dt>
             <dd>
               <Link href={`/objekte/${t.objektId}`}>{t.objekt}</Link>
             </dd>
             <dt>Einheit</dt>
-            <dd>{t.einheit ?? 'ganzes Objekt'}</dd>
+            <dd>{t.einheit ?? 'ganze Immobilie'}</dd>
             <dt>Mieter</dt>
             <dd>
               {mv ? (
@@ -351,8 +351,8 @@ export default async function TicketSeite({
               </ul>
             ) : (
               <p className="leise">
-                Die Rechnung des Handwerkers hier ablegen: Sie landet unter Belegen, mit Objekt und
-                Handwerker aus dem Ticket.
+                Die Rechnung des Handwerkers hier ablegen: Sie landet unter Belegen, mit Immobilie
+                und Handwerker aus dem Ticket.
               </p>
             )}
             {schreiben ? (

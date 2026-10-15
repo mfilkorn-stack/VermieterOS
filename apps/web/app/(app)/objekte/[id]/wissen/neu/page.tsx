@@ -20,7 +20,7 @@ export default async function WissenNeu({ params }: { params: Promise<{ id: stri
         <h1>Artikel anlegen</h1>
         <p className="leise">
           Hausordnung, Anleitungen, Müllabfuhr, häufige Fragen. Die KI nutzt die Artikel für
-          Antwortentwürfe zu diesem Objekt.
+          Antwortentwürfe zu dieser Immobilie.
         </p>
         <WissenFormular objektId={id} />
       </div>

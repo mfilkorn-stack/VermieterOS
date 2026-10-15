@@ -3,6 +3,7 @@
 import {
   fachdaten,
   letzteVersion,
+  loesche,
   portalZugaengeZuMv,
   widerrufePortalZugang,
   type Tx,
@@ -42,17 +43,18 @@ import { grundbuchAusRoh, nebenkostenAusRoh } from '@/lib/umwandeln'
 async function schreibe(
   daten: FormData,
   fn: (tx: Tx, k: MandantKontext, objektId: string) => Promise<string | void>,
+  hinweis = 'Gespeichert.',
 ): Promise<FormStatus> {
   let ziel: string | void
   try {
     await verlange({ stammdaten: ['schreiben'] })
-    const objektId = pflicht(daten, 'objektId', 'Objekt')
+    const objektId = pflicht(daten, 'objektId', 'Immobilie')
     ziel = await mitMandant(async (tx, k) => {
       if (!(await letzteVersion(tx, 'objekt', objektId)))
-        throw new Eingabefehler('Objekt nicht gefunden.')
+        throw new Eingabefehler('Haus oder Wohnung nicht gefunden.')
       return (await fn(tx, k, objektId)) ?? `/objekte/${objektId}`
     })
-    await setzeHinweis('Gespeichert.')
+    await setzeHinweis(hinweis)
   } catch (e) {
     return { fehler: fehlertext(e) }
   }
@@ -424,4 +426,31 @@ export async function darlehenSpeichern(_: FormStatus, d: FormData): Promise<For
       })
     }
   })
+}
+
+/**
+ * Löscht Haus/Wohnung, Einheit oder Mietverhältnis: alle Versionen werden storniert, der Eintrag
+ * verschwindet aus den Listen und bleibt im Ledger nachvollziehbar. Nur, wenn nichts mehr daran
+ * hängt (Buchungen, Tickets, Dokumente …); die Hindernisse zeigt die Lösch-Karte vorher an.
+ */
+export async function loeschen(_: FormStatus, d: FormData): Promise<FormStatus> {
+  return schreibe(
+    d,
+    async (tx, k, objektId) => {
+      const art = pflicht(d, 'art', 'Art')
+      if (art !== 'objekt' && art !== 'einheit' && art !== 'mietverhaeltnis')
+        throw new Eingabefehler('Unbekannte Art.')
+      if (!haken(d, 'bestaetigt')) throw new Eingabefehler('Bitte das Löschen bestätigen.')
+      const id = art === 'objekt' ? objektId : pflicht(d, 'id', 'Eintrag')
+      await loesche(tx, art, id, {
+        mandantId: k.mandantId,
+        akteur: { art: 'nutzer', id: k.nutzerId },
+        grund: text(d, 'grund') ?? 'Gelöscht',
+      })
+      if (art === 'objekt') return '/'
+      if (art === 'einheit') return `/objekte/${objektId}`
+      return `/objekte/${objektId}/einheiten/${pflicht(d, 'einheitId', 'Einheit')}/vermietung`
+    },
+    'Gelöscht.',
+  )
 }

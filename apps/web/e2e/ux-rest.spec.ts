@@ -48,7 +48,7 @@ test('Eigentümerschaft, Mieter am Ticket, Auftrag per Mail, Dokumentliste', asy
   // P9: Ticket an der Einheit zeigt den laufenden Mieter verlinkt
   await page.goto('/tickets/neu?objekt=' + objektId)
   const t = page.getByTestId('ticket-anlegen')
-  await t.getByLabel('Objekt / Einheit').selectOption({ label: 'Musterweg 1 · EG' })
+  await t.getByLabel('Immobilie / Einheit').selectOption({ label: 'Musterweg 1 · EG' })
   await t.getByLabel('Titel').fill('Wasserhahn in der Küche tropft')
   await t.getByLabel('Beschreibung').fill('Tropft seit einer Woche.')
   await t.getByRole('button', { name: 'Ticket anlegen' }).click()
@@ -94,10 +94,10 @@ test('Eigentümerschaft, Mieter am Ticket, Auftrag per Mail, Dokumentliste', asy
   await d.getByRole('button', { name: 'Hochladen' }).click()
   await expect(page.getByTestId('dokument-titel')).toHaveText('Grundriss EG')
 
-  // Dokumente stehen im Bereich „Objekte“ als Reiter
+  // Dokumente stehen im Bereich „Übersicht“ als Reiter
   await page
     .getByRole('navigation', { name: 'Hauptmenü' })
-    .getByRole('link', { name: /^Objekte/ })
+    .getByRole('link', { name: /^Übersicht/ })
     .click()
   await page.getByTestId('bereich-reiter').getByRole('link', { name: 'Dokumente' }).click()
   await expect(page).toHaveURL(/\/dokumente$/)
