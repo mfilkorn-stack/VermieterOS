@@ -66,7 +66,7 @@ export async function mitMandant<T>(fn: (tx: Tx, k: MandantKontext) => Promise<T
   return withMandant(db, k.mandantId, (tx) => fn(tx, k))
 }
 
-type Rechte = { [K in keyof typeof statements]?: Array<(typeof statements)[K][number]> }
+export type Rechte = { [K in keyof typeof statements]?: Array<(typeof statements)[K][number]> }
 
 /** Prüft Rechte der aktiven Rolle (Better-Auth-Access-Control). */
 export async function darf(rechte: Rechte): Promise<boolean> {

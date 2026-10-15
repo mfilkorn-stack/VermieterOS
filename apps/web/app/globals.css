@@ -1412,3 +1412,44 @@ img.vorschau {
   align-items: end;
   margin-bottom: 16px;
 }
+
+/* Löschen und Wiederherstellen im Posteingang: zurückhaltend, rechts unten an der Karte */
+.nachricht-aktion {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+button.dezent {
+  background: transparent;
+  color: var(--leise);
+  border-color: transparent;
+  min-height: 32px;
+  padding: 4px 8px;
+}
+button.dezent:hover {
+  background: var(--akzent-fl);
+  color: var(--rot);
+}
+.reiter .zahl.neutral {
+  color: var(--leise);
+}
+
+/* Reiter eines Menübereichs über der Seitenüberschrift */
+.bereich-reiter {
+  margin-bottom: 16px;
+  overflow-x: auto;
+  max-width: 100%;
+  width: fit-content;
+}
+
+/* Fuß der Seitenleiste: Name als Zugang zu Einstellungen und Profil */
+.profil-link .label {
+  display: grid;
+  line-height: 1.25;
+}
+.profil-link small {
+  color: var(--nav-text);
+  opacity: 0.75;
+  font-size: 0.75rem;
+  font-weight: 400;
+}

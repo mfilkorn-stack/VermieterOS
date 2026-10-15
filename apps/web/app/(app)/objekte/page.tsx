@@ -3,12 +3,14 @@ import Link from 'next/link'
 import { ObjektListe } from '@/components/objekt-liste'
 import { ladeObjektKacheln } from '@/lib/objekte'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 export default async function ObjekteSeite() {
   const objekte = await mitMandant((tx) => ladeObjektKacheln(tx))
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   return (
     <>
+      <BereichReiter bereich="objekte" aktiv="/objekte" />
       <div className="seitenkopf">
         <div>
           <h1>Objekte</h1>

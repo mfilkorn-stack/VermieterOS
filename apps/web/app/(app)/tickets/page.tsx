@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { zeitpunktAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 export default async function TicketsSeite({
   searchParams,
@@ -15,6 +16,7 @@ export default async function TicketsSeite({
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   return (
     <>
+      <BereichReiter bereich="tickets" aktiv="/tickets" />
       <div className="seitenkopf">
         <div>
           <h1>Tickets</h1>

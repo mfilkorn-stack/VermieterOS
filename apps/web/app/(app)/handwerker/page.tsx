@@ -4,12 +4,14 @@ import Link from 'next/link'
 import { Status } from '@/components/status'
 import { GEWERK_TEXT } from '@/lib/betrieb-text'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 export default async function HandwerkerSeite() {
   const liste = await mitMandant((tx) => listeHandwerker(tx))
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   return (
     <>
+      <BereichReiter bereich="tickets" aktiv="/handwerker" />
       <div className="seitenkopf">
         <div>
           <h1>Handwerker</h1>

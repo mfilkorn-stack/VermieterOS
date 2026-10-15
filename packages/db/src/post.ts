@@ -6,6 +6,7 @@ import {
   anhaenge,
   antworten,
   nachrichten,
+  nachrichtLoeschungen,
   nachrichtZuordnungen,
   postfaecher,
   telefonnotizen,
@@ -282,6 +283,45 @@ export async function ordneNachrichtZu(
 /** Nachricht ohne Ziel und nicht bewusst erledigt (za = nachrichten_zuordnung_aktuell, LEFT JOIN). */
 const ZUORDNUNG_OFFEN = sql`coalesce(za.mietverhaeltnis_id, za.objekt_id, za.handwerker_id) IS NULL AND coalesce(za.art, '') <> 'erledigt'`
 
+/** Nachricht `n` liegt im Papierkorb bzw. nicht. */
+const IM_PAPIERKORB = sql`EXISTS (SELECT 1 FROM nachrichten_im_papierkorb pk WHERE pk.nachricht_id = n.id)`
+const NICHT_GELOESCHT = sql`NOT ${IM_PAPIERKORB}`
+
+/**
+ * Löscht eine Mail in den Papierkorb oder stellt sie wieder her. Die Mail bleibt gespeichert,
+ * damit der nächste Abruf sie nicht erneut aus dem IMAP-Postfach holt.
+ */
+export async function setzePapierkorb(
+  tx: Tx,
+  p: { mandantId: string; nachrichtId: string; geloescht: boolean; akteur: Akteur },
+): Promise<void> {
+  await tx.insert(nachrichtLoeschungen).values({
+    id: uuidv7(),
+    mandantId: p.mandantId,
+    nachrichtId: p.nachrichtId,
+    geloescht: p.geloescht,
+    akteurArt: p.akteur.art,
+    akteurId: p.akteur.id,
+  })
+  await ereignis(tx, {
+    mandantId: p.mandantId,
+    typ: 'nachricht_geloescht',
+    entitaet: 'nachricht',
+    entitaetId: p.nachrichtId,
+    akteur: p.akteur,
+    payload: { geloescht: p.geloescht },
+  })
+}
+
+/** Anzahl der Mails im Papierkorb (ohne Beleg-Postfächer). */
+export async function mailsImPapierkorb(tx: Tx): Promise<number> {
+  const [r] = await tx.execute<{ n: number }>(sql`
+    SELECT count(*)::int AS n FROM nachrichten_im_papierkorb pk
+    JOIN nachrichten n ON n.id = pk.nachricht_id
+    JOIN postfaecher pf ON pf.id = n.postfach_id AND pf.zweck = 'post'`)
+  return r?.n ?? 0
+}
+
 /** Zuordnung über den Verlauf: aktuelle Zuordnung der jüngsten Nachricht mit einer der Message-IDs. */
 export async function zuordnungImVerlauf(tx: Tx, messageIds: string[]): Promise<string | null> {
   if (messageIds.length === 0) return null
@@ -462,10 +502,15 @@ export async function ladePosteingang(
     limit?: number
     objektId?: string
     handwerkerId?: string
+    /** nur Mails im Papierkorb; sonst sind sie ausgeblendet */
+    papierkorb?: boolean
   } = {},
 ): Promise<PosteingangEintrag[]> {
   // Mails an die Beleg-Adresse landen im Belegeingang, nicht im Posteingang (WP 1.8).
-  const bedingungen = [sql`pf.zweck = 'post'`]
+  const bedingungen = [
+    sql`pf.zweck = 'post'`,
+    optionen.papierkorb ? IM_PAPIERKORB : NICHT_GELOESCHT,
+  ]
   if (optionen.nurOffen) bedingungen.push(ZUORDNUNG_OFFEN)
   if (optionen.objektId) bedingungen.push(sql`za.objekt_id = ${optionen.objektId}`)
   if (optionen.handwerkerId) bedingungen.push(sql`za.handwerker_id = ${optionen.handwerkerId}`)
@@ -533,7 +578,7 @@ export async function offeneNachrichten(tx: Tx): Promise<number> {
     SELECT count(*)::int AS n FROM nachrichten n
     JOIN postfaecher pf ON pf.id = n.postfach_id AND pf.zweck = 'post'
     LEFT JOIN nachrichten_zuordnung_aktuell za ON za.nachricht_id = n.id
-    WHERE ${ZUORDNUNG_OFFEN}`)
+    WHERE ${ZUORDNUNG_OFFEN} AND ${NICHT_GELOESCHT}`)
   return rows[0]?.n ?? 0
 }
 
@@ -558,6 +603,8 @@ export type NachrichtDetail = {
   rohGroesse: number
   rohSha256: string
   anhaenge: { id: string; dateiname: string; mimeTyp: string; groesse: number; sha256: string }[]
+  /** Zeitpunkt, seit dem die Mail im Papierkorb liegt; null, wenn nicht */
+  geloeschtAm: string | null
   /** Alle Zuordnungen, älteste zuerst; die letzte gilt. */
   zuordnungen: {
     mietverhaeltnisId: string | null
@@ -587,11 +634,14 @@ export async function ladeNachricht(tx: Tx, id: string): Promise<NachrichtDetail
     text: string
     roh_groesse: number
     roh_sha256: string
+    geloescht_am: string | null
   }>(sql`
     SELECT n.id, pf.bezeichnung AS postfach, pf.benutzer, n.message_id, n.referenzen,
            n.von_adresse, n.von_name, n.an, n.betreff,
-           n.gesendet_am, n.empfangen_am, n.text, n.roh_groesse, n.roh_sha256
+           n.gesendet_am, n.empfangen_am, n.text, n.roh_groesse, n.roh_sha256,
+           pk.geloescht_am
     FROM nachrichten n JOIN postfaecher pf ON pf.id = n.postfach_id
+    LEFT JOIN nachrichten_im_papierkorb pk ON pk.nachricht_id = n.id
     WHERE n.id = ${id}`)
   if (!n) return null
   const anhaengeZeilen = await tx
@@ -634,6 +684,7 @@ export async function ladeNachricht(tx: Tx, id: string): Promise<NachrichtDetail
     text: n.text,
     rohGroesse: n.roh_groesse,
     rohSha256: n.roh_sha256,
+    geloeschtAm: n.geloescht_am,
     anhaenge: anhaengeZeilen,
     zuordnungen,
   }
@@ -918,7 +969,7 @@ export async function ladeVerlauf(tx: Tx, mietverhaeltnisId: string): Promise<Ve
            za.art AS zuordnung, NULL AS richtung, false AS korrigiert
     FROM nachrichten n
     JOIN nachrichten_zuordnung_aktuell za ON za.nachricht_id = n.id
-    WHERE za.mietverhaeltnis_id = ${mietverhaeltnisId}
+    WHERE za.mietverhaeltnis_id = ${mietverhaeltnisId} AND ${NICHT_GELOESCHT}
     UNION ALL
     SELECT 'telefonnotiz', t.id, NULL, NULL, t.zeitpunkt, t.betreff, t.gespraechspartner, t.inhalt, 0, NULL, t.richtung,
            t.ersetzt_id IS NOT NULL

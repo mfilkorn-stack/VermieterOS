@@ -290,6 +290,29 @@ test('Mail-Eingang: Postfach, Abruf, automatische und manuelle Zuordnung', async
   await expect(telefon).toContainText('Donnerstag')
   await expect(telefon).toContainText('korrigiert')
   await expect(telefon).not.toContainText('Mittwoch')
+
+  // Löschen: die Mail verschwindet aus Liste und Verlauf, liegt im Papierkorb, lässt sich
+  // wiederherstellen
+  const verlaufUrl = page.url()
+  await page.goto(nachrichtUrl)
+  await page.getByTestId('mail-loeschen').click()
+  await expect(page).toHaveURL(/\/posteingang$/)
+  await page.goto('/posteingang?alle=1')
+  await expect(page.locator('[data-testid="nachricht"][data-betreff="Heizung kalt"]')).toHaveCount(
+    0,
+  )
+  await page.getByRole('link', { name: /Papierkorb/ }).click()
+  const geloescht = page.locator('[data-testid="nachricht"][data-betreff="Heizung kalt"]')
+  await expect(geloescht).toHaveCount(1)
+  await page.goto(verlaufUrl)
+  await expect(page.getByTestId('verlauf-eintrag')).toHaveCount(3)
+  await page.goto('/posteingang?papierkorb=1')
+  await geloescht.getByRole('button', { name: 'Wiederherstellen' }).click()
+  await expect(page.getByTestId('posteingang-leer')).toContainText('Papierkorb ist leer')
+  await page.goto('/posteingang?alle=1')
+  await expect(page.locator('[data-testid="nachricht"][data-betreff="Heizung kalt"]')).toHaveCount(
+    1,
+  )
 })
 
 /**

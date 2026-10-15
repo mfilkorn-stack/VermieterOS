@@ -3,6 +3,7 @@ import { referenzwert, type ReferenzEintrag, type ReferenzStatus } from '@vermie
 import { BUNDESLAENDER, BUNDESLAND_NAME } from '@vermieteros/schema'
 import { datumAnzeige, prozentText } from '@/lib/format'
 import { mitMandant } from '@/lib/sitzung'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 const STATUS_TEXT: Record<ReferenzStatus, string> = {
   gueltig: 'aktuell und geprüft',
@@ -39,6 +40,7 @@ export default async function ReferenzdatenSeite() {
 
   return (
     <>
+      <BereichReiter bereich="einstellungen" aktiv="/referenzdaten" />
       <h1>Referenzdaten</h1>
       <p className="leise">
         Werte von außen, mit Gültigkeit, Quelle und Prüffrist. Ist ein Wert nicht mehr geprüft oder

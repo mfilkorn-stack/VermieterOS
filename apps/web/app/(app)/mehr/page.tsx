@@ -1,14 +1,13 @@
-import { ArrowLeftRight, ChevronRight, FileLock, LogOut, ShieldCheck } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { NavIcon, Zaehler } from '@/components/navigation'
 import { ladeNavigation } from '@/lib/navigation'
-import { abmelden } from '../../(oeffentlich)/aktionen'
 
 /** Zweitrangige Bereiche für die Tab-Leiste auf dem Handy. */
 export default async function MehrSeite() {
   const nav = await ladeNavigation()
-  // Fachbereiche ohne eigenen Tab (Betriebskosten, Journal, Steuer, Abschluss) mit Zählern,
-  // darunter die Verwaltung.
+  // Bereiche ohne eigenen Tab (Finanzen, Abschluss & Steuer) mit Zählern, darunter Einstellungen
+  // (Profil mit Sicherheit, Datenschutz und Abmelden; Verwaltung der Eigentümerschaft).
   const fach = nav.haupt.filter((e) => !nav.tabs.some((t) => t.href === e.href))
   const eintrag = (e: (typeof nav.haupt)[number]) => (
     <li key={e.href}>
@@ -34,43 +33,14 @@ export default async function MehrSeite() {
       </div>
       {fach.length ? (
         <>
-          <p className="nav-titel">Finanzen und Fristen</p>
+          <p className="nav-titel">Weitere Bereiche</p>
           <ul className="mehr-liste" style={{ marginBottom: 16 }} data-testid="mehr-fach">
             {fach.map(eintrag)}
           </ul>
         </>
       ) : null}
-      <p className="nav-titel">Verwaltung</p>
-      <ul className="mehr-liste">
-        {nav.verwaltung.map(eintrag)}
-        <li>
-          <Link href="/mandanten">
-            <ArrowLeftRight size={20} strokeWidth={1.75} aria-hidden />
-            <span className="label">Eigentümerschaft wechseln</span>
-            <ChevronRight size={16} aria-hidden />
-          </Link>
-        </li>
-        <li>
-          <Link href="/datenschutz">
-            <FileLock size={20} strokeWidth={1.75} aria-hidden />
-            <span className="label">Datenschutz</span>
-            <ChevronRight size={16} aria-hidden />
-          </Link>
-        </li>
-        <li>
-          <Link href="/sicherheit">
-            <ShieldCheck size={20} strokeWidth={1.75} aria-hidden />
-            <span className="label">Sicherheit</span>
-            <ChevronRight size={16} aria-hidden />
-          </Link>
-        </li>
-      </ul>
-      <form action={abmelden} style={{ marginTop: 16 }}>
-        <button type="submit" className="zweit">
-          <LogOut size={18} strokeWidth={1.75} aria-hidden />
-          Abmelden
-        </button>
-      </form>
+      <p className="nav-titel">Einstellungen</p>
+      <ul className="mehr-liste">{nav.verwaltung.map(eintrag)}</ul>
     </>
   )
 }

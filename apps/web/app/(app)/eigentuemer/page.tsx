@@ -8,6 +8,7 @@ import { adresssucheAn } from '@/lib/adresse'
 import { bruchText, datumAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { anteilAendern, eigentuemerAnlegen } from './aktionen'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 const ART_TEXT = {
   allein: 'Alleineigentum',
@@ -38,6 +39,7 @@ export default async function EigentuemerSeite() {
 
   return (
     <>
+      <BereichReiter bereich="einstellungen" aktiv="/eigentuemer" />
       <h1>Eigentümer · {mandant?.name}</h1>
       <p className="leise">
         {mandant ? ART_TEXT[mandant.art] : ''}. Die Anteile bestimmen die Aufteilung der Einkünfte

@@ -8,6 +8,7 @@ import { kiEingerichtet } from '@/lib/ki'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { belegAuslesenDirekt, belegHochladen } from './aktionen'
 import { KiHinweis } from '@/components/ki-hinweis'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 function Herkunft({ b }: { b: BelegZeile }) {
   if (b.ticketId)
@@ -48,6 +49,7 @@ export default async function BelegeSeite({
 
   return (
     <>
+      <BereichReiter bereich="finanzen" aktiv="/belege" />
       <div className="seitenkopf">
         <div>
           <h1>Belege</h1>

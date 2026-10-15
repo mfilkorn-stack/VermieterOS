@@ -9,6 +9,7 @@ import { darf, mitMandant } from '@/lib/sitzung'
 import { postfachAendern, postfachAnlegen } from './aktionen'
 import { KiHinweis } from '@/components/ki-hinweis'
 import { kiEingerichtet } from '@/lib/ki'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 export default async function PostfaecherSeite() {
   if (!(await darf({ post: ['postfaecher'] }))) redirect('/posteingang')
@@ -17,6 +18,7 @@ export default async function PostfaecherSeite() {
 
   return (
     <>
+      <BereichReiter bereich="einstellungen" aktiv="/postfaecher" />
       <h1>Postfächer</h1>
       <p className="leise">
         Vermieter.OS liest das Postfach nur: keine Markierung als gelesen, nichts wird verschoben

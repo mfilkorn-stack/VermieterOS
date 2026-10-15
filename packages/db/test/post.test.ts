@@ -14,8 +14,10 @@ import {
   legeNachrichtAn,
   legePostfachAn,
   listePostfaecher,
+  mailsImPapierkorb,
   offeneNachrichten,
   ordneNachrichtZu,
+  setzePapierkorb,
   zuordnungImVerlauf,
   type NeueNachricht,
 } from '../src/post'
@@ -355,6 +357,68 @@ describe('Zuordnung', () => {
           }),
         ),
       /gehört nicht zum Mandanten/,
+    )
+  })
+})
+
+describe('Papierkorb', () => {
+  it('gelöschte Mail fehlt in Liste, Zähler und Verlauf; wiederherstellbar; append-only; nur Nutzer', async () => {
+    const id = (await withMandant(v.worker, a, (tx) =>
+      legeNachrichtAn(tx, nachricht(a, postfachA, { betreff: 'Newsletter Baumarkt' }), SYSTEM),
+    ))!
+    await withMandant(v.app, a, (tx) =>
+      ordneNachrichtZu(tx, {
+        mandantId: a,
+        nachrichtId: id,
+        mietverhaeltnisId: mvA,
+        art: 'manuell',
+        akteur: NUTZER,
+      }),
+    )
+    const imVerlauf = async () =>
+      (await withMandant(v.app, a, (tx) => ladeVerlauf(tx, mvA))).some(
+        (e) => e.art === 'nachricht' && e.id === id,
+      )
+    const inListe = async (papierkorb = false) =>
+      (await withMandant(v.app, a, (tx) => ladePosteingang(tx, { papierkorb }))).some(
+        (x) => x.id === id,
+      )
+    expect(await imVerlauf()).toBe(true)
+    const papierkorbVorher = await withMandant(v.app, a, (tx) => mailsImPapierkorb(tx))
+
+    await withMandant(v.app, a, (tx) =>
+      setzePapierkorb(tx, { mandantId: a, nachrichtId: id, geloescht: true, akteur: NUTZER }),
+    )
+    expect(await inListe()).toBe(false)
+    expect(await inListe(true)).toBe(true)
+    expect(await imVerlauf()).toBe(false)
+    expect(await withMandant(v.app, a, (tx) => mailsImPapierkorb(tx))).toBe(papierkorbVorher + 1)
+    expect((await withMandant(v.app, a, (tx) => ladeNachricht(tx, id)))?.geloeschtAm).toBeTruthy()
+
+    await withMandant(v.app, a, (tx) =>
+      setzePapierkorb(tx, { mandantId: a, nachrichtId: id, geloescht: false, akteur: NUTZER }),
+    )
+    expect(await inListe()).toBe(true)
+    expect(await imVerlauf()).toBe(true)
+    expect((await withMandant(v.app, a, (tx) => ladeNachricht(tx, id)))?.geloeschtAm).toBeNull()
+
+    await erwarteFehler(
+      () => withMandant(v.app, a, (tx) => tx.execute(sql`DELETE FROM nachricht_loeschungen`)),
+      /append-only|permission denied/,
+    )
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, a, (tx) =>
+          setzePapierkorb(tx, { mandantId: a, nachrichtId: id, geloescht: true, akteur: SYSTEM }),
+        ),
+      /nachricht_loeschungen_akteur_chk/,
+    )
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, b, (tx) =>
+          setzePapierkorb(tx, { mandantId: b, nachrichtId: id, geloescht: true, akteur: NUTZER }),
+        ),
+      /gehört nicht zum Mandanten|violates/,
     )
   })
 })

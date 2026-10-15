@@ -6,6 +6,7 @@ import { datumAnzeige, euroAnzeige } from '@/lib/format'
 import { BEHANDLUNG_TEXT, STEUERKATEGORIE_TEXT } from '@/lib/journal-text'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { heuteBerlin } from '@/lib/zeit'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 /**
  * Journal eines Zahlungsjahres (Modul 08): Summen je Kategorie, darunter alle Einträge.
@@ -45,6 +46,7 @@ export default async function JournalSeite({
 
   return (
     <>
+      <BereichReiter bereich="finanzen" aktiv="/journal" />
       <div className="seitenkopf">
         <div>
           <h1>Journal {jahr}</h1>

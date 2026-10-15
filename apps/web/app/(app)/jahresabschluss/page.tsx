@@ -4,6 +4,7 @@ import { Status } from '@/components/status'
 import { abschlussLink, ladeAbschluss, STAND_TEXT, STAND_TON } from '@/lib/jahresabschluss'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { heuteBerlin } from '@/lib/zeit'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 /** Jahresabschluss je Objekt (WP 2.7): Vorjahr als Checkliste, laufendes Jahr als Wächter. */
 export default async function Jahresabschluss({
@@ -19,6 +20,7 @@ export default async function Jahresabschluss({
   const objekte = await mitMandant((tx) => ladeAbschluss(tx, jahr))
   return (
     <>
+      <BereichReiter bereich="abschluss" aktiv="/jahresabschluss" />
       <div className="seitenkopf">
         <div>
           <h1>Jahresabschluss {jahr}</h1>

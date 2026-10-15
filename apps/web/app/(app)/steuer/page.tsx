@@ -7,6 +7,7 @@ import { objektliste } from '@/lib/objekte'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { STATUS_TEXT, steuerJahre } from '@/lib/steuer'
 import { heuteBerlin } from '@/lib/zeit'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 /** Steuerpakete je Objekt für das Vorjahr und das Jahr davor (WP 2.6). */
 export default async function SteuerUebersicht() {
@@ -18,6 +19,7 @@ export default async function SteuerUebersicht() {
   }))
   return (
     <>
+      <BereichReiter bereich="abschluss" aktiv="/steuer" />
       <div className="seitenkopf">
         <div>
           <h1>Steuer</h1>
