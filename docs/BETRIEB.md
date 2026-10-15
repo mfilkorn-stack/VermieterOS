@@ -102,7 +102,7 @@ Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten un
 
 **Handwerkeraufträge** gehen aus dem Ticket („Auftrag an Handwerker“) über denselben SMTP wie Antworten, mit dem ersten aktiven Vermietungs-Postfach als Reply-To; Mangelfotos des Tickets hängen auf Wunsch an (zusammen höchstens 15 MB). Der Auftrag wird vor dem Versand in `antworten` vermerkt (Bezug `ticket_id`, Empfänger `handwerker_id`), ein nur gemeldetes Ticket steht danach auf „beauftragt“. Ohne `SMTP_HOST` öffnet der Knopf das Mailprogramm, dann ohne Vermerk.
 
-**Dokumente über alle Objekte** stehen unter „Dokumente“ im Menü, filterbar nach Objekt, Art und Suchtext; Belege haben ihre eigene Liste.
+**Dokumente über alle Immobilien** stehen unter „Dokumente“ (Reiter der Übersicht), filterbar nach Immobilie, Art und Suchtext; Belege haben ihre eigene Liste.
 
 **Tickets aus Dateien:** Unter „Ticket anlegen“ lässt sich eine Mängelmeldung oder ein Schreiben als PDF oder Foto hochladen. Mit KI-Schlüssel schlägt die Aufgabe `ticket_extraktion` Titel, Beschreibung und Priorität vor; das Formular ist vorbelegt, erst das Anlegen schreibt das Ticket. Die Datei liegt bis dahin als Dokument am Objekt und hängt danach am Ticket (der Eintrag am Objekt gilt als ersetzt).
 
@@ -110,127 +110,6 @@ Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten un
 
 **Löschen im Posteingang** legt eine Mail in den Papierkorb (Reiter „Papierkorb“), von dort lässt sie sich wiederherstellen. Gelöschte Mails fehlen in Liste, Zählern und Verläufen, bleiben aber gespeichert (Tabelle `nachricht_loeschungen`, append-only): Der Abruf erkennt bereits geholte Mails an ihrer Prüfsumme, eine wirklich entfernte Mail käme beim nächsten Abruf zurück. Im Postfach beim Mailanbieter ändert sich nichts.
 
-**Menü:** sechs Bereiche (Übersicht, Objekte, Posteingang, Tickets, Finanzen, Abschluss & Steuer). Verwandte Seiten stehen als Reiter oben auf der Seite: Objekte · Mieter · Dokumente, Tickets · Handwerker, Belege · Journal · Betriebskosten, Jahresabschluss · Steuer. Unten in der Seitenleiste führt der eigene Name zu den Einstellungen: Profil (Sicherheit, Datenschutz, Eigentümerschaft wechseln, Abmelden) · Eigentümer · Zugänge · Postfächer · Referenzdaten. Die Adressen sind unverändert.
+**Menü:** fünf Bereiche (Übersicht, Posteingang, Tickets, Finanzen, Abschluss & Steuer). Die Übersicht zeigt Häuser und Eigentumswohnungen und legt sie an („Haus anlegen“, „Eigentumswohnung anlegen“); `/objekte` leitet dorthin. Verwandte Seiten stehen als Reiter oben auf der Seite: Übersicht · Mieter · Dokumente, Tickets · Handwerker, Belege · Journal · Betriebskosten, Jahresabschluss · Steuer. Unten in der Seitenleiste führt der eigene Name zu den Einstellungen: Profil (Sicherheit, Datenschutz, Eigentümerschaft wechseln, Abmelden) · Eigentümer · Zugänge · Postfächer · Referenzdaten. Die Adressen sind unverändert.
 
-**Antworten aus dem Posteingang** gehen über denselben SMTP mit `MAIL_ABSENDER` als Absender und dem Postfach (IMAP-Benutzer, sofern eine Mailadresse) als Reply-To, damit die Rückantwort des Mieters wieder im Posteingang landet; `In-Reply-To` hängt die Antwort in den Thread. Jede Antwort wird vor dem Versand mit Text vermerkt (Tabelle `antworten`, append-only) und erscheint im Verlauf des Mietverhältnisses. Ist der IMAP-Benutzer keine Mailadresse, gehen Rückantworten an `MAIL_ABSENDER`.
-
-Für jeden Anbieter SPF und DKIM für die Absender-Domain setzen, sonst landen Anmeldelinks im Spam. Ohne `SMTP_HOST` wird nichts verschickt: Einladungslinks fürs Portal erscheinen dann in der App zum persönlichen Weitergeben, Bestätigungsmails fehlen. Fehler beim Versand stehen im Log von `web`, ohne Inhalt.
-
-Beim Start prüft `web` Verbindung und Anmeldung am SMTP-Server, ohne etwas zu verschicken. Nach jedem Deployment oder jeder Änderung an der `.env`:
-
-```sh
-docker compose logs web | grep '\[mail\]'
-```
-
-`[mail] SMTP bereit (smtp.ionos.de:587)` ist richtig. `nicht erreichbar: getaddrinfo ENOTFOUND` heißt Tippfehler im Host, `Invalid login` oder `535` falscher Benutzer oder falsches Passwort.
-
-### Adresssuche
-
-Objekt anlegen, Stammdaten und Eigentümer haben ein Feld „Adresse suchen“. Ein gewählter Vorschlag füllt Straße, Hausnummer, PLZ, Ort und, wo es das Feld gibt, das Bundesland. Danach zeigt das Formular „Anschrift gefunden“. Weicht man von Hand davon ab, steht dort „abweichend geändert“. Gespeichert wird, was in den Feldern steht.
-
-Die Vorschläge kommen von Photon (OpenStreetMap, betrieben von komoot in Deutschland, ohne Schlüssel und ohne Vertrag; die öffentliche Instanz ist für faire, geringe Nutzung gedacht). Die App fragt vom Server aus an und schickt nur den Suchtext, nie Nutzer, Mandant oder IP des Browsers. `ADRESSSUCHE=aus` blendet das Feld aus, `ADRESSSUCHE_URL` zeigt auf einen eigenen Photon-Server. Ist der Dienst nicht erreichbar, sagt das Formular es und die Felder bleiben normal ausfüllbar.
-
-**Firmensuche (Handwerker):** Das Handwerker-Formular hat ein Feld „Firma suchen“. Vorschläge sind OpenStreetMap-Einträge mit Namen über Photon, Handwerksbetriebe zuerst; die Auswahl füllt Firma, Anschrift und, wo eindeutig, das Gewerk. Telefon, E-Mail und Webseite holt die App erst nach der Auswahl, einmal pro Firma, von Nominatim (Nutzungsregeln: kein Abruf beim Tippen, höchstens einer pro Sekunde) und trägt sie nur in leere Felder ein. Nicht jeder Betrieb steht in OpenStreetMap; „Im Internet suchen“ öffnet dann eine Websuche im eigenen Browser. `FIRMENSUCHE=aus` schaltet ab, `FIRMENSUCHE_DETAILS_URL` zeigt auf ein eigenes Nominatim.
-
-### Registrierung
-
-In Produktion legt nicht jeder ein Konto an, der die Domain kennt. Erlaubt sind die Adressen in `REGISTRIERUNG_ERLAUBT` (kommagetrennt, typischerweise nur die eigene) und Adressen mit offener Einladung in einen Mandanten. Alle anderen bekommen „Registrierung nur mit Einladung“. Mieter brauchen kein Konto, sie nutzen das Portal. `REGISTRIERUNG=offen` hebt die Sperre auf (Tests, lokale Entwicklung; dort ist sie ohnehin aus).
-
-**Passwort vergessen:** Link auf der Anmeldeseite, Mail mit Einmal-Link (gilt eine Stunde), danach enden alle Sitzungen des Kontos; die Zwei-Faktor-Pflicht bleibt. Ohne Mailversand gibt es keinen Weg zurück ins Konto. Passwörter stehen nirgends im Klartext, weder in Logs noch in der Datenbank (nur Hash).
-
-### Mieterportal
-
-Erreichbar unter `https://www.vermieteros.app/portal`. Mieter werden am Mietverhältnis (Verlauf, Karte „Mieterportal“) eingeladen und dort auch gesperrt. Anmeldelinks gelten 15 Minuten, Einladungen 7 Tage, jeweils einmal; die Sitzung hält 30 Tage. In der Datenbank stehen nur Prüfsummen der Links und Sitzungen (ADR 0010). Mängelmeldungen erscheinen als Ticket „gemeldet“, Nachrichten im Verlauf; Eigentümer, Miteigentümer und Mitverwalter bekommen dazu eine Mail.
-
-### Monitoring
-
-Bei healthchecks.io (oder selbst gehostet) vier Checks anlegen und die URLs in `.env` eintragen:
-
-| Variable                  | Erwartet                                                   | Karenz |
-| ------------------------- | ---------------------------------------------------------- | ------ |
-| `HEALTHCHECK_BACKUP`      | täglich                                                    | 2 h    |
-| `HEALTHCHECK_INTEGRITAET` | täglich                                                    | 2 h    |
-| `HEALTHCHECK_RESTORE`     | monatlich                                                  | 1 Tag  |
-| `HEALTHCHECK_ABRUF`       | je Mail-Abruf (`ABRUF_INTERVALL_SEKUNDEN`, Standard 5 min) | 30 min |
-
-Dazu ein externer Uptime-Check auf `https://www.vermieteros.app/api/gesund`. Er antwortet mit 200, wenn die App läuft und die Datenbank erreicht.
-
-### Erstes Deployment
-
-Reihenfolge und Abnahme stehen als Checkliste in [LIVEGANG.md](LIVEGANG.md).
-
-Den Tag eines Images auf `main` nehmen (`sha-<kurz>`, siehe GitHub Packages):
-
-```sh
-./deploy.sh sha-1a2b3c4 --ohne-backup
-```
-
-Beim ersten Mal gibt es noch nichts zu sichern. Danach `docker compose logs ops` prüfen und einmal von Hand sichern und testen, siehe unten.
-
-## Routine
-
-### Deployment
-
-```sh
-./deploy.sh sha-<kurz>
-```
-
-Das Skript zieht die Images, sichert die Datenbank, migriert und startet neu. Es wartet, bis alle Dienste gesund sind. Schlägt das Backup fehl, wird nicht migriert.
-
-### Von Hand sichern und prüfen
-
-```sh
-docker compose run --rm ops backup
-docker compose run --rm ops integritaet
-docker compose run --rm ops restore-test            # jüngstes Backup
-docker compose run --rm ops rclone lsf ziel:<bucket>/vermieteros
-```
-
-Ohne Schlüssel auf dem Server läuft der Restore-Test auf dem eigenen Rechner. Dort wird der Container mit denselben S3-Variablen gestartet und der Schlüssel eingehängt:
-
-```sh
-docker run --rm --env-file s3.env -e BACKUP_SCHLUESSEL=/geheim/backup.key \
-  -v ~/geheim:/geheim:ro ghcr.io/mfilkorn-stack/vermieteros-ops:<tag> restore-test
-```
-
-### Vorhaltung
-
-Tägliche Backups bleiben 30 Tage. Das Backup vom Monatsersten bleibt 13 Monate. Gesteuert über `BACKUP_TAGE` und `BACKUP_MONATE`. Gelöscht wird nur nach einem erfolgreichen neuen Backup.
-
-### Monatlich
-
-Image-Updates: `docker compose pull` für `caddy` und `postgres` (Minor-Versionen), dann `./deploy.sh` mit dem aktuellen Tag. Ein Blick in die Monitoring-Historie. Restore-Test-Ergebnis prüfen.
-
-## Wiederherstellung im Ernstfall
-
-Die Datenbank ist verloren oder beschädigt. Ziel ist eine leere Datenbank mit den drei Rollen, in die das Backup eingespielt und danach geprüft wird. Das Skript `wiederherstellen` bricht ab, wenn die Zieldatenbank nicht leer ist.
-
-1. Server neu aufsetzen wie oben oder auf dem bestehenden Server das Volume ersetzen:
-   ```sh
-   docker compose down
-   docker volume rm vermieteros_pgdata
-   ```
-2. Den privaten Schlüssel aus dem Passwortmanager nach `geheim/backup.key` legen, Rechte wie bei der Einrichtung.
-3. Nur Postgres starten. Die Rollen entstehen aus `postgres-init.sh`:
-   ```sh
-   docker compose up -d --wait postgres
-   ```
-4. Einspielen und prüfen. Ohne Namen nimmt das Skript das jüngste vollständige Backup:
-   ```sh
-   docker compose run --rm -e PGUSER=postgres -e PGPASSWORD="$(grep ^POSTGRES_PASSWORT= .env | cut -d= -f2)" \
-     ops wiederherstellen [vermieteros-2026-…Z]
-   ```
-   Am Ende steht `OK: n Ketten intakt, n Köpfe aus dem Manifest vorhanden`.
-5. Mails und Anhänge zurückkopieren, falls der Dokumenten-Bucket verloren ist. Vorhandenes wird nicht überschrieben:
-   ```sh
-   docker compose run --rm ops rclone copy --immutable --checksum ziel:<backup-bucket>/dokumente dokumente:<dokumente-bucket>
-   ```
-6. Starten: `./deploy.sh <tag> --ohne-backup`. Eine neuere App-Version migriert dabei nach.
-
-Verloren sind die Änderungen seit dem letzten Backup, höchstens ein Tag.
-
-## Grenzen
-
-- **Datenverlust bis zu einem Tag.** `pg_dump` läuft nachts. Kontinuierliche WAL-Archivierung (z. B. WAL-G) kommt, sobald Mieter und Mails im System sind (Phase 1).
-- **Die Backup-Zugangsdaten liegen auf dem Server.** Wer den Server übernimmt, kann Backups löschen und Manifeste ersetzen. Abhilfe: eine zweite Kopie, die der Server nicht erreicht, z. B. ein nächtlicher Abzug vom eigenen Rechner auf eine Storage Box, oder Object Lock, sobald der Bucket es unterstützt.
-- **Ein Server.** Fällt er aus, bedeutet das Wiederherstellung auf einem neuen Server, rund eine Stunde mit diesem Runbook.
+**Löschen** von Haus/Eigentumswohnung, Einheit und Mietverhältnis steht eingeklappt am Ende der jeweiligen Seite (Akte, Einheit bearbeiten, Mietverhältnisse der Einheit) und braucht einen Haken zur Bestätigung. Es geht von unten nach oben: erst Mietverhältnisse, dann Einheiten, dann das Haus. Hängt noch etwas daran (Buchungen, Tickets, Dokumente, Zähler, Betriebskostenabrechnungen, Steuerpakete, Darlehen, Portal-Zugänge, Mails), nennt die Seite es, und Löschen ist gesperrt. Gedacht ist Löschen für Fehleingaben; ein echtes Mietverhältnis mit Verlauf wird beendet (Mietende), nicht gelöscht. Gelöscht wird per Storno aller Versionen (`packages/db/src/loeschen.ts`): Der Eintrag verschwindet aus allen Listen, das Ledger behält ihn mit Zeitpunkt, Person und Grund. Mit dem Mietverhältnis gehen seine Konditionen und die Personen der Mietpartei, mit dem Haus Notfallkarte und Wissensbasis.

@@ -106,7 +106,7 @@ export default async function DokumentSeite({ params }: { params: Promise<{ id: 
   const auszug = aktiv?.ausgabe as MietvertragAuszug | undefined
   const zurueck = mv
     ? { href: `/mietverhaeltnisse/${mv.mietverhaeltnisId}`, text: mietverhaeltnisText(mv) }
-    : { href: `/objekte/${d.objektId}`, text: objekt?.bezeichnung ?? 'Objekt' }
+    : { href: `/objekte/${d.objektId}`, text: objekt?.bezeichnung ?? 'Immobilie' }
 
   return (
     <>

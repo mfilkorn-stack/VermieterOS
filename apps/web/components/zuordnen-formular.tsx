@@ -52,7 +52,7 @@ export function ZuordnenFormular({
               </option>
             ))}
           </optgroup>
-          <optgroup label="Objekt (WEG, Behörde, Versorger)">
+          <optgroup label="Immobilie (WEG, Behörde, Versorger)">
             {ziele.objekte.map((o) => (
               <option key={o.id} value={'objekt:' + o.id}>
                 {o.bezeichnung}

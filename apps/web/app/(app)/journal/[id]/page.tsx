@@ -171,7 +171,7 @@ export default async function JournalEintragSeite({ params }: { params: Promise<
                   <input
                     name="grund"
                     required
-                    placeholder="z. B. falscher Betrag, falsches Objekt"
+                    placeholder="z. B. falscher Betrag, falsche Immobilie"
                   />
                 </label>
                 <p className="leise">

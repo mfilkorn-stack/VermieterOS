@@ -15,7 +15,9 @@ export default async function HandwerkerSeite() {
       <div className="seitenkopf">
         <div>
           <h1>Handwerker</h1>
-          <p className="leise">Verzeichnis für Aufträge und die Notfallkarten der Objekte.</p>
+          <p className="leise">
+            Verzeichnis für Aufträge und die Notfallkarten der Häuser und Wohnungen.
+          </p>
         </div>
         {schreiben ? (
           <Link className="knopf" href="/handwerker/neu" data-testid="handwerker-neu">

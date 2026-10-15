@@ -53,7 +53,7 @@ export default async function SchreibenSeite({ params }: { params: Promise<{ id:
   const vermieter = [s.vermieter.name, ...s.vermieter.anschrift].join('\n')
   const fehlt = [
     s.vermieter.anschrift.length === 0 ? 'Anschrift des Vermieters (Eigentümer)' : null,
-    s.wohnung.anschrift.length === 0 ? 'Anschrift des Objekts' : null,
+    s.wohnung.anschrift.length === 0 ? 'Anschrift der Immobilie' : null,
   ].filter(Boolean)
 
   return (

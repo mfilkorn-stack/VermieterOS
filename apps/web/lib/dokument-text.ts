@@ -18,7 +18,7 @@ export const DOKUMENT_TYP_TEXT: Record<DokumentTyp, string> = {
   bodenrichtwert: 'Bodenrichtwertauskunft',
   grundriss: 'Grundriss / Aufteilungsplan',
   energieausweis: 'Energieausweis',
-  objektfoto: 'Objektfotos / Fotodokumentation',
+  objektfoto: 'Fotos / Fotodokumentation',
   kreditvertrag: 'Kreditvertrag',
   grundschuldbestellung: 'Grundschuldbestellung',
   finanzierung: 'Finanzierungsunterlagen (Selbstauskunft, Angebot)',

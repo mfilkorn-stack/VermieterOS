@@ -73,7 +73,7 @@ async function ablegen(
   },
 ): Promise<string> {
   if (p.bezug.objektId && !(await letzteVersion(tx, 'objekt', p.bezug.objektId))) {
-    throw new Eingabefehler('Objekt nicht gefunden.')
+    throw new Eingabefehler('Immobilie nicht gefunden.')
   }
   if (
     p.bezug.mietverhaeltnisId &&
@@ -174,7 +174,7 @@ export async function dokumentHochladen(_: FormStatus, d: FormData): Promise<For
     const objektId = text(d, 'objektId')
     const mietverhaeltnisId = text(d, 'mietverhaeltnisId')
     if (!objektId && !mietverhaeltnisId)
-      throw new Eingabefehler('Objekt oder Mietverhältnis fehlt.')
+      throw new Eingabefehler('Immobilie oder Mietverhältnis fehlt.')
     const dokumentDaten = daten(d, upload.dateiname)
     id = await mitMandant(async (tx, k) => {
       const abgelegt = await objektSpeicher().ablegen(
@@ -241,7 +241,7 @@ export async function anhangAlsDokument(_: FormStatus, d: FormData): Promise<For
             )?.objektId ?? null)
           : null)
       if (!objektId && !mietverhaeltnisId && dokumentDaten.typ !== 'beleg')
-        throw new Eingabefehler('Bitte ein Objekt wählen (nur Belege dürfen ohne Objekt sein).')
+        throw new Eingabefehler('Bitte eine Immobilie wählen (nur Belege dürfen ohne sein).')
       return ablegen(tx, k, {
         bezug: { objektId, mietverhaeltnisId },
         datei,
@@ -460,9 +460,9 @@ export async function kaufvertragUebernehmen(_: FormStatus, d: FormData): Promis
       throw new Eingabefehler('Bitte mindestens einen Wert zum Übernehmen anhaken.')
     await mitMandant(async (tx, k) => {
       const dok = await ladeDokument(tx, id)
-      if (!dok?.objektId) throw new Eingabefehler('Das Dokument hängt an keinem Objekt.')
+      if (!dok?.objektId) throw new Eingabefehler('Das Dokument hängt an keiner Immobilie.')
       const objektVersion = await letzteVersion(tx, 'objekt', dok.objektId)
-      if (!objektVersion) throw new Eingabefehler('Objekt nicht gefunden.')
+      if (!objektVersion) throw new Eingabefehler('Immobilie nicht gefunden.')
       const p = await bestaetigeVorschlagInTx(
         tx,
         { mandantId: k.mandantId, akteur: { art: 'nutzer', id: k.nutzerId } },
@@ -541,7 +541,7 @@ export async function kaufvertragUebernehmen(_: FormStatus, d: FormData): Promis
   }
   revalidatePath(`/dokumente/${id}`)
   return {
-    hinweis: 'Übernommen. Die Werte stehen jetzt mit Herkunft „Dokument, Seite“ in der Objektakte.',
+    hinweis: 'Übernommen. Die Werte stehen jetzt mit Herkunft „Dokument, Seite“ in der Akte.',
   }
 }
 

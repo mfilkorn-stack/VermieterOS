@@ -7,7 +7,6 @@ import {
   withMandant,
   type Tx,
 } from '@vermieteros/db'
-import { sql } from 'drizzle-orm'
 import type { NavEintrag } from '@/components/navigation'
 import { bereichPfade } from './bereiche'
 import { DRINGEND, ladeBkFristen } from './bk-fristen'
@@ -26,7 +25,6 @@ export type Navigation = {
 const MEHR_BEREICHE = ['/mehr', ...bereichPfade('einstellungen'), '/mandanten']
 
 export type Zaehler = {
-  objekte: number
   offen: number
   tickets: number
   belege: number
@@ -36,9 +34,7 @@ export type Zaehler = {
 
 /** Alle Zähler des Menüs; auch die Startseite zeigt sie als „Zu erledigen“. */
 export async function ladeZaehler(tx: Tx, post: boolean): Promise<Zaehler> {
-  const [o] = await tx.execute<{ n: number }>(sql`select count(*)::int as n from objekte_aktuell`)
   return {
-    objekte: o?.n ?? 0,
     offen: post ? await offeneNachrichten(tx) : 0,
     tickets: await gemeldeteTickets(tx),
     belege: await offeneBelege(tx),
@@ -54,13 +50,12 @@ export function zuErledigen(z: Zaehler, rolle: Rolle): NavEintrag[] {
 }
 
 function eintraege(daten: Zaehler, post: boolean) {
-  const start: NavEintrag = { href: '/', label: 'Übersicht', icon: 'start', bereiche: ['/'] }
-  const objekte: NavEintrag = {
-    href: '/objekte',
-    label: 'Objekte',
-    icon: 'objekte',
-    bereiche: bereichPfade('objekte'),
-    zaehler: { n: daten.objekte, art: 'menge', text: daten.objekte === 1 ? 'Objekt' : 'Objekte' },
+  // Übersicht = Häuser und Wohnungen samt ihren Akten, Mietern und Dokumenten
+  const start: NavEintrag = {
+    href: '/',
+    label: 'Übersicht',
+    icon: 'start',
+    bereiche: [...bereichPfade('bestand'), '/objekte'],
   }
   const posteingang: NavEintrag[] = post
     ? [
@@ -122,21 +117,20 @@ function eintraege(daten: Zaehler, post: boolean) {
   ]
   return {
     start,
-    objekte,
     posteingang,
     tickets,
     finanzen,
     abschluss,
     aufgaben,
-    haupt: [start, objekte, ...posteingang, tickets, finanzen, abschluss] as NavEintrag[],
+    haupt: [start, ...posteingang, tickets, finanzen, abschluss] as NavEintrag[],
   }
 }
 
 /**
  * Menü des aktiven Mandanten mit Zählern. Zähler nur, wo sie etwas aussagen:
- * Handlung (Amber) für Mails, Tickets, Belege, Fristen und Abschluss, Menge (Grau) für Objekte.
- * Sechs Bereiche statt einzelner Seiten; verwandte Seiten stehen auf der Seite als Reiter.
- * Tabs je Rolle: Steuerberater bekommt Objekte, Finanzen und Abschluss statt Posteingang und Tickets.
+ * Handlung (Amber) für Mails, Tickets, Belege, Fristen und Abschluss.
+ * Fünf Bereiche statt einzelner Seiten; verwandte Seiten stehen auf der Seite als Reiter.
+ * Tabs je Rolle: Steuerberater bekommt Finanzen und Abschluss statt Posteingang und Tickets.
  * Der Tab „Mehr“ trägt die Summe der Handlungszähler, die hinter ihm liegen.
  */
 export async function ladeNavigation(): Promise<Navigation> {
@@ -167,8 +161,8 @@ export async function ladeNavigation(): Promise<Navigation> {
   ]
   const vorneTabs: NavEintrag[] =
     k.rolle === 'steuerberater'
-      ? [e.objekte, e.finanzen, e.abschluss]
-      : [e.start, e.objekte, ...e.posteingang, e.tickets]
+      ? [e.start, e.finanzen, e.abschluss]
+      : [e.start, ...e.posteingang, e.tickets]
   const hinten = e.haupt.filter((x) => !vorneTabs.includes(x))
   const summe = hinten.reduce((n, x) => n + (x.zaehler?.art === 'handlung' ? x.zaehler.n : 0), 0)
   return {

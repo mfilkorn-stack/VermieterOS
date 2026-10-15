@@ -282,7 +282,7 @@ export default async function SteuerSeiteAnsicht({
       <div className="karte tabelle-scroll">
         <h2>Buchungen {jahr}</h2>
         <p className="leise">
-          {s.journal.length} Buchungen am Objekt
+          {s.journal.length} Buchungen an der Immobilie
           {ohneBeleg.length
             ? ', ohne Beleg: ' + ohneBeleg.map((x) => x.belegnummer).join(', ')
             : ''}

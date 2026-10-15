@@ -17,10 +17,10 @@ async function amObjekt(
   let objektId: string
   try {
     await verlange({ stammdaten: ['schreiben'] })
-    objektId = pflicht(d, 'objektId', 'Objekt')
+    objektId = pflicht(d, 'objektId', 'Immobilie')
     await mitMandant(async (tx, k) => {
       if (!(await letzteVersion(tx, 'objekt', objektId)))
-        throw new Eingabefehler('Objekt nicht gefunden.')
+        throw new Eingabefehler('Haus oder Wohnung nicht gefunden.')
       await fn(tx, k, objektId)
     })
   } catch (e) {

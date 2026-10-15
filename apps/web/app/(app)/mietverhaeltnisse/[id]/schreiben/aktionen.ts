@@ -45,7 +45,7 @@ export async function schreibenErstellen(_: FormStatus, d: FormData): Promise<Fo
       if (!s) throw new Eingabefehler('Mietverhältnis nicht gefunden.')
       if (s.wohnung.anschrift.length === 0)
         throw new Eingabefehler(
-          'Am Objekt fehlt die Anschrift. Bitte zuerst in den Stammdaten ergänzen.',
+          'An der Immobilie fehlt die Anschrift. Bitte zuerst in den Stammdaten ergänzen.',
         )
       const gemeinsam = { vermieter, ort, ausgestellt }
       let brief: Brief

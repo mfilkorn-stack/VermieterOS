@@ -4,6 +4,8 @@ Bezeichner im Code, in der Datenbank und in Prompts verwenden genau diese Formen
 
 **Oberfläche und Code (T1):** In der Oberfläche heißt der Mandant „Eigentümerschaft“, die Mitglieder heißen „Zugänge“. Code, Datenbank, Tests und Doku behalten `mandant` und `mitglied`; die Umbenennung betrifft nur sichtbare Texte. Die Art (allein, Ehepaar, Bruchteil, GbR) heißt in der Oberfläche „Art der Eigentümerschaft“. Portal-Zugänge der Mieter sind davon getrennt und stehen immer mit „Mieterportal“.
 
+**Haus und Eigentumswohnung statt Objekt:** Die Oberfläche kennt kein „Objekt“. Man legt ein Haus oder eine Eigentumswohnung an (Art `haus`/`etw`), darin Einheiten und Mietverhältnisse; wo beides gemeint ist (Filter, Auswahllisten, Fehlermeldungen), heißt es „Immobilie“. Code, Datenbank und Steuerunterlagen behalten `objekt`: Es bleibt die steuerliche Einheit für AfA, Anlage V und Journal-Aufteilung.
+
 | Begriff                             | Bezeichner            | Bedeutung                                                                                  |
 | ----------------------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
 | Mandant                             | `mandant`             | Eigentümerschaft als abgeschlossener Datenbereich (ADR 0002)                               |

@@ -22,7 +22,7 @@ export async function orte(tx: Tx): Promise<Ort[]> {
     if (!out.some((o) => o.objektId === r.objekt_id && o.einheitId === null)) {
       out.push({
         wert: `${r.objekt_id}|`,
-        text: `${r.objekt} (ganzes Objekt)`,
+        text: `${r.objekt} (ganze Immobilie)`,
         objektId: r.objekt_id,
         einheitId: null,
       })

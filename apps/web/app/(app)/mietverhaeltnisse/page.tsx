@@ -34,7 +34,7 @@ export default async function MieterSeite({
 
   return (
     <>
-      <BereichReiter bereich="objekte" aktiv="/mietverhaeltnisse" />
+      <BereichReiter bereich="bestand" aktiv="/mietverhaeltnisse" />
       <div className="seitenkopf">
         <div>
           <h1>Mieter</h1>
@@ -43,7 +43,7 @@ export default async function MieterSeite({
               ? 'Noch keine laufenden Mietverhältnisse.'
               : laufend +
                 (laufend === 1 ? ' laufendes Mietverhältnis' : ' laufende Mietverhältnisse') +
-                ' über alle Objekte.'}
+                ' über alle Immobilien.'}
           </p>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default async function MieterSeite({
                 name="q"
                 type="search"
                 defaultValue={suche}
-                placeholder="Name, E-Mail, Einheit, Objekt"
+                placeholder="Name, E-Mail, Einheit, Immobilie"
               />
             </span>
           </label>
@@ -76,12 +76,12 @@ export default async function MieterSeite({
           {suche
             ? 'Kein Mietverhältnis passt zur Suche.'
             : zeilen.length === 0
-              ? 'Noch keine Mietverhältnisse. Mieter legst du in der Objektakte an der jeweiligen Einheit an.'
+              ? 'Noch keine Mietverhältnisse. Mieter legst du in der Akte des Hauses oder der Wohnung an der jeweiligen Einheit an.'
               : 'Keine laufenden Mietverhältnisse.'}
           {zeilen.length === 0 ? (
             <>
               {' '}
-              <Link href="/">Zu den Objekten</Link>
+              <Link href="/">Zur Übersicht</Link>
             </>
           ) : null}
         </p>

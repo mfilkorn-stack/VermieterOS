@@ -49,7 +49,7 @@ describe('JournalEintragDaten', () => {
           { objektId: O1, betragCent: 24_075 },
         ],
       }),
-    ).toContain('Ein Objekt ist doppelt aufgeteilt')
+    ).toContain('Eine Immobilie ist doppelt aufgeteilt')
   })
 
   it('umlagefähig nur mit Kostenart und Leistungszeitraum', () => {

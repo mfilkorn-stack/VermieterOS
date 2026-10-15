@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Auswahl, Feld } from '@/components/felder'
+import { loeschHindernisse } from '@vermieteros/db'
 import { Formular } from '@/components/formular'
+import { LoeschKarte } from '@/components/loesch-karte'
 import { MieterPersonen } from '@/components/mieter-personen'
 import { ladeAkte } from '@/lib/akte'
 import { datumAnzeige, euroAnzeige, euroText } from '@/lib/format'
@@ -86,7 +88,13 @@ export default async function VermietungSeite({
   const { id, eid } = await params
   const neu = (await searchParams).neu === '1'
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect(`/objekte/${id}`)
-  const akte = await mitMandant((tx) => ladeAkte(tx, id))
+  const { akte, hindernisse } = await mitMandant(async (tx) => {
+    const akte = await ladeAkte(tx, id)
+    const mvs = akte?.einheiten.find((e) => e.id === eid)?.mietverhaeltnisse ?? []
+    const hindernisse: Record<string, string[]> = {}
+    for (const m of mvs) hindernisse[m.id] = await loeschHindernisse(tx, 'mietverhaeltnis', m.id)
+    return { akte, hindernisse }
+  })
   const einheit = akte?.einheiten.find((e) => e.id === eid)
   if (!akte || !einheit) notFound()
   const laufend = einheit.mietverhaeltnisse.some((m) => !m.v.ende || m.v.ende >= heuteBerlin())
@@ -100,7 +108,7 @@ export default async function VermietungSeite({
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href="/">Objekte</Link>
+        <Link href="/">Übersicht</Link>
         <span aria-hidden>/</span>
         <Link href={`/objekte/${id}`}>{akte.objekt.bezeichnung}</Link>
         <span aria-hidden>/</span>
@@ -245,6 +253,15 @@ export default async function VermietungSeite({
               </Formular>
             </details>
           ) : null}
+          <LoeschKarte
+            art="mietverhaeltnis"
+            id={m.id}
+            objektId={id}
+            einheitId={eid}
+            name="Mietverhältnis"
+            hindernisse={hindernisse[m.id] ?? []}
+            eingebettet
+          />
         </div>
       ))}
 

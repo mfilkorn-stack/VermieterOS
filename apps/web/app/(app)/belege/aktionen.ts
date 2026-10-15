@@ -84,7 +84,7 @@ export async function belegHochladen(d: FormData): Promise<HochladenErgebnis> {
         objektId = t.objektId
       }
       if (objektId && !(await letzteVersion(tx, 'objekt', objektId)))
-        throw new Eingabefehler('Objekt nicht gefunden.')
+        throw new Eingabefehler('Immobilie nicht gefunden.')
       const abgelegt = await objektSpeicher().ablegen(
         k.mandantId,
         'dokument',
@@ -202,10 +202,10 @@ function buchungAusFormular(d: FormData, objekte: BelegObjekt[]): JournalEintrag
   const zeilen = objektIds
     .map((o, i) => ({ objektId: o, einheitId: einheitIds[i] || null, betrag: betraege[i] ?? null }))
     .filter((z) => z.objektId)
-  if (zeilen.length === 0) throw new Eingabefehler('Bitte mindestens ein Objekt wählen.')
+  if (zeilen.length === 0) throw new Eingabefehler('Bitte mindestens eine Immobilie wählen.')
   for (const z of zeilen) {
     const o = objekte.find((x) => x.id === z.objektId)
-    if (!o) throw new Eingabefehler('Objekt nicht gefunden.')
+    if (!o) throw new Eingabefehler('Immobilie nicht gefunden.')
     if (z.einheitId && !o.einheiten.some((e) => e.id === z.einheitId))
       throw new Eingabefehler(`Die Einheit gehört nicht zu ${o.bezeichnung}.`)
   }

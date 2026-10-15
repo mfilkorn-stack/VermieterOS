@@ -35,9 +35,9 @@ export function ZuordnungAnzeige({ z, namen }: { z: ZuordnungStand | null; namen
     return (
       <>
         <Status ton="gruen" icon={Building2}>
-          Objekt
+          Immobilie
         </Status>
-        <Link href={`/objekte/${z.objektId}`}>{namen.objekte.get(z.objektId) ?? 'Objekt'}</Link>
+        <Link href={`/objekte/${z.objektId}`}>{namen.objekte.get(z.objektId) ?? 'Immobilie'}</Link>
       </>
     )
   if (z?.handwerkerId)

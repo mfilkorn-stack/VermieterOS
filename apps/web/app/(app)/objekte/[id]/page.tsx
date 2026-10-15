@@ -38,7 +38,9 @@ import {
   listePostfaecher,
   listeTickets,
   listeWissen,
+  loeschHindernisse,
 } from '@vermieteros/db'
+import { LoeschKarte } from '@/components/loesch-karte'
 import { DokumentListe } from '@/components/dokument-liste'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { ladeAkte, type Akte } from '@/lib/akte'
@@ -159,6 +161,7 @@ export default async function ObjektSeite({
       // Mails, die dem Objekt zugeordnet sind (WEG, Behörde, Versorger)
       post: post ? await ladePosteingang(tx, { objektId: id, limit: 10 }) : [],
       postfaecher: (await listePostfaecher(tx)).length,
+      hindernisse: await loeschHindernisse(tx, 'objekt', id),
       portal:
         (
           await tx.execute<{ n: number }>(
@@ -220,7 +223,7 @@ export default async function ObjektSeite({
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href="/">Objekte</Link>
+        <Link href="/">Übersicht</Link>
         <span aria-hidden>/</span>
         <span>{o.art === 'etw' ? 'Eigentumswohnung' : 'Haus'}</span>
       </nav>
@@ -417,7 +420,7 @@ export default async function ObjektSeite({
         <>
           <Abschnitt titel="Post" />
           {postMails.length === 0 ? (
-            <p className="leise">Keine Mails zu diesem Objekt zugeordnet.</p>
+            <p className="leise">Keine Mails zu dieser Immobilie zugeordnet.</p>
           ) : (
             <ul className="liste-schlicht" data-testid="objekt-post">
               {postMails.map((m) => (
@@ -673,6 +676,15 @@ export default async function ObjektSeite({
           </dl>
         )}
       </div>
+      {schreiben ? (
+        <LoeschKarte
+          art="objekt"
+          id={id}
+          objektId={id}
+          name={o.art === 'etw' ? 'Eigentumswohnung' : 'Haus'}
+          hindernisse={daten.hindernisse}
+        />
+      ) : null}
     </>
   )
 }

@@ -98,7 +98,7 @@ export default function DatenschutzSeite() {
 
       <h2>Empfänger</h2>
       <p>
-        Ihre Daten sehen nur die Personen, die das jeweilige Objekt verwalten, und, soweit nötig,
+        Ihre Daten sehen nur die Personen, die die jeweilige Immobilie verwalten, und, soweit nötig,
         Miteigentümer, Steuerberater und beauftragte Handwerker. Technische Dienstleister:
       </p>
       <table className="vergleich" data-testid="empfaenger">

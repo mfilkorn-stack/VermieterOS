@@ -25,7 +25,7 @@ export default async function MandantenSeite() {
       </div>
       <p className="leise">
         Eine Eigentümerschaft bist du allein, ein Ehepaar, eine Bruchteilsgemeinschaft oder eine
-        GbR. Jede hat ihre eigenen Objekte, Belege und Zugänge; Daten anderer Eigentümerschaften
+        GbR. Jede hat ihre eigenen Immobilien, Belege und Zugänge; Daten anderer Eigentümerschaften
         sind darin nie sichtbar.
       </p>
       {mandanten.length === 0 ? <p>Du gehörst noch zu keiner Eigentümerschaft.</p> : null}

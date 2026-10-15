@@ -17,7 +17,7 @@ export default async function DarlehenSeite({
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href={'/objekte'}>Objekte</Link>
+        <Link href="/">Übersicht</Link>
         <span aria-hidden>/</span>
         <Link href={`/objekte/${id}`}>{akte.objekt.bezeichnung}</Link>
         <span aria-hidden>/</span>

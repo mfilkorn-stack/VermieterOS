@@ -24,7 +24,7 @@ export default async function SteuerUebersicht() {
         <div>
           <h1>Steuer</h1>
           <p className="leise">
-            Einkünfte aus Vermietung je Objekt als Vorbereitung der Anlage V. Festgeschrieben
+            Einkünfte aus Vermietung je Immobilie als Vorbereitung der Anlage V. Festgeschrieben
             entsteht ein Paket (ZIP) mit Übersicht, Journal, Belegen und Prüfsummen für den
             Steuerberater.
           </p>
@@ -32,12 +32,12 @@ export default async function SteuerUebersicht() {
       </div>
       <div className="karte tabelle-scroll">
         {objekte.length === 0 ? (
-          <p className="leise">Noch keine Objekte.</p>
+          <p className="leise">Noch keine Häuser oder Wohnungen.</p>
         ) : (
           <table className="vergleich" data-testid="steuer-uebersicht">
             <thead>
               <tr>
-                <th>Objekt</th>
+                <th>Immobilie</th>
                 {jahre.map((j) => (
                   <th key={j}>{j}</th>
                 ))}

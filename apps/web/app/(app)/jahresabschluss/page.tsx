@@ -27,7 +27,7 @@ export default async function Jahresabschluss({
           <p className="leise">
             {jahr === laufend
               ? 'Vollständigkeits-Wächter für das laufende Jahr: Was jetzt schon fehlt, ist offen; was erst nach Jahresende kommt, steht auf später.'
-              : 'Was für Steuerberater und Mieter beisammen sein muss, je Objekt. Erledigt ist ein Jahr mit festgeschriebenem Steuerpaket.'}
+              : 'Was für Steuerberater und Mieter beisammen sein muss, je Immobilie. Erledigt ist ein Jahr mit festgeschriebenem Steuerpaket.'}
           </p>
         </div>
       </div>
@@ -42,7 +42,9 @@ export default async function Jahresabschluss({
           Laufendes Jahr {laufend}
         </Link>
       </nav>
-      {objekte.length === 0 ? <p className="karte leise">Noch keine Objekte.</p> : null}
+      {objekte.length === 0 ? (
+        <p className="karte leise">Noch keine Häuser oder Wohnungen.</p>
+      ) : null}
       {objekte.map(({ roh, abschluss }) => {
         const relevant = abschluss.punkte.filter((p) => p.stand !== 'entfaellt').length
         return (

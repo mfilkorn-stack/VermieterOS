@@ -8,29 +8,35 @@ import { adresssucheAn } from '@/lib/adresse'
 import { darf } from '@/lib/sitzung'
 import { objektAnlegen } from '../../aktionen'
 
-export default async function ObjektNeuSeite() {
+export default async function ObjektNeuSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ art?: string }>
+}) {
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect('/')
+  const art = (await searchParams).art === 'etw' ? 'etw' : 'haus'
+  const titel = art === 'etw' ? 'Eigentumswohnung anlegen' : 'Haus anlegen'
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href={'/objekte'}>Objekte</Link>
+        <Link href="/">Übersicht</Link>
         <span aria-hidden>/</span>
-        <span>Objekt anlegen</span>
+        <span>{titel}</span>
       </nav>
       <div className="karte">
-        <h1>Objekt anlegen</h1>
+        <h1>{titel}</h1>
         <p className="leise">
-          Grunddaten genügen. Grundbuch, Kauf, Einheiten, Mieter und Darlehen ergänzt die Objektakte
+          Grunddaten genügen. Grundbuch, Kauf, Einheiten, Mieter und Darlehen ergänzt die Akte
           Schritt für Schritt.
         </p>
-        <Formular aktion={objektAnlegen} knopf="Objekt anlegen" testId="objekt-anlegen">
+        <Formular aktion={objektAnlegen} knopf={titel} testId="objekt-anlegen" key={art}>
           <label>
             Bezeichnung
-            <input name="bezeichnung" placeholder="z. B. Musterstraße 1" required />
+            <input name="bezeichnung" placeholder="z. B. Musterweg 1" required />
           </label>
           <label>
             Art
-            <select name="art" defaultValue="haus">
+            <select name="art" defaultValue={art}>
               <option value="haus">Haus</option>
               <option value="etw">Eigentumswohnung</option>
             </select>

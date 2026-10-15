@@ -59,7 +59,7 @@ export const JournalEintragDaten = z
     verteilungJahre: z.number().int().min(2).max(5).nullish(),
     kostenart: BetrkvKostenart.nullish(),
     umlagefaehig: z.boolean().default(false),
-    anteile: z.array(JournalAnteil).min(1, 'Mindestens ein Objekt'),
+    anteile: z.array(JournalAnteil).min(1, 'Mindestens eine Immobilie'),
   })
   .superRefine((e, ctx) => {
     const fehler = (path: string, message: string) =>
@@ -95,7 +95,7 @@ export const JournalEintragDaten = z
       fehler('anteile', 'Die Anteile müssen zusammen den Bruttobetrag ergeben')
     }
     const orte = new Set(e.anteile.map((a) => `${a.objektId}|${a.einheitId ?? ''}`))
-    if (orte.size !== e.anteile.length) fehler('anteile', 'Ein Objekt ist doppelt aufgeteilt')
+    if (orte.size !== e.anteile.length) fehler('anteile', 'Eine Immobilie ist doppelt aufgeteilt')
   })
 export type JournalEintragDaten = z.infer<typeof JournalEintragDaten>
 

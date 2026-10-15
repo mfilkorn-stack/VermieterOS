@@ -83,7 +83,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   )
   await m.getByRole('button', { name: 'Anlegen' }).click()
 
-  bereich = 'Objekt erfassen'
+  bereich = 'Haus erfassen'
   await page.getByTestId('objekt-neu').click()
   const o = page.getByTestId('objekt-anlegen')
   await o.getByLabel('Bezeichnung').fill('ETW mit Stellplatz')
@@ -98,7 +98,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   const akte = page.url()
   await bild(
     page,
-    'Objektakte am Anfang',
+    'Akte am Anfang',
     'Ampeln pro Modul und eine Checkliste; jeder Punkt führt direkt zum passenden Formular.',
   )
 
@@ -126,7 +126,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await bild(
     page,
     'Stammdaten und Grundbuch',
-    'Mehrere Grundbuchblätter pro Objekt, z. B. Wohnung mit Miteigentumsanteil plus Stellplatz.',
+    'Mehrere Grundbuchblätter pro Immobilie, z. B. Wohnung mit Miteigentumsanteil plus Stellplatz.',
   )
   await s.getByRole('button', { name: 'Speichern' }).click()
   await expect(page).toHaveURL(akte)
@@ -214,7 +214,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await expect(page.getByTestId('vollstaendig')).toBeVisible()
   await bild(
     page,
-    'Objektakte vollständig',
+    'Akte vollständig',
     'Alle Ampeln grün: Anschaffungskosten, AfA pro Jahr, Fristen und Grundstücksfläche gerechnet.',
   )
 
@@ -413,7 +413,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await bild(
     page,
     'Beleg auslesen und buchen',
-    'Vorschau links, rechts die ausgelesenen Werte mit Fundstelle. Vorbelegt ist nur, was wörtlich im PDF steht; Objekt kommt aus dem Ticket, die Kategorie als Vorschlag. Ein Klick bucht und öffnet den nächsten Beleg.',
+    'Vorschau links, rechts die ausgelesenen Werte mit Fundstelle. Vorbelegt ist nur, was wörtlich im PDF steht; Immobilie kommt aus dem Ticket, die Kategorie als Vorschlag. Ein Klick bucht und öffnet den nächsten Beleg.',
   )
   await page
     .getByTestId('beleg-buchen')
@@ -445,8 +445,8 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await page.goto(akte)
   await bild(
     page,
-    'Objektakte mit Notfallkarte',
-    'Offene Tickets, Notfallkarte und Wissensbasis am Objekt. Die KI nutzt beides für Antwortentwürfe, Telefonnummern setzt die Software ein.',
+    'Akte mit Notfallkarte',
+    'Offene Tickets, Notfallkarte und Wissensbasis am Haus. Die KI nutzt beides für Antwortentwürfe, Telefonnummern setzt die Software ein.',
   )
 
   bereich = 'Mieterportal'
@@ -543,7 +543,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await bild(
     page,
     'Steuerpaket',
-    'Einkünfte aus Vermietung je Objekt und Jahr: Sollmiete, Journal nach Zahlungstag, AfA, Korrekturen wie Hausgeld nach BFH und Zinsbescheinigung, Aufteilung auf die Miteigentümer. Festschreiben erzeugt das ZIP für den Steuerberater.',
+    'Einkünfte aus Vermietung je Immobilie und Jahr: Sollmiete, Journal nach Zahlungstag, AfA, Korrekturen wie Hausgeld nach BFH und Zinsbescheinigung, Aufteilung auf die Miteigentümer. Festschreiben erzeugt das ZIP für den Steuerberater.',
   )
 
   bereich = 'Jahresabschluss'
@@ -552,7 +552,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   await bild(
     page,
     'Jahresabschluss',
-    'Checkliste je Objekt für das Vorjahr: Belege gebucht, Grundsteuerbescheid, Hausgeld- und Zinsbescheinigung, Betriebskostenabrechnung versendet, Steuerpaket festgeschrieben. Jeder offene Punkt führt zum Erledigen; im laufenden Jahr derselbe Blick als Wächter.',
+    'Checkliste je Immobilie für das Vorjahr: Belege gebucht, Grundsteuerbescheid, Hausgeld- und Zinsbescheinigung, Betriebskostenabrechnung versendet, Steuerpaket festgeschrieben. Jeder offene Punkt führt zum Erledigen; im laufenden Jahr derselbe Blick als Wächter.',
   )
 
   bereich = 'Auf dem Handy'
@@ -566,7 +566,7 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   })
   const hp = await handy.newPage()
   await hp.goto(akte)
-  await bild(hp, 'Objektakte', 'Dieselbe Akte in Handybreite.', true)
+  await bild(hp, 'Akte', 'Dieselbe Akte in Handybreite.', true)
   await hp.goto('/posteingang?alle=1')
   await bild(hp, 'Posteingang', 'Posteingang in Handybreite.', true)
   await handy.close()

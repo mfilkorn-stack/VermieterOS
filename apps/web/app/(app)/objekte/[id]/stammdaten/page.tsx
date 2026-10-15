@@ -24,7 +24,7 @@ export default async function StammdatenSeite({ params }: { params: Promise<{ id
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href={'/objekte'}>Objekte</Link>
+        <Link href="/">Übersicht</Link>
         <span aria-hidden>/</span>
         <Link href={`/objekte/${id}`}>{o.bezeichnung}</Link>
         <span aria-hidden>/</span>

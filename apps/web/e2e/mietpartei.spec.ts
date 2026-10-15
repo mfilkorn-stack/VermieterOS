@@ -94,7 +94,7 @@ test('Mietpartei: WG mit mehreren Personen, Einzug und Auszug', async ({ page })
   await expect(page.getByTestId('mv-konditionen')).toContainText('1.200,00')
   await page
     .getByRole('navigation', { name: 'Hauptmenü' })
-    .getByRole('link', { name: /^Objekte/ })
+    .getByRole('link', { name: /^Übersicht/ })
     .click()
   await page.getByTestId('bereich-reiter').getByRole('link', { name: 'Mieter' }).click()
   await expect(page.getByTestId('mieter-zeile')).toHaveCount(1)

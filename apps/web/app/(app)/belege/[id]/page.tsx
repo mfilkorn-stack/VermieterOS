@@ -231,7 +231,7 @@ export default async function BelegSeite({
                     ? 'Die letzte Auswertung ist veraltet.'
                     : vorschlag?.status === 'verworfen'
                       ? 'Die letzte Auswertung wurde verworfen.'
-                      : 'Die KI liest Lieferant, Betrag, Umsatzsteuer, Daten und Leistungszeitraum mit Fundstelle aus und schlägt Objekt und Kategorie vor.'}
+                      : 'Die KI liest Lieferant, Betrag, Umsatzsteuer, Daten und Leistungszeitraum mit Fundstelle aus und schlägt Immobilie und Kategorie vor.'}
                 </p>
                 {schreiben && !gebucht ? (
                   kiEingerichtet() ? (
