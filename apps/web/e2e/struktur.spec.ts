@@ -46,13 +46,13 @@ test('Eigentumswohnung anlegen, Einheit und Mietverhältnis pflegen, alles wiede
   // Wohnung mit Einheit lässt sich nicht löschen; die Akte sagt, warum
   await page.goto(akte)
   const lw = page.getByTestId('loeschen-objekt')
-  await lw.getByText('Eigentumswohnung löschen').click()
+  await lw.locator('summary').click()
   await expect(lw.getByTestId('loesch-hindernisse')).toContainText('Einheiten (zuerst löschen)')
 
   // Mietverhältnis löschen (Bestätigung nötig)
   await page.getByTestId('einheitenliste').getByRole('link', { name: 'Mietverhältnisse' }).click()
   const lm = page.getByTestId('loeschen-mietverhaeltnis')
-  await lm.getByText('Mietverhältnis löschen').click()
+  await lm.locator('summary').click()
   await lm.getByLabel('Ja, Mietverhältnis löschen').check()
   await lm.getByRole('button', { name: 'Endgültig löschen' }).click()
   await expect(page.getByTestId('mietverhaeltnis')).toHaveCount(0)
@@ -62,7 +62,7 @@ test('Eigentumswohnung anlegen, Einheit und Mietverhältnis pflegen, alles wiede
   await page.goto(akte)
   await page.getByTestId('einheitenliste').getByRole('link', { name: 'Bearbeiten' }).click()
   const le = page.getByTestId('loeschen-einheit')
-  await le.getByText('Einheit löschen').click()
+  await le.locator('summary').click()
   await le.getByLabel('Ja, Einheit löschen').check()
   await le.getByRole('button', { name: 'Endgültig löschen' }).click()
   await expect(page.getByTestId('objekt-titel')).toHaveText('Musterweg 1')
@@ -70,7 +70,7 @@ test('Eigentumswohnung anlegen, Einheit und Mietverhältnis pflegen, alles wiede
 
   // Jetzt die Wohnung selbst
   const lw2 = page.getByTestId('loeschen-objekt')
-  await lw2.getByText('Eigentumswohnung löschen').click()
+  await lw2.locator('summary').click()
   await lw2.getByLabel('Ja, Eigentumswohnung löschen').check()
   await lw2.getByRole('button', { name: 'Endgültig löschen' }).click()
   await expect(page).toHaveURL(/\/$/)

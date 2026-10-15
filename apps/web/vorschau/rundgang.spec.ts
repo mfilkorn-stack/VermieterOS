@@ -83,11 +83,16 @@ test('Rundgang mit Musterdaten', async ({ page, browser }) => {
   )
   await m.getByRole('button', { name: 'Anlegen' }).click()
 
-  bereich = 'Haus erfassen'
-  await page.getByTestId('objekt-neu').click()
+  bereich = 'Wohnung erfassen'
+  await expect(page.getByTestId('etw-neu')).toBeVisible()
+  await bild(
+    page,
+    'Übersicht leer',
+    'Start ohne Umweg: Haus oder Eigentumswohnung anlegen, darin Einheiten und Mieter. Reiter für Mieter und Dokumente.',
+  )
+  await page.getByTestId('etw-neu').click()
   const o = page.getByTestId('objekt-anlegen')
   await o.getByLabel('Bezeichnung').fill('ETW mit Stellplatz')
-  await o.getByLabel('Art').selectOption('etw')
   await o.getByLabel('Im Bestand seit').fill('2021-07-01')
   await o.getByLabel('Straße').fill('Musterweg')
   await o.getByLabel('Hausnummer').fill('18')
