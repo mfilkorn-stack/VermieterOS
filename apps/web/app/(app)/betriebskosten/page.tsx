@@ -6,6 +6,7 @@ import { ladeBkFristen, STUFE_TEXT, STUFE_TON } from '@/lib/bk-fristen'
 import { datumAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { bkAnlegen } from './aktionen'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 /** Übersicht der Betriebskostenabrechnungen mit Frist-Wächter (WP 2.5). */
 export default async function BetriebskostenUebersicht() {
@@ -14,6 +15,7 @@ export default async function BetriebskostenUebersicht() {
   const fristen = await mitMandant((tx) => ladeBkFristen(tx))
   return (
     <>
+      <BereichReiter bereich="finanzen" aktiv="/betriebskosten" />
       <div className="seitenkopf">
         <div>
           <h1>Betriebskosten</h1>

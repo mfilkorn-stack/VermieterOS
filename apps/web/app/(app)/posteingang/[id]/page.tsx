@@ -8,7 +8,7 @@ import {
   listeTickets,
 } from '@vermieteros/db'
 import { nachrichtFakten } from '@vermieteros/ki'
-import { Download, FileText, Mail, Wrench } from 'lucide-react'
+import { Download, FileText, Mail, RotateCcw, Trash2, Wrench } from 'lucide-react'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { AntwortSenden } from '@/components/antwort-senden'
@@ -29,6 +29,7 @@ import { sicheresZiel } from '@/lib/ziel'
 import { KiHinweis } from '@/components/ki-hinweis'
 import { kiEingerichtet } from '@/lib/ki'
 import { absenderAdresse, mailEingerichtet } from '@/lib/mail'
+import { mailPapierkorb } from '../aktionen'
 
 export default async function NachrichtSeite({
   params,
@@ -91,8 +92,39 @@ export default async function NachrichtSeite({
         <span aria-hidden>/</span>
         <span>Nachricht</span>
       </nav>
+      {n.geloeschtAm ? (
+        <div className="karte zeile" data-testid="im-papierkorb">
+          <span>Diese Mail liegt seit {zeitpunktAnzeige(n.geloeschtAm)} im Papierkorb.</span>
+          {zuordnen ? (
+            <form action={mailPapierkorb}>
+              <input type="hidden" name="nachrichtId" value={n.id} />
+              <input type="hidden" name="zurueck" value={'/posteingang/' + n.id} />
+              <button type="submit" name="aktion" value="wiederherstellen" className="zweit">
+                <RotateCcw size={16} aria-hidden />
+                Wiederherstellen
+              </button>
+            </form>
+          ) : null}
+        </div>
+      ) : null}
       <div className="seitenkopf">
         <h1 data-testid="nachricht-betreff">{n.betreff || '(ohne Betreff)'}</h1>
+        {zuordnen && !n.geloeschtAm ? (
+          <form action={mailPapierkorb}>
+            <input type="hidden" name="nachrichtId" value={n.id} />
+            <input type="hidden" name="zurueck" value={zurueck} />
+            <button
+              type="submit"
+              name="aktion"
+              value="loeschen"
+              className="zweit"
+              data-testid="mail-loeschen"
+            >
+              <Trash2 size={16} aria-hidden />
+              Löschen
+            </button>
+          </form>
+        ) : null}
       </div>
       <div className="raster-2">
         <div>

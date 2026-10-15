@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { datumAnzeige, euroAnzeige } from '@/lib/format'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { heuteBerlin } from '@/lib/zeit'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 function passt(
   z: { mieterNamen: string[]; mieterEmails: string[]; einheit: string; objekt: string },
@@ -33,6 +34,7 @@ export default async function MieterSeite({
 
   return (
     <>
+      <BereichReiter bereich="objekte" aktiv="/mietverhaeltnisse" />
       <div className="seitenkopf">
         <div>
           <h1>Mieter</h1>

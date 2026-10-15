@@ -9,6 +9,7 @@ import {
 } from '@vermieteros/db'
 import { sql } from 'drizzle-orm'
 import type { NavEintrag } from '@/components/navigation'
+import { bereichPfade } from './bereiche'
 import { DRINGEND, ladeBkFristen } from './bk-fristen'
 import { offeneAbschlussPunkte } from './jahresabschluss'
 import { db } from './db'
@@ -22,19 +23,7 @@ export type Navigation = {
   tabs: NavEintrag[]
 }
 
-const MEHR_BEREICHE = [
-  '/mehr',
-  '/journal',
-  '/betriebskosten',
-  '/steuer',
-  '/jahresabschluss',
-  '/handwerker',
-  '/eigentuemer',
-  '/mitglieder',
-  '/postfaecher',
-  '/referenzdaten',
-  '/mandanten',
-]
+const MEHR_BEREICHE = ['/mehr', ...bereichPfade('einstellungen'), '/mandanten']
 
 export type Zaehler = {
   objekte: number
@@ -58,10 +47,10 @@ export async function ladeZaehler(tx: Tx, post: boolean): Promise<Zaehler> {
   }
 }
 
-/** Menüeinträge mit Handlungszählern > 0, in der Reihenfolge des Menüs. */
+/** Seiten mit Handlungszählern > 0 für „Zu erledigen“ auf der Übersicht, feiner als das Menü. */
 export function zuErledigen(z: Zaehler, rolle: Rolle): NavEintrag[] {
   const post = roles[rolle].authorize({ post: ['lesen'] }).success
-  return eintraege(z, post).haupt.filter((e) => e.zaehler?.art === 'handlung' && e.zaehler.n > 0)
+  return eintraege(z, post).aufgaben.filter((e) => e.zaehler!.n > 0)
 }
 
 function eintraege(daten: Zaehler, post: boolean) {
@@ -70,9 +59,9 @@ function eintraege(daten: Zaehler, post: boolean) {
     href: '/objekte',
     label: 'Objekte',
     icon: 'objekte',
+    bereiche: bereichPfade('objekte'),
     zaehler: { n: daten.objekte, art: 'menge', text: daten.objekte === 1 ? 'Objekt' : 'Objekte' },
   }
-  const mieter: NavEintrag = { href: '/mietverhaeltnisse', label: 'Mieter', icon: 'mieter' }
   const posteingang: NavEintrag[] = post
     ? [
         {
@@ -87,60 +76,67 @@ function eintraege(daten: Zaehler, post: boolean) {
     href: '/tickets',
     label: 'Tickets',
     icon: 'tickets',
+    bereiche: bereichPfade('tickets'),
     zaehler: { n: daten.tickets, art: 'handlung', text: 'neu gemeldet' },
   }
-  const belege: NavEintrag = {
+  const finanzen: NavEintrag = {
     href: '/belege',
-    label: 'Belege',
-    icon: 'belege',
-    zaehler: { n: daten.belege, art: 'handlung', text: 'offen' },
+    label: 'Finanzen',
+    icon: 'finanzen',
+    bereiche: bereichPfade('finanzen'),
+    zaehler: {
+      n: daten.belege + daten.fristen,
+      art: 'handlung',
+      text: 'offen (Belege, Fristen)',
+    },
   }
-  const dokumente: NavEintrag = { href: '/dokumente', label: 'Dokumente', icon: 'dokumente' }
-  const journal: NavEintrag = { href: '/journal', label: 'Journal', icon: 'journal' }
-  const betriebskosten: NavEintrag = {
-    href: '/betriebskosten',
-    label: 'Betriebskosten',
-    icon: 'betriebskosten',
-    zaehler: { n: daten.fristen, art: 'handlung', text: 'Frist in Sicht oder abgelaufen' },
-  }
-  const steuer: NavEintrag = { href: '/steuer', label: 'Steuer', icon: 'steuer' }
   const abschluss: NavEintrag = {
     href: '/jahresabschluss',
-    label: 'Jahresabschluss',
+    label: 'Abschluss & Steuer',
     icon: 'jahresabschluss',
+    bereiche: bereichPfade('abschluss'),
     zaehler: { n: daten.abschluss, art: 'handlung', text: 'offen' },
   }
+  // Für „Zu erledigen“: die einzelnen Seiten hinter den Bereichen
+  const aufgaben: NavEintrag[] = [
+    ...posteingang,
+    tickets,
+    {
+      href: '/belege',
+      label: 'Belege',
+      icon: 'belege',
+      zaehler: { n: daten.belege, art: 'handlung', text: 'offen' },
+    },
+    {
+      href: '/betriebskosten',
+      label: 'Betriebskosten',
+      icon: 'betriebskosten',
+      zaehler: { n: daten.fristen, art: 'handlung', text: 'Frist in Sicht oder abgelaufen' },
+    },
+    {
+      href: '/jahresabschluss',
+      label: 'Jahresabschluss',
+      icon: 'jahresabschluss',
+      zaehler: { n: daten.abschluss, art: 'handlung', text: 'offen' },
+    },
+  ]
   return {
     start,
     objekte,
-    mieter,
     posteingang,
     tickets,
-    belege,
-    journal,
-    betriebskosten,
-    steuer,
+    finanzen,
     abschluss,
-    haupt: [
-      start,
-      objekte,
-      mieter,
-      ...posteingang,
-      tickets,
-      belege,
-      dokumente,
-      betriebskosten,
-      journal,
-      steuer,
-      abschluss,
-    ] as NavEintrag[],
+    aufgaben,
+    haupt: [start, objekte, ...posteingang, tickets, finanzen, abschluss] as NavEintrag[],
   }
 }
 
 /**
  * Menü des aktiven Mandanten mit Zählern. Zähler nur, wo sie etwas aussagen:
  * Handlung (Amber) für Mails, Tickets, Belege, Fristen und Abschluss, Menge (Grau) für Objekte.
- * Tabs je Rolle: Steuerberater bekommt Belege, Journal und Steuer statt Posteingang und Tickets.
+ * Sechs Bereiche statt einzelner Seiten; verwandte Seiten stehen auf der Seite als Reiter.
+ * Tabs je Rolle: Steuerberater bekommt Objekte, Finanzen und Abschluss statt Posteingang und Tickets.
  * Der Tab „Mehr“ trägt die Summe der Handlungszähler, die hinter ihm liegen.
  */
 export async function ladeNavigation(): Promise<Navigation> {
@@ -155,7 +151,6 @@ export async function ladeNavigation(): Promise<Navigation> {
   }
   const rolle = roles[k.rolle]
   const post = rolle.authorize({ post: ['lesen'] }).success
-  const postfaecher = rolle.authorize({ post: ['postfaecher'] }).success
 
   const daten = await withMandant(db, k.mandantId, async (tx) => {
     const [m] = await tx.select({ name: schema.mandanten.name }).from(schema.mandanten)
@@ -163,17 +158,16 @@ export async function ladeNavigation(): Promise<Navigation> {
   })
   const e = eintraege(daten, post)
   const verwaltung: NavEintrag[] = [
-    { href: '/handwerker', label: 'Handwerker', icon: 'handwerker' },
-    { href: '/eigentuemer', label: 'Eigentümer', icon: 'eigentuemer' },
-    { href: '/mitglieder', label: 'Zugänge', icon: 'mitglieder' },
-    ...(postfaecher
-      ? [{ href: '/postfaecher', label: 'Postfächer', icon: 'postfaecher' } as const]
-      : []),
-    { href: '/referenzdaten', label: 'Referenzdaten', icon: 'referenzdaten' },
+    {
+      href: '/profil',
+      label: 'Einstellungen',
+      icon: 'einstellungen',
+      bereiche: bereichPfade('einstellungen'),
+    },
   ]
   const vorneTabs: NavEintrag[] =
     k.rolle === 'steuerberater'
-      ? [e.objekte, e.belege, e.journal, e.steuer]
+      ? [e.objekte, e.finanzen, e.abschluss]
       : [e.start, e.objekte, ...e.posteingang, e.tickets]
   const hinten = e.haupt.filter((x) => !vorneTabs.includes(x))
   const summe = hinten.reduce((n, x) => n + (x.zaehler?.art === 'handlung' ? x.zaehler.n : 0), 0)
@@ -187,7 +181,7 @@ export async function ladeNavigation(): Promise<Navigation> {
         href: '/mehr',
         label: 'Mehr',
         icon: 'mehr',
-        bereiche: [...MEHR_BEREICHE, ...hinten.map((x) => x.href)],
+        bereiche: [...MEHR_BEREICHE, ...hinten.flatMap((x) => x.bereiche ?? [x.href])],
         zaehler: { n: summe, art: 'handlung', text: 'zu erledigen' },
       },
     ],

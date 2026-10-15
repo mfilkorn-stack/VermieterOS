@@ -1,12 +1,12 @@
-import { ArrowLeftRight, Building2, FileLock, LogOut, ShieldCheck } from 'lucide-react'
+import { ArrowLeftRight, Building2 } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { NavGruppe, TabLeiste } from '@/components/navigation'
+import { NavGruppe, ProfilLink, TabLeiste } from '@/components/navigation'
 import { Hinweis } from '@/components/hinweis'
 import { HINWEIS_COOKIE, liesHinweis } from '@/lib/hinweis'
 import { ladeNavigation } from '@/lib/navigation'
+import { bereichPfade } from '@/lib/bereiche'
 import { erfordereGesicherteSitzung } from '@/lib/sitzung'
-import { abmelden } from '../(oeffentlich)/aktionen'
 
 function initialen(name: string): string {
   return name
@@ -40,29 +40,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <nav aria-label="Hauptmenü" className="nav-gruppe" style={{ gap: 20 }}>
             <NavGruppe eintraege={nav.haupt} />
-            <NavGruppe titel="Verwaltung" eintraege={nav.verwaltung} />
           </nav>
           <div className="nav-fuss">
-            <Link href="/sicherheit" className="nav-link">
-              <ShieldCheck size={18} strokeWidth={1.75} aria-hidden />
-              <span className="label">Sicherheit</span>
-            </Link>
-            <Link href="/datenschutz" className="nav-link">
-              <FileLock size={18} strokeWidth={1.75} aria-hidden />
-              <span className="label">Datenschutz</span>
-            </Link>
-            <div className="nutzer">
-              <span className="initialen" aria-hidden>
-                {initialen(s.user.name)}
-              </span>
-              <span>{s.user.name}</span>
-            </div>
-            <form action={abmelden}>
-              <button type="submit">
-                <LogOut size={18} strokeWidth={1.75} aria-hidden />
-                Abmelden
-              </button>
-            </form>
+            <ProfilLink
+              name={s.user.name}
+              initialen={initialen(s.user.name)}
+              bereiche={bereichPfade('einstellungen')}
+            />
           </div>
         </div>
       </aside>

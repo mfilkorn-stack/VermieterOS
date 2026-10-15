@@ -15,6 +15,8 @@ import {
   LayoutDashboard,
   Library,
   ReceiptText,
+  Settings,
+  Wallet,
   Mail,
   ShieldCheck,
   UserCog,
@@ -33,6 +35,8 @@ const ICONS = {
   posteingang: Inbox,
   tickets: Wrench,
   belege: ReceiptText,
+  finanzen: Wallet,
+  einstellungen: Settings,
   dokumente: FolderOpen,
   journal: BookOpenText,
   betriebskosten: Calculator,
@@ -78,6 +82,40 @@ export function Zaehler({ z }: { z: NonNullable<NavEintrag['zaehler']> }) {
 export function NavIcon({ name, size = 18 }: { name: IconName; size?: number }) {
   const Icon = ICONS[name]
   return <Icon size={size} strokeWidth={1.75} aria-hidden />
+}
+
+/**
+ * Fuß der Seitenleiste: Name des Nutzers als Zugang zu Einstellungen (Profil, Sicherheit,
+ * Datenschutz, Abmelden und die Verwaltung der Eigentümerschaft).
+ */
+export function ProfilLink({
+  name,
+  initialen,
+  bereiche,
+}: {
+  name: string
+  initialen: string
+  bereiche: string[]
+}) {
+  const pfad = usePathname()
+  const e: NavEintrag = { href: '/profil', label: name, icon: 'einstellungen', bereiche }
+  return (
+    <Link
+      href="/profil"
+      className="nav-link profil-link"
+      aria-current={aktiv(pfad, e) ? 'page' : undefined}
+      data-testid="profil-link"
+    >
+      <span className="initialen" aria-hidden>
+        {initialen}
+      </span>
+      <span className="label">
+        {name}
+        <small>Einstellungen</small>
+      </span>
+      <NavIcon name="einstellungen" />
+    </Link>
+  )
 }
 
 /** Gruppe in der Seitenleiste (ab 960 px). */

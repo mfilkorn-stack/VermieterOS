@@ -5,9 +5,10 @@ import {
   listeHandwerker,
   listePortalNachrichten,
   listePostfaecher,
+  mailsImPapierkorb,
   offeneNachrichten,
 } from '@vermieteros/db'
-import { Mail, MessageSquare, Paperclip, Search, Settings } from 'lucide-react'
+import { Mail, MessageSquare, Paperclip, RotateCcw, Search, Settings, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { SortierBadges, sortierungAus } from '@/components/ki-sortierung'
@@ -17,37 +18,52 @@ import { zeitpunktAnzeige } from '@/lib/format'
 import { objektliste } from '@/lib/objekte'
 import { anhangText } from '@/lib/post-text'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { mailPapierkorb } from './aktionen'
 
 export default async function PosteingangSeite({
   searchParams,
 }: {
-  searchParams: Promise<{ alle?: string; q?: string }>
+  searchParams: Promise<{ alle?: string; q?: string; papierkorb?: string }>
 }) {
   if (!(await darf({ post: ['lesen'] }))) redirect('/')
   const sp = await searchParams
   const suche = sp.q?.trim() ?? ''
   // Mit Suchbegriff immer über alle Nachrichten suchen.
+  const papierkorb = sp.papierkorb === '1' && suche === ''
   const alle = sp.alle === '1' || suche !== ''
   const zuordnen = await darf({ post: ['zuordnen'] })
   const postfaecher = await darf({ post: ['postfaecher'] })
-  const { eintraege, kandidaten, objekte, handwerker, hatPostfach, portal, offen, sortierungen } =
-    await mitMandant(async (tx) => {
-      const eintraege = await ladePosteingang(tx, { nurOffen: !alle, suche })
-      return {
-        eintraege,
-        kandidaten: await ladeZuordnungsKandidaten(tx),
-        objekte: await objektliste(tx),
-        handwerker: await listeHandwerker(tx),
-        hatPostfach: (await listePostfaecher(tx)).length > 0,
-        portal: await listePortalNachrichten(tx, { nurOffen: true, limit: 10 }),
-        offen: await offeneNachrichten(tx),
-        sortierungen: await geltendeKiVorschlaege(
-          tx,
-          'sortierung',
-          eintraege.map((n) => n.id),
-        ),
-      }
-    })
+  const {
+    eintraege,
+    kandidaten,
+    objekte,
+    handwerker,
+    hatPostfach,
+    portal,
+    offen,
+    geloescht,
+    sortierungen,
+  } = await mitMandant(async (tx) => {
+    const eintraege = await ladePosteingang(
+      tx,
+      papierkorb ? { papierkorb: true } : { nurOffen: !alle, suche },
+    )
+    return {
+      eintraege,
+      kandidaten: await ladeZuordnungsKandidaten(tx),
+      objekte: await objektliste(tx),
+      handwerker: await listeHandwerker(tx),
+      hatPostfach: (await listePostfaecher(tx)).length > 0,
+      portal: await listePortalNachrichten(tx, { nurOffen: true, limit: 10 }),
+      offen: await offeneNachrichten(tx),
+      geloescht: await mailsImPapierkorb(tx),
+      sortierungen: await geltendeKiVorschlaege(
+        tx,
+        'sortierung',
+        eintraege.map((n) => n.id),
+      ),
+    }
+  })
   const namen = {
     kandidaten: new Map(kandidaten.map((k) => [k.mietverhaeltnisId, k])),
     objekte: new Map(objekte.map((o) => [o.id, o.bezeichnung])),
@@ -56,9 +72,11 @@ export default async function PosteingangSeite({
   const ziele = { kandidaten, objekte, handwerker }
   const zurueck = suche
     ? `/posteingang?q=${encodeURIComponent(suche)}`
-    : alle
-      ? '/posteingang?alle=1'
-      : '/posteingang'
+    : papierkorb
+      ? '/posteingang?papierkorb=1'
+      : alle
+        ? '/posteingang?alle=1'
+        : '/posteingang'
 
   return (
     <>
@@ -82,12 +100,20 @@ export default async function PosteingangSeite({
       </div>
       <div className="zeile" style={{ marginBottom: 16 }}>
         <nav className="reiter" aria-label="Filter">
-          <Link href="/posteingang" aria-current={alle ? undefined : 'page'}>
+          <Link href="/posteingang" aria-current={alle || papierkorb ? undefined : 'page'}>
             Nicht zugeordnet{offen > 0 ? <span className="zahl">{offen}</span> : null}
           </Link>
-          <Link href="/posteingang?alle=1" aria-current={alle && !suche ? 'page' : undefined}>
+          <Link
+            href="/posteingang?alle=1"
+            aria-current={alle && !suche && !papierkorb ? 'page' : undefined}
+          >
             Alle
           </Link>
+          {geloescht > 0 || papierkorb ? (
+            <Link href="/posteingang?papierkorb=1" aria-current={papierkorb ? 'page' : undefined}>
+              Papierkorb{geloescht > 0 ? <span className="zahl neutral">{geloescht}</span> : null}
+            </Link>
+          ) : null}
         </nav>
         <form key={suche} action="/posteingang" role="search" className="suche">
           <label>
@@ -104,7 +130,13 @@ export default async function PosteingangSeite({
           </label>
         </form>
       </div>
-      {portal.length && !alle && !suche ? (
+      {papierkorb ? (
+        <p className="leise" data-testid="papierkorb-hinweis">
+          Gelöschte Mails bleiben gespeichert, damit der nächste Abruf sie nicht erneut holt. Im
+          Postfach beim Mailanbieter liegen sie unverändert.
+        </p>
+      ) : null}
+      {portal.length && !alle && !suche && !papierkorb ? (
         <div className="karte" data-testid="portal-nachrichten">
           <h2>
             <MessageSquare
@@ -146,6 +178,8 @@ export default async function PosteingangSeite({
             </>
           ) : suche ? (
             `Keine Nachricht zu „${suche}“.`
+          ) : papierkorb ? (
+            'Der Papierkorb ist leer.'
           ) : alle ? (
             'Noch keine Nachrichten.'
           ) : (
@@ -194,8 +228,32 @@ export default async function PosteingangSeite({
               <p className="meta" data-testid="zuordnung">
                 <ZuordnungAnzeige z={z} namen={namen} />
               </p>
-              {zuordnen && offenGeblieben ? (
+              {zuordnen && offenGeblieben && !papierkorb ? (
                 <ZuordnenFormular nachrichtId={n.id} aktuell="" ziele={ziele} zurueck={zurueck} />
+              ) : null}
+              {zuordnen ? (
+                <form action={mailPapierkorb} className="nachricht-aktion">
+                  <input type="hidden" name="nachrichtId" value={n.id} />
+                  <input type="hidden" name="zurueck" value={zurueck} />
+                  {papierkorb ? (
+                    <button type="submit" name="aktion" value="wiederherstellen" className="zweit">
+                      <RotateCcw size={16} aria-hidden />
+                      Wiederherstellen
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      name="aktion"
+                      value="loeschen"
+                      className="dezent"
+                      aria-label={'Löschen: ' + (n.betreff || '(ohne Betreff)')}
+                      data-testid="mail-loeschen"
+                    >
+                      <Trash2 size={16} aria-hidden />
+                      Löschen
+                    </button>
+                  )}
+                </form>
               ) : null}
             </li>
           )

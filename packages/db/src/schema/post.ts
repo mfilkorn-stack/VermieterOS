@@ -118,6 +118,29 @@ export const nachrichtZuordnungen = pgTable(
 )
 
 /**
+ * Papierkorb des Posteingangs, append-only: jede Zeile löscht (`geloescht`) oder stellt wieder her.
+ * Die Mail selbst bleibt, sonst käme sie beim nächsten Abruf aus dem IMAP-Postfach zurück
+ * (Erkennung über die Prüfsumme). Maßgeblich ist die jüngste Zeile je Nachricht.
+ */
+export const nachrichtLoeschungen = pgTable(
+  'nachricht_loeschungen',
+  {
+    id: uuid('id').primaryKey(),
+    mandantId: uuid('mandant_id').notNull(),
+    nachrichtId: uuid('nachricht_id')
+      .notNull()
+      .references(() => nachrichten.id),
+    geloescht: boolean('geloescht').notNull(),
+    akteurArt: text('akteur_art').$type<AkteurArt>().notNull(),
+    akteurId: text('akteur_id').notNull(),
+    erfasstAm: timestamp('erfasst_am', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index('nachricht_loeschungen_nachricht_idx').on(t.nachrichtId, t.erfasstAm)],
+)
+
+/**
  * Antworten aus der App auf eingegangene Mails, append-only. Versand über den zentralen SMTP mit
  * Reply-To auf das Postfach, damit die Rückantwort wieder im Posteingang landet. Der Text bleibt
  * hier, damit der Verlauf des Mietverhältnisses beide Richtungen zeigt.

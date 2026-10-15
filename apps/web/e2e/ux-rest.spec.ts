@@ -94,10 +94,12 @@ test('Eigentümerschaft, Mieter am Ticket, Auftrag per Mail, Dokumentliste', asy
   await d.getByRole('button', { name: 'Hochladen' }).click()
   await expect(page.getByTestId('dokument-titel')).toHaveText('Grundriss EG')
 
+  // Dokumente stehen im Bereich „Objekte“ als Reiter
   await page
     .getByRole('navigation', { name: 'Hauptmenü' })
-    .getByRole('link', { name: 'Dokumente' })
+    .getByRole('link', { name: /^Objekte/ })
     .click()
+  await page.getByTestId('bereich-reiter').getByRole('link', { name: 'Dokumente' }).click()
   await expect(page).toHaveURL(/\/dokumente$/)
   const liste = page.getByTestId('dokumentliste')
   await expect(liste.locator('[data-titel="Grundriss EG"]')).toContainText('Musterweg 1')
@@ -114,7 +116,16 @@ test('Eigentümerschaft, Mieter am Ticket, Auftrag per Mail, Dokumentliste', asy
   await page.getByTestId('dokument-filter').getByRole('button', { name: 'Filtern' }).click()
   await expect(page.getByTestId('dokument')).toHaveCount(1)
 
-  // T1: Zugänge statt Mitglieder
-  await page.goto('/mitglieder')
+  // Einstellungen: der Name unten in der Seitenleiste führt zum Profil, dort Sicherheit,
+  // Datenschutz und Abmelden; Zugänge als Reiter (T1: statt Mitglieder)
+  await page.getByTestId('profil-link').click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Profil')
+  await expect(page.getByTestId('profil')).toContainText('Geschwister Muster')
+  await expect(page.getByRole('link', { name: /Sicherheit/ })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('link', { name: 'Datenschutz' })).toBeVisible()
+  await page.getByTestId('bereich-reiter').getByRole('link', { name: 'Zugänge' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Zugänge')
+  await page.getByTestId('profil-link').click()
+  await page.getByTestId('abmelden').click()
+  await expect(page).toHaveURL(/\/login/)
 })

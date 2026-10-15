@@ -108,6 +108,10 @@ Die App verschickt Mails für Kontobestätigung, Einladungen in den Mandanten un
 
 **Nachrichten aus dem Mieterportal** stehen im Posteingang unter „Aus dem Mieterportal“, solange sie unbeantwortet sind, und lassen sich dort wie Mails beantworten: Die Antwort geht per Mail an die Portal-Adresse (Reply-To auf das erste aktive Vermietungs-Postfach) und erscheint im Portal unter „Ihre Nachrichten“ sowie im Verlauf des Mietverhältnisses.
 
+**Löschen im Posteingang** legt eine Mail in den Papierkorb (Reiter „Papierkorb“), von dort lässt sie sich wiederherstellen. Gelöschte Mails fehlen in Liste, Zählern und Verläufen, bleiben aber gespeichert (Tabelle `nachricht_loeschungen`, append-only): Der Abruf erkennt bereits geholte Mails an ihrer Prüfsumme, eine wirklich entfernte Mail käme beim nächsten Abruf zurück. Im Postfach beim Mailanbieter ändert sich nichts.
+
+**Menü:** sechs Bereiche (Übersicht, Objekte, Posteingang, Tickets, Finanzen, Abschluss & Steuer). Verwandte Seiten stehen als Reiter oben auf der Seite: Objekte · Mieter · Dokumente, Tickets · Handwerker, Belege · Journal · Betriebskosten, Jahresabschluss · Steuer. Unten in der Seitenleiste führt der eigene Name zu den Einstellungen: Profil (Sicherheit, Datenschutz, Eigentümerschaft wechseln, Abmelden) · Eigentümer · Zugänge · Postfächer · Referenzdaten. Die Adressen sind unverändert.
+
 **Antworten aus dem Posteingang** gehen über denselben SMTP mit `MAIL_ABSENDER` als Absender und dem Postfach (IMAP-Benutzer, sofern eine Mailadresse) als Reply-To, damit die Rückantwort des Mieters wieder im Posteingang landet; `In-Reply-To` hängt die Antwort in den Thread. Jede Antwort wird vor dem Versand mit Text vermerkt (Tabelle `antworten`, append-only) und erscheint im Verlauf des Mietverhältnisses. Ist der IMAP-Benutzer keine Mailadresse, gehen Rückantworten an `MAIL_ABSENDER`.
 
 Für jeden Anbieter SPF und DKIM für die Absender-Domain setzen, sonst landen Anmeldelinks im Spam. Ohne `SMTP_HOST` wird nichts verschickt: Einladungslinks fürs Portal erscheinen dann in der App zum persönlichen Weitergeben, Bestätigungsmails fehlen. Fehler beim Versand stehen im Log von `web`, ohne Inhalt.

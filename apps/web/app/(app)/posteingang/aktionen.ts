@@ -1,6 +1,6 @@
 'use server'
 
-import { ordneNachrichtZu } from '@vermieteros/db'
+import { ordneNachrichtZu, setzePapierkorb } from '@vermieteros/db'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { Eingabefehler, pflicht, text } from '@/lib/eingabe'
@@ -43,6 +43,31 @@ export async function nachrichtZuordnen(_: FormStatus, d: FormData): Promise<For
     return { fehler: fehlertext(e) }
   }
   // Menü im Layout zeigt Mandant und Zähler; Layouts rendern bei Navigation sonst nicht neu.
+  revalidatePath('/', 'layout')
+  redirect(sicheresZiel(text(d, 'zurueck'), '/posteingang'))
+}
+
+/**
+ * Mail in den Papierkorb legen oder wiederherstellen. Gelöscht wird nur aus der Ansicht: die Mail
+ * bleibt gespeichert, sonst holte der nächste Abruf sie erneut aus dem Postfach.
+ */
+export async function mailPapierkorb(d: FormData): Promise<void> {
+  await verlange({ post: ['zuordnen'] })
+  const nachrichtId = pflicht(d, 'nachrichtId', 'Nachricht')
+  const geloescht = d.get('aktion') !== 'wiederherstellen'
+  await mitMandant((tx, k) =>
+    setzePapierkorb(tx, {
+      mandantId: k.mandantId,
+      nachrichtId,
+      geloescht,
+      akteur: { art: 'nutzer', id: k.nutzerId },
+    }),
+  )
+  await setzeHinweis(
+    geloescht
+      ? 'Mail gelöscht. Im Papierkorb lässt sie sich wiederherstellen.'
+      : 'Mail wiederhergestellt.',
+  )
   revalidatePath('/', 'layout')
   redirect(sicheresZiel(text(d, 'zurueck'), '/posteingang'))
 }

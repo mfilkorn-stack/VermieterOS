@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { DokumentListe } from '@/components/dokument-liste'
 import { DOKUMENT_TYP_TEXT } from '@/lib/dokument-text'
 import { darf, mitMandant } from '@/lib/sitzung'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 /**
  * Alle Dokumente über alle Objekte (N2): Suche nach Titel und Dateiname, Filter nach Objekt und
@@ -39,6 +40,7 @@ export default async function DokumenteSeite({
 
   return (
     <>
+      <BereichReiter bereich="objekte" aktiv="/dokumente" />
       <div className="seitenkopf">
         <div>
           <h1>Dokumente</h1>

@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { istRolle, ROLLEN, ROLLEN_TEXT } from '@/lib/rechte'
 import { aktiverMandant, darf } from '@/lib/sitzung'
 import { einladen } from '../aktionen'
+import { BereichReiter } from '@/components/bereich-reiter'
 
 const BASIS_URL = process.env['BETTER_AUTH_URL'] ?? 'http://localhost:3000'
 
@@ -15,6 +16,7 @@ export default async function MitgliederSeite() {
 
   return (
     <>
+      <BereichReiter bereich="einstellungen" aktiv="/mitglieder" />
       <h1>Zugänge · {org?.name}</h1>
       <p className="leise">
         Wer diese Eigentümerschaft in VermieterOS sieht oder bearbeitet. Die Eigentümer mit ihren
