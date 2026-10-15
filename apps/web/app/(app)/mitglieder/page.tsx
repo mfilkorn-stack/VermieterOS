@@ -15,7 +15,12 @@ export default async function MitgliederSeite() {
 
   return (
     <>
-      <h1>Mitglieder · {org?.name}</h1>
+      <h1>Zugänge · {org?.name}</h1>
+      <p className="leise">
+        Wer diese Eigentümerschaft in VermieterOS sieht oder bearbeitet. Die Eigentümer mit ihren
+        Anteilen stehen unter <a href="/eigentuemer">Eigentümer</a>, Mieterportal-Zugänge am
+        jeweiligen Mietverhältnis.
+      </p>
       <ul className="liste" data-testid="mitgliederliste">
         {(org?.members ?? []).map((m) => (
           <li key={m.id} className="karte zeile">

@@ -72,13 +72,15 @@ Pflichtfeld-Stern in `Feld` und `Auswahl`; Knopftexte vereinheitlichen; Flash-Be
 
 ## Zurückgestellt
 
-**„Mandant“ umbenennen (T1).** Der Begriff steht in Datenbank, Code, Doku und Tests. Nur die Oberfläche umzubenennen („Eigentümerschaft“, „Zugänge“) ist möglich, bringt aber eine dauerhafte Diskrepanz zwischen Wort auf dem Bildschirm und Wort im Code. Vorschlag: Oberfläche umbenennen, Code lassen, im Glossar festhalten. Entscheidung offen.
+**„Mandant“ umbenennen (T1).** Der Begriff steht in Datenbank, Code, Doku und Tests. Nur die Oberfläche umzubenennen („Eigentümerschaft“, „Zugänge“) ist möglich, bringt aber eine dauerhafte Diskrepanz zwischen Wort auf dem Bildschirm und Wort im Code. Vorschlag: Oberfläche umbenennen, Code lassen, im Glossar festhalten. **Umgesetzt:** Oberfläche sagt „Eigentümerschaft“ und „Zugänge“, Code und Datenbank bleiben bei `mandant` und `mitglied`; siehe Glossar.
 
 **Zuordnung zu Objekt oder Handwerker (P3).** Mails von Handwerkern, WEG oder Behörden bleiben heute „Nicht zugeordnet“. Eine zweite Zuordnungsart ist eine Modelländerung (Zuordnung, Verlauf, Zähler, KI-Kontext). Sinnvoll, aber erst nach UX-3, wenn klar ist, wie oft das vorkommt. Kurzfristig reicht ein Status „Erledigt ohne Zuordnung“ in UX-3.
 
-**Handwerkerauftrag per App-Mail (P8).** Gleicher Versandweg wie Mieterantworten, protokolliert im Ticket. Klein, aber erst nach UX-4, damit es einen gemeinsamen Mechanismus für ausgehende Nachrichten gibt.
+**Handwerkerauftrag per App-Mail (P8).** Gleicher Versandweg wie Mieterantworten, protokolliert im Ticket. Klein, aber erst nach UX-4, damit es einen gemeinsamen Mechanismus für ausgehende Nachrichten gibt. **Umgesetzt:** Karte „Auftrag an Handwerker“ am Ticket, Vermerk in `antworten` mit `ticket_id` (Migrationen 0038/0039), Fotos als Anhang, ein gemeldetes Ticket steht danach auf „beauftragt“.
 
-**Dokumentliste über alle Objekte (N2).** Nützlich, aber selten gebraucht, solange UX-1 die Mietverträge über das Mietverhältnis erreichbar macht. Als kleines Paket nach UX-5.
+**Dokumentliste über alle Objekte (N2).** Nützlich, aber selten gebraucht, solange UX-1 die Mietverträge über das Mietverhältnis erreichbar macht. Als kleines Paket nach UX-5. **Umgesetzt:** `/dokumente` mit Suche, Filter nach Objekt und Art, ersetzte auf Wunsch; Menüeintrag „Dokumente“ (auch M2).
+
+**Mieter am Ticket (P9).** **Umgesetzt:** Ticketdetail mit Block Objekt, Einheit, Mieter (direkt oder laufend in der Einheit, verlinkt), Gemeldet und Ursprung; Statuskarte heißt „Status“, der Auftrag hat eine eigene Karte.
 
 ## Empfohlene Reihenfolge
 

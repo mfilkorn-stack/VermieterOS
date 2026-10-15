@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { aktuell, neueVersion } from '../src/ledger'
+import { auftraegeZuTicket, legeAntwortAn } from '../src/post'
+import { listeAlleDokumente } from '../src/dokumente'
 import { withMandant } from '../src/mandant'
 import { NUTZER, erwarteFehler, neuerMandant, verbindungen } from './helfer'
 
@@ -179,5 +181,93 @@ describe('Handwerker, Notfallkarte, Wissensbasis, Tickets', () => {
              + (SELECT count(*) FROM wissensartikel_aktuell)::int AS n`),
     )
     expect(r[0]?.n).toBe(3)
+  })
+
+  it('Handwerkerauftrag: am Ticket vermerkt; genau ein Bezug; Handwerker nur mit Ticket, nie fremd', async () => {
+    const t = await withMandant(v.app, a, (tx) =>
+      neueVersion(tx, {
+        entitaet: 'ticket',
+        mandantId: a,
+        akteur: NUTZER,
+        gueltigAb: '2026-10-01',
+        identitaet: { objektId: objektA },
+        daten: { titel: 'Wasserhahn tropft', status: 'gemeldet', prioritaet: 'normal' },
+      }),
+    )
+    const basis = {
+      mandantId: a,
+      nachrichtId: null,
+      ticketId: t.identId,
+      handwerkerId: handwerkerA,
+      mietverhaeltnisId: null,
+      an: ['auftrag@example.org'],
+      betreff: 'Auftrag: Wasserhahn tropft',
+      text: 'Bitte reparieren.',
+      messageId: '<auftrag-1@example.org>',
+      akteur: NUTZER,
+    }
+    await withMandant(v.app, a, (tx) => legeAntwortAn(tx, basis))
+    const liste = await withMandant(v.app, a, (tx) => auftraegeZuTicket(tx, t.identId))
+    expect(liste.map((x) => x.betreff)).toEqual(['Auftrag: Wasserhahn tropft'])
+    expect(await withMandant(v.app, b, (tx) => auftraegeZuTicket(tx, t.identId))).toEqual([])
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, a, (tx) => legeAntwortAn(tx, { ...basis, handwerkerId: handwerkerB })),
+      /gehört nicht zum Mandanten/,
+    )
+    await erwarteFehler(
+      () =>
+        withMandant(v.app, a, (tx) =>
+          legeAntwortAn(tx, { ...basis, ticketId: null, portalNachrichtId: null }),
+        ),
+      /antworten_bezug_chk|antworten_handwerker_chk/,
+    )
+  })
+
+  it('Dokumentliste über alle Objekte: Ort aus Objekt oder Ticket, ohne Belege', async () => {
+    const t = await withMandant(v.app, a, (tx) =>
+      neueVersion(tx, {
+        entitaet: 'ticket',
+        mandantId: a,
+        akteur: NUTZER,
+        gueltigAb: '2026-10-01',
+        identitaet: { objektId: objektA },
+        daten: { titel: 'Fenster klemmt', status: 'gemeldet', prioritaet: 'normal' },
+      }),
+    )
+    const dok = (titel: string, identitaet: Record<string, unknown>, typ = 'sonstiges') =>
+      withMandant(v.app, a, (tx) =>
+        neueVersion(tx, {
+          entitaet: 'dokument',
+          mandantId: a,
+          akteur: NUTZER,
+          gueltigAb: '2026-10-01',
+          identitaet: {
+            objektId: null,
+            mietverhaeltnisId: null,
+            ticketId: null,
+            beleg: false,
+            anhangId: null,
+            dateiHash: 'a'.repeat(64),
+            speicherSchluessel: 'dok/' + titel,
+            dateiname: titel + '.pdf',
+            mime: 'application/pdf',
+            groesseBytes: 100,
+            ...identitaet,
+          } as never,
+          daten: { typ, status: 'gueltig', titel } as never,
+        }),
+      )
+    await dok('Grundriss', { objektId: objektA })
+    await dok('Foto Fenster', { objektId: objektA, ticketId: t.identId }, 'mangelfoto')
+    await dok('Rechnung', { objektId: objektA, beleg: true }, 'beleg')
+    const liste = await withMandant(v.app, a, (tx) => listeAlleDokumente(tx))
+    const titel = liste.map((d) => d.titel)
+    expect(titel).toContain('Grundriss')
+    expect(titel).toContain('Foto Fenster')
+    expect(titel).not.toContain('Rechnung')
+    expect(liste.find((d) => d.titel === 'Grundriss')?.ortObjektId).toBe(objektA)
+    expect(liste.find((d) => d.titel === 'Grundriss')?.ort).toBe('Haus')
+    expect(await withMandant(v.app, b, (tx) => listeAlleDokumente(tx))).toEqual([])
   })
 })

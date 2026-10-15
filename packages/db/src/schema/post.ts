@@ -127,9 +127,15 @@ export const antworten = pgTable(
   {
     id: uuid('id').primaryKey(),
     mandantId: uuid('mandant_id').notNull(),
-    /** Genau eines von beiden: Antwort auf eine Mail oder auf eine Nachricht aus dem Mieterportal */
+    /**
+     * Genau ein Bezug: Antwort auf eine Mail, auf eine Nachricht aus dem Mieterportal oder
+     * Handwerkerauftrag aus einem Ticket
+     */
     nachrichtId: uuid('nachricht_id').references(() => nachrichten.id),
     portalNachrichtId: uuid('portal_nachricht_id').references(() => portalNachrichten.id),
+    /** Oder: Auftrag an einen Handwerker aus einem Ticket (P8); FKs in Migration 0039 */
+    ticketId: uuid('ticket_id'),
+    handwerkerId: uuid('handwerker_id'),
     /** Zuordnung der Mail zum Zeitpunkt des Versands; null bei einer nicht zugeordneten Mail */
     mietverhaeltnisId: uuid('mietverhaeltnis_id'),
     an: text('an').array().notNull(),
@@ -145,6 +151,7 @@ export const antworten = pgTable(
   (t) => [
     index('antworten_nachricht_idx').on(t.nachrichtId, t.gesendetAm),
     index('antworten_portal_idx').on(t.portalNachrichtId, t.gesendetAm),
+    index('antworten_ticket_idx').on(t.ticketId, t.gesendetAm),
     index('antworten_mv_gesendet_idx').on(t.mietverhaeltnisId, t.gesendetAm),
   ],
 )

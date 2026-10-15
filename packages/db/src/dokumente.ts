@@ -29,15 +29,16 @@ export type DokumentZeile = {
   erstelltAm: string
 }
 
-const SELECT = sql`
-  SELECT d.id, d.objekt_id AS "objektId", d.mietverhaeltnis_id AS "mietverhaeltnisId",
+const SPALTEN = sql`
+  d.id, d.objekt_id AS "objektId", d.mietverhaeltnis_id AS "mietverhaeltnisId",
          d.datei_hash AS "dateiHash", d.speicher_schluessel AS "speicherSchluessel",
          d.dateiname, d.mime, d.groesse_bytes::int AS "groesseBytes",
          d.beleg, d.ticket_id AS "ticketId", d.anhang_id AS "anhangId",
          a.typ, a.status, a.titel, a.dokumentdatum::text AS dokumentdatum,
          a.gueltig_bis::text AS "gueltigBis", a.ersetzt_durch AS "ersetztDurch", a.notizen,
-         a.gueltig_ab::text AS "gueltigAb", d.erstellt_am AS "erstelltAm"
-  FROM dokumente d JOIN dokumente_aktuell a ON a.dokument_id = d.id`
+         a.gueltig_ab::text AS "gueltigAb", d.erstellt_am AS "erstelltAm"`
+
+const SELECT = sql`SELECT ${SPALTEN} FROM dokumente d JOIN dokumente_aktuell a ON a.dokument_id = d.id`
 
 export async function ladeDokument(tx: Tx, id: string): Promise<DokumentZeile | null> {
   const [r] = await tx.execute<DokumentZeile>(sql`${SELECT} WHERE d.id = ${id}`)
@@ -58,6 +59,33 @@ export async function listeDokumente(
            WHERE e.objekt_id = ${o.objektId ?? null}))`
   return tx.execute<DokumentZeile>(sql`${SELECT} WHERE ${bed}
     ORDER BY CASE a.status WHEN 'gueltig' THEN 0 ELSE 1 END, a.dokumentdatum DESC NULLS LAST, d.erstellt_am DESC`)
+}
+
+export type DokumentUebersicht = DokumentZeile & {
+  /** Objekt, zu dem das Dokument gehört: direkt, über das Mietverhältnis oder das Ticket */
+  ortObjektId: string | null
+  /** „Objekt · Einheit“ zur Anzeige */
+  ort: string | null
+}
+
+/**
+ * Alle Dokumente der Eigentümerschaft über alle Objekte (N2), ohne Belege (die haben ihre eigene
+ * Liste). Jüngste zuerst; Filter macht die Seite.
+ */
+export async function listeAlleDokumente(tx: Tx): Promise<DokumentUebersicht[]> {
+  return tx.execute<DokumentUebersicht>(sql`
+    SELECT ${SPALTEN},
+           o.objekt_id AS "ortObjektId",
+           concat_ws(' · ', o.bezeichnung, ea.bezeichnung) AS ort
+    FROM dokumente d
+    JOIN dokumente_aktuell a ON a.dokument_id = d.id
+    LEFT JOIN mietverhaeltnisse m ON m.id = d.mietverhaeltnis_id
+    LEFT JOIN einheiten e ON e.id = m.einheit_id
+    LEFT JOIN tickets t ON t.id = d.ticket_id
+    LEFT JOIN objekte_aktuell o ON o.objekt_id = coalesce(d.objekt_id, e.objekt_id, t.objekt_id)
+    LEFT JOIN einheiten_aktuell ea ON ea.einheit_id = coalesce(m.einheit_id, t.einheit_id)
+    WHERE NOT d.beleg AND a.typ <> 'beleg'
+    ORDER BY a.dokumentdatum DESC NULLS LAST, d.erstellt_am DESC`)
 }
 
 /** Anhang einer Mail für die Ablage als Dokument: dieselbe Datei, kein zweiter Upload. */

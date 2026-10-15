@@ -31,10 +31,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </span>
             <span className="marke-name">Vermieter.OS</span>
           </Link>
-          <Link href="/mandanten" className="mandant-block" title="Mandant wechseln">
+          <Link href="/mandanten" className="mandant-block" title="Eigentümerschaft wechseln">
             <span className="text">
-              <strong>{nav.mandant?.name ?? 'Mandant wählen'}</strong>
-              <small>{nav.mandant?.rolle ?? 'kein Mandant aktiv'}</small>
+              <strong>{nav.mandant?.name ?? 'Eigentümerschaft wählen'}</strong>
+              <small>{nav.mandant?.rolle ?? 'keine ausgewählt'}</small>
             </span>
             <ArrowLeftRight size={16} strokeWidth={1.75} aria-hidden />
           </Link>
@@ -74,7 +74,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <span className="marke-name">Vermieter.OS</span>
         </Link>
         <Link href="/mandanten" className="mandant-kurz">
-          {nav.mandant?.name ?? 'Mandant wählen'}
+          {nav.mandant?.name ?? 'Eigentümerschaft wählen'}
         </Link>
       </header>
       <main className="inhalt">

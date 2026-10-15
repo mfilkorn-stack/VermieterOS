@@ -6,13 +6,13 @@ export default function MandantNeuSeite() {
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
-        <Link href={'/mandanten'}>Mandanten</Link>
+        <Link href={'/mandanten'}>Eigentümerschaften</Link>
         <span aria-hidden>/</span>
-        <span>Mandant anlegen</span>
+        <span>Eigentümerschaft anlegen</span>
       </nav>
       <div className="karte">
-        <h1>Mandant anlegen</h1>
-        <Formular aktion={mandantAnlegen} knopf="Mandant anlegen" testId="mandant-anlegen">
+        <h1>Eigentümerschaft anlegen</h1>
+        <Formular aktion={mandantAnlegen} knopf="Eigentümerschaft anlegen" testId="mandant-anlegen">
           <label>
             Name
             <input

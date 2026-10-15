@@ -1,12 +1,15 @@
 import {
+  auftraegeZuTicket,
   belegeZuTicket,
   ladeTicket,
   listeDokumente,
   listeHandwerker,
+  listeMietverhaeltnisse,
+  listePostfaecher,
   ticketVerlauf,
 } from '@vermieteros/db'
 import { TICKET_STATUS } from '@vermieteros/schema'
-import { Mail, MapPin, ReceiptText } from 'lucide-react'
+import { Mail, ReceiptText, Send } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BelegImport } from '@/components/beleg-import'
@@ -15,12 +18,13 @@ import { Auswahl, Feld } from '@/components/felder'
 import { Formular } from '@/components/formular'
 import { PrioritaetBadge, TicketStatusBadge } from '@/components/ticket-badges'
 import { optionen, PRIORITAET_TEXT, TICKET_STATUS_TEXT } from '@/lib/betrieb-text'
-import { euroAnzeige, zeitpunktAnzeige } from '@/lib/format'
+import { datumAnzeige, euroAnzeige, zeitpunktAnzeige } from '@/lib/format'
 import { kiEingerichtet } from '@/lib/ki'
+import { absenderAdresse, mailEingerichtet } from '@/lib/mail'
 import { darf, mitMandant } from '@/lib/sitzung'
-import { isoZuBerlin } from '@/lib/zeit'
+import { heuteBerlin, isoZuBerlin } from '@/lib/zeit'
 import { belegAuslesenDirekt, belegHochladen } from '../../belege/aktionen'
-import { ticketAktualisieren } from '../aktionen'
+import { auftragSenden, ticketAktualisieren } from '../aktionen'
 import { KiHinweis } from '@/components/ki-hinweis'
 
 export default async function TicketSeite({
@@ -38,6 +42,10 @@ export default async function TicketSeite({
     return {
       t,
       verlauf: await ticketVerlauf(tx, id),
+      auftraege: await auftraegeZuTicket(tx, id),
+      postfach: (await listePostfaecher(tx)).find(
+        (x) => x.aktiv && x.zweck === 'post' && x.benutzer.includes('@'),
+      ),
       rechnungen: await belegeZuTicket(tx, id),
       fotos: (await listeDokumente(tx, { ticketId: id })).filter(
         (x) => x.typ === 'mangelfoto' && x.status === 'gueltig',
@@ -48,21 +56,46 @@ export default async function TicketSeite({
       handwerker: (await listeHandwerker(tx)).filter(
         (h) => h.objektIds.length === 0 || h.objektIds.includes(t.objektId),
       ),
+      // Mieter: das Mietverhältnis am Ticket, sonst das laufende der Einheit (P9)
+      mv: await (async () => {
+        const alle = await listeMietverhaeltnisse(tx, heuteBerlin())
+        const direkt = alle.find((m) => m.mietverhaeltnisId === t.mietverhaeltnisId)
+        if (direkt) return { ...direkt, abgeleitet: false }
+        const laufend = t.einheitId
+          ? alle.find((m) => m.einheitId === t.einheitId && m.laufend)
+          : undefined
+        return laufend ? { ...laufend, abgeleitet: true } : null
+      })(),
     }
   })
   if (!d) notFound()
-  const { t, verlauf, handwerker, rechnungen, fotos, dateien } = d
+  const { t, verlauf, handwerker, rechnungen, fotos, dateien, mv, auftraege, postfach } = d
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   const auftragnehmer = handwerker.find((h) => h.id === t.auftragnehmerId)
   const ort = t.einheit ? `${t.objekt} · ${t.einheit}` : t.objekt
+  const auftragBetreff = 'Auftrag: ' + t.titel + ' (' + ort + ')'
+  const auftragText = [
+    'Guten Tag,',
+    '',
+    'bitte übernehmen Sie folgenden Auftrag:',
+    '',
+    t.beschreibung ?? t.titel,
+    '',
+    'Ort: ' + ort,
+    t.termin
+      ? 'Termin: ' + zeitpunktAnzeige(t.termin)
+      : 'Bitte melden Sie sich mit einem Terminvorschlag.',
+    '',
+    'Mit freundlichen Grüßen',
+  ].join('\n')
   const auftrag = auftragnehmer?.email
     ? [
         'mailto:',
         encodeURIComponent(auftragnehmer.email),
         '?subject=',
-        encodeURIComponent(`Auftrag: ${t.titel} (${ort})`),
+        encodeURIComponent(auftragBetreff),
         '&body=',
-        encodeURIComponent([t.beschreibung ?? t.titel, '', `Ort: ${ort}`].join('\n')),
+        encodeURIComponent(auftragText),
       ].join('')
     : null
 
@@ -84,18 +117,54 @@ export default async function TicketSeite({
           <p className="meta">
             <PrioritaetBadge p={t.prioritaet} />
             <TicketStatusBadge status={t.status} />
-            <span>
-              <MapPin size={14} aria-hidden />
-              <Link href={`/objekte/${t.objektId}`}>{ort}</Link>
-            </span>
-            {t.nachrichtId ? (
-              <Link href={`/posteingang/${t.nachrichtId}`}>Ursprüngliche Mail</Link>
-            ) : null}
           </p>
         </div>
       </div>
       <div className="raster-2">
         <div>
+          <dl className="karte kopfdaten" data-testid="ticket-wo">
+            <dt>Objekt</dt>
+            <dd>
+              <Link href={`/objekte/${t.objektId}`}>{t.objekt}</Link>
+            </dd>
+            <dt>Einheit</dt>
+            <dd>{t.einheit ?? 'ganzes Objekt'}</dd>
+            <dt>Mieter</dt>
+            <dd>
+              {mv ? (
+                <>
+                  <Link
+                    href={`/mietverhaeltnisse/${mv.mietverhaeltnisId}`}
+                    data-testid="ticket-mieter"
+                  >
+                    {mv.mieterNamen.join(', ') || 'ohne Mieter'}
+                  </Link>
+                  <span className="leise">
+                    {mv.ende
+                      ? ' · ' + datumAnzeige(mv.beginn) + ' bis ' + datumAnzeige(mv.ende)
+                      : ' · seit ' + datumAnzeige(mv.beginn)}
+                  </span>
+                  {mv.abgeleitet ? <span className="leise"> · laufend in der Einheit</span> : null}
+                </>
+              ) : (
+                '–'
+              )}
+            </dd>
+            <dt>Gemeldet</dt>
+            <dd>
+              {verlauf[0]
+                ? zeitpunktAnzeige(verlauf[0].erfasstAm) + ' · ' + verlauf[0].erfasstVon
+                : zeitpunktAnzeige(t.angelegtAm)}
+            </dd>
+            {t.nachrichtId ? (
+              <>
+                <dt>Ursprung</dt>
+                <dd>
+                  <Link href={`/posteingang/${t.nachrichtId}`}>Ursprüngliche Mail</Link>
+                </dd>
+              </>
+            ) : null}
+          </dl>
           {t.beschreibung ? (
             <div className="karte">
               <h2>Beschreibung</h2>
@@ -138,7 +207,7 @@ export default async function TicketSeite({
         <div>
           {schreiben ? (
             <div className="karte">
-              <h2>Status und Auftrag</h2>
+              <h2>Status</h2>
               <Formular
                 aktion={ticketAktualisieren}
                 knopf="Änderungen speichern"
@@ -176,14 +245,86 @@ export default async function TicketSeite({
                 </label>
                 <Feld label="Begründung (optional)" name="begruendung" />
               </Formular>
-              {auftrag ? (
-                <p>
-                  <a className="knopf zweit" href={auftrag} data-testid="ticket-auftrag-mail">
-                    <Mail size={16} aria-hidden />
-                    Auftrag per Mail an {auftragnehmer?.firma}
-                  </a>
-                </p>
+            </div>
+          ) : null}
+          {schreiben ? (
+            <div className="karte" data-testid="ticket-auftrag">
+              <h2>
+                <Send size={18} aria-hidden style={{ verticalAlign: '-3px', marginRight: 6 }} />
+                Auftrag an Handwerker
+              </h2>
+              {auftraege.length ? (
+                <ul className="leise" data-testid="auftrag-gesendet">
+                  {auftraege.map((a) => (
+                    <li key={a.id}>
+                      Gesendet {zeitpunktAnzeige(a.gesendetAm)} an {a.an.join(', ')}: „{a.betreff}“
+                    </li>
+                  ))}
+                </ul>
               ) : null}
+              {!auftragnehmer ? (
+                <p className="leise">
+                  Erst oben einen Handwerker wählen und speichern; dann geht der Auftrag von hier
+                  per Mail raus und steht im Ticket.
+                </p>
+              ) : !auftragnehmer.email ? (
+                <p className="leise">
+                  Für {auftragnehmer.firma} ist keine Mailadresse hinterlegt.{' '}
+                  <Link href={`/handwerker/${auftragnehmer.id}`}>Handwerker bearbeiten</Link>
+                </p>
+              ) : !mailEingerichtet() ? (
+                <p>
+                  <a
+                    className="knopf zweit"
+                    href={auftrag ?? '#'}
+                    data-testid="ticket-auftrag-mail"
+                  >
+                    <Mail size={16} aria-hidden />
+                    Im Mailprogramm öffnen
+                  </a>
+                  <span className="leise">
+                    {' '}
+                    Der Mailversand ist nicht eingerichtet; der Auftrag wird so nicht im Ticket
+                    vermerkt.
+                  </span>
+                </p>
+              ) : (
+                <Formular aktion={auftragSenden} knopf="Auftrag senden" testId="auftrag-formular">
+                  <input type="hidden" name="ticketId" value={t.id} />
+                  <Feld
+                    label="An"
+                    name="an"
+                    type="email"
+                    defaultValue={auftragnehmer.email}
+                    required
+                  />
+                  <Feld label="Betreff" name="betreff" defaultValue={auftragBetreff} required />
+                  <label>
+                    Text
+                    <textarea
+                      name="text"
+                      rows={10}
+                      defaultValue={auftraege.length ? '' : auftragText}
+                      required
+                    />
+                  </label>
+                  {fotos.length ? (
+                    <label className="zeile">
+                      <input type="checkbox" name="fotos" value="ja" defaultChecked />
+                      {fotos.length === 1 ? 'Foto anhängen' : fotos.length + ' Fotos anhängen'}
+                    </label>
+                  ) : null}
+                  <p className="leise">
+                    Absender {absenderAdresse()}.{' '}
+                    {postfach
+                      ? 'Rückmeldungen gehen an ' +
+                        postfach.benutzer +
+                        ' und erscheinen im Posteingang.'
+                      : 'Ohne Vermietungs-Postfach gehen Rückmeldungen an den Absender.'}
+                    {t.status === 'gemeldet' ? ' Das Ticket steht danach auf „beauftragt“.' : ''}
+                  </p>
+                </Formular>
+              )}
             </div>
           ) : null}
           <div className="karte" data-testid="ticket-rechnungen">

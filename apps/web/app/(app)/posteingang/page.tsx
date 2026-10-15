@@ -89,7 +89,7 @@ export default async function PosteingangSeite({
             Alle
           </Link>
         </nav>
-        <form action="/posteingang" role="search" className="suche">
+        <form key={suche} action="/posteingang" role="search" className="suche">
           <label>
             <span className="sr-only">Suche</span>
             <span className="suchfeld">

@@ -82,9 +82,9 @@ test('Handwerker, Notfallkarte, Wissensbasis und Ticket von der Meldung bis zum 
   await f.getByRole('button', { name: 'Speichern' }).click()
   await expect(page.getByTestId('ticket-status').first()).toContainText('beauftragt')
   await expect(menue).not.toContainText('neu gemeldet')
-  await expect(page.getByTestId('ticket-auftrag-mail')).toHaveAttribute(
-    'href',
-    /^mailto:auftrag%40heizung-schmidt\.example/,
+  // Auftrag per App-Mail vorbereitet (Versand im Test ux-rest)
+  await expect(page.getByTestId('auftrag-formular').getByLabel(/^An/)).toHaveValue(
+    'auftrag@heizung-schmidt.example',
   )
 
   await f.getByLabel('Status').selectOption('termin')

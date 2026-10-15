@@ -4,10 +4,16 @@ import {
   fachdaten,
   ladeDokument,
   ladeTicket,
+  legeAntwortAn,
   letzteVersion,
+  listeDokumente,
+  listeHandwerker,
+  listePostfaecher,
   schema,
   type Tx,
 } from '@vermieteros/db'
+import { sha256 } from '@vermieteros/post'
+import { randomUUID } from 'node:crypto'
 import {
   bestaetigeVorschlagInTx,
   erzeugeVorschlag,
@@ -23,6 +29,7 @@ import { DATEI_FEHLER, ERLAUBTE_TYPEN, MAX_GROESSE } from '@/lib/dokument-text'
 import { Eingabefehler, pflicht, text, zodText } from '@/lib/eingabe'
 import { fehlertext, type FormStatus } from '@/lib/form-status'
 import { kiUmgebung } from '@/lib/ki'
+import { absenderAdresse, mailEingerichtet, sendeMail } from '@/lib/mail'
 import { mitMandant, verlange, type MandantKontext } from '@/lib/sitzung'
 import { objektSpeicher } from '@/lib/speicher'
 import { speichere } from '@/lib/speichern'
@@ -246,4 +253,96 @@ export async function ticketAusDatei(_: FormStatus, d: FormData): Promise<FormSt
     return { fehler: fehlertext(e) }
   }
   redirect(ziel)
+}
+
+/** Obergrenze für Fotos im Handwerkerauftrag; größere Mails lehnen viele Server ab. */
+const MAX_ANHANG_BYTES = 15 * 1024 * 1024
+
+/**
+ * Handwerkerauftrag aus dem Ticket per Mail (P8): gleicher Versandweg wie Antworten, Reply-To ist
+ * das Vermietungs-Postfach, damit die Rückmeldung im Posteingang landet. Vermerk und, bei einem
+ * nur gemeldeten Ticket, der Wechsel auf „beauftragt“ stehen vor dem Versand in derselben
+ * Transaktion und fallen weg, wenn der Server ablehnt.
+ */
+export async function auftragSenden(_: FormStatus, d: FormData): Promise<FormStatus> {
+  let id: string
+  try {
+    await verlange({ stammdaten: ['schreiben'] })
+    id = pflicht(d, 'ticketId', 'Ticket')
+    if (!mailEingerichtet())
+      throw new Eingabefehler('Der Mailversand ist nicht eingerichtet (SMTP_HOST).')
+    const an = pflicht(d, 'an', 'Empfänger').toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+$/.test(an)) throw new Eingabefehler('Empfänger: keine Mailadresse.')
+    const betreff = pflicht(d, 'betreff', 'Betreff')
+    const inhalt = pflicht(d, 'text', 'Text')
+    const mitFotos = d.get('fotos') === 'ja'
+    await mitMandant(async (tx, k) => {
+      const t = await ladeTicket(tx, id)
+      if (!t) throw new Eingabefehler('Ticket nicht gefunden.')
+      const h = (await listeHandwerker(tx)).find((x) => x.id === t.auftragnehmerId)
+      if (!h) throw new Eingabefehler('Bitte zuerst einen Handwerker am Ticket wählen.')
+
+      const anhaenge: Array<{ dateiname: string; inhalt: Buffer; mime: string }> = []
+      if (mitFotos) {
+        const fotos = (await listeDokumente(tx, { ticketId: id })).filter(
+          (x) => x.typ === 'mangelfoto' && x.status === 'gueltig',
+        )
+        let summe = 0
+        for (const f of fotos) {
+          const dok = await ladeDokument(tx, f.id)
+          if (!dok) continue
+          const bytes = await objektSpeicher().holen(dok.speicherSchluessel)
+          if (sha256(bytes) !== dok.dateiHash)
+            throw new Eingabefehler(`Prüfsumme von „${dok.dateiname}“ stimmt nicht.`)
+          summe += bytes.length
+          if (summe > MAX_ANHANG_BYTES)
+            throw new Eingabefehler('Die Fotos sind zusammen größer als 15 MB; ohne Fotos senden.')
+          anhaenge.push({ dateiname: dok.dateiname, inhalt: bytes, mime: dok.mime })
+        }
+      }
+
+      const messageId = `<${randomUUID()}@${absenderAdresse().split('@')[1] ?? 'vermieteros'}>`
+      await legeAntwortAn(tx, {
+        mandantId: k.mandantId,
+        nachrichtId: null,
+        ticketId: id,
+        handwerkerId: h.id,
+        mietverhaeltnisId: null,
+        an: [an],
+        betreff,
+        text: inhalt,
+        messageId,
+        akteur: { art: 'nutzer', id: k.nutzerId },
+      })
+      if (t.status === 'gemeldet') {
+        const v = await letzteVersion(tx, 'ticket', id)
+        if (!v) throw new Eingabefehler('Ticket nicht gefunden.')
+        const heute = heuteBerlin()
+        await speichere(tx, k, {
+          entitaet: 'ticket',
+          identId: id,
+          daten: { ...fachdaten('ticket', v), status: 'beauftragt' },
+          gueltigAb: heute > t.gueltigAb ? heute : t.gueltigAb,
+          begruendung: `Auftrag per Mail an ${h.firma}`,
+        })
+      }
+      const postfach = (await listePostfaecher(tx)).find(
+        (x) => x.aktiv && x.zweck === 'post' && x.benutzer.includes('@'),
+      )
+      const ok = await sendeMail({
+        art: 'handwerkerauftrag',
+        an,
+        betreff,
+        text: inhalt,
+        messageId,
+        replyTo: postfach?.benutzer ?? null,
+        ...(anhaenge.length ? { anhaenge } : {}),
+      })
+      if (!ok) throw new Eingabefehler('Der Mailserver hat den Auftrag abgelehnt.')
+    })
+  } catch (e) {
+    return { fehler: fehlertext(e) }
+  }
+  revalidatePath('/', 'layout')
+  redirect(`/tickets/${id}`)
 }
