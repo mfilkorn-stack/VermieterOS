@@ -18,6 +18,7 @@ import {
   WissenKategorie,
   ZaehlerArt,
   ZaehlerstandQuelle,
+  VerwaltungArt,
 } from './enums'
 import {
   Basispunkte,
@@ -66,6 +67,17 @@ export const GrundbuchEintrag = z.object({
 })
 export type GrundbuchEintrag = z.infer<typeof GrundbuchEintrag>
 
+/** Verwalter einer Immobilie, Teil der Stammdaten; je Art höchstens einer */
+export const Verwalter = z.object({
+  art: VerwaltungArt,
+  firma: Text,
+  ansprechpartner: Text.nullish(),
+  telefon: Telefon.nullish(),
+  email: Email.nullish(),
+  notiz: z.string().trim().max(2000).nullish(),
+})
+export type Verwalter = z.infer<typeof Verwalter>
+
 export const NebenkostenPosition = z.object({
   art: NebenkostenArt,
   bezeichnung: Text.nullish(),
@@ -85,6 +97,11 @@ export const ObjektDaten = z.object({
   baujahr: z.number().int().min(1500).max(2100).nullish(),
   weg: z.boolean().default(false),
   grundbuch: z.array(GrundbuchEintrag).nullish(),
+  verwalter: z
+    .array(Verwalter)
+    .max(2)
+    .refine((v) => new Set(v.map((x) => x.art)).size === v.length, 'Je Art nur ein Verwalter')
+    .nullish(),
   /** Tag der Beurkundung; maßgeblich für die Spekulationsfrist (§ 23 EStG). */
   kaufvertragDatum: Datum.nullish(),
   /** Übergang von Nutzen und Lasten; maßgeblich für AfA und 15-%-Grenze. */

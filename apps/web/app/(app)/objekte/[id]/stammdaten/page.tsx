@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BUNDESLAENDER, BUNDESLAND_NAME } from '@vermieteros/schema'
+import { BUNDESLAENDER, BUNDESLAND_NAME, VERWALTUNG_ARTEN } from '@vermieteros/schema'
 import { notFound, redirect } from 'next/navigation'
 import { Adresssuche } from '@/components/adresssuche'
 import { Aenderung, Auswahl, Feld } from '@/components/felder'
@@ -10,6 +10,7 @@ import { adresssucheAn } from '@/lib/adresse'
 import { gueltigerKaufvertrag, ladeAkte } from '@/lib/akte'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { grundbuchZuRoh } from '@/lib/umwandeln'
+import { VERWALTUNG_TEXT } from '@/lib/verwalter'
 import { stammdatenSpeichern } from '../aktionen'
 
 export default async function StammdatenSeite({ params }: { params: Promise<{ id: string }> }) {
@@ -72,6 +73,40 @@ export default async function StammdatenSeite({ params }: { params: Promise<{ id
             <input type="checkbox" name="weg" defaultChecked={o.weg} /> Teil einer
             Wohnungseigentümergemeinschaft (WEG)
           </label>
+          <h2>Verwaltung</h2>
+          <p className="leise">
+            Optional. Bei einer Eigentumswohnung die WEG-Verwaltung der Gemeinschaft, dazu eine
+            Mietverwaltung, wenn jemand die Vermietung für dich übernimmt.
+          </p>
+          {VERWALTUNG_ARTEN.map((art) => {
+            const w = o.verwalter?.find((x) => x.art === art)
+            return (
+              <fieldset key={art} data-testid={'verwalter-' + art}>
+                <legend>{VERWALTUNG_TEXT[art]}</legend>
+                <Feld label="Firma" name={art + '_firma'} defaultValue={w?.firma ?? ''} />
+                <Feld
+                  label="Ansprechpartner"
+                  name={art + '_ansprechpartner'}
+                  defaultValue={w?.ansprechpartner ?? ''}
+                />
+                <div className="zeile">
+                  <Feld
+                    label="Telefon"
+                    name={art + '_telefon'}
+                    type="tel"
+                    defaultValue={w?.telefon ?? ''}
+                  />
+                  <Feld
+                    label="E-Mail"
+                    name={art + '_email'}
+                    type="email"
+                    defaultValue={w?.email ?? ''}
+                  />
+                </div>
+                <Feld label="Notiz" name={art + '_notiz'} defaultValue={w?.notiz ?? ''} />
+              </fieldset>
+            )
+          })}
           <h2>Grundbuch</h2>
           <p className="leise">
             Ein Blatt pro Grundbuch. Eine Eigentumswohnung mit separat gekauftem Stellplatz hat

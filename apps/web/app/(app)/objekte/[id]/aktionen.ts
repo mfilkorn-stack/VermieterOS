@@ -37,6 +37,7 @@ import { setzeHinweis } from '@/lib/hinweis'
 import { speichere } from '@/lib/speichern'
 import { heuteBerlin } from '@/lib/zeit'
 import { grundbuchAusRoh, nebenkostenAusRoh } from '@/lib/umwandeln'
+import { verwalterAusFormular } from '@/lib/verwalter'
 
 /** Gemeinsamer Rahmen: Recht prüfen, im Mandanten-Kontext schreiben, Fehler als Text. */
 async function schreibe(
@@ -88,6 +89,7 @@ export async function stammdatenSpeichern(_: FormStatus, d: FormData): Promise<F
       baujahr: dezimal(d, 'baujahr', 'Baujahr', 0),
       weg: haken(d, 'weg'),
       grundbuch: grundbuchAusRoh(json<GrundbuchRoh[]>(d, 'grundbuch')),
+      verwalter: verwalterAusFormular(d),
     })
     await speichere(tx, k, {
       entitaet: 'objekt',
