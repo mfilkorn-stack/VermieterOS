@@ -411,6 +411,20 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 
 Mieterportal komplett (Zählerstand per Foto), WhatsApp Business API, Ankaufsprüfung als Modul 12 mit „Vom Ankauf in den Bestand“, pgvector für sinngemäße Suche, DATEV-Export nur auf konkreten Bedarf des Steuerberaters, E-Signatur, Neuvermietung.
 
+**Erscheinungsbild der Eigentümerschaft (WP 5.1).** Es sind zwei Dinge, die getrennt behandelt werden.
+
+- **Briefkopf und Hausfarbe nach außen (zuerst):** Logo, Akzentfarbe, Schrift aus einer festen Auswahl, Absenderzeile und Fußzeile mit Bankverbindung und Kontakt. Das gilt für alles, was Mieter und Handwerker erhalten: Standardschreiben, Betriebskostenabrechnung, Mails mit Signatur und das Mieterportal. Gespeichert wird es je Eigentümerschaft als versionierte Einstellung, damit ein festgeschriebenes Dokument sein damaliges Aussehen behält.
+- **PDF-Import:** Man lädt einen vorhandenen Briefbogen hoch, die Software schlägt die Werte vor, und man bestätigt sie (wie beim Auslesen von Verträgen).
+  - Das Logo ist das größte Bild der ersten Seite.
+  - Die Farben sind die vorherrschenden Farben der gerenderten Seite.
+  - Absender und Fußzeile liest die KI mit Fundstelle aus.
+  - Die Schrift wird nur erkannt und auf die nächstliegende aus der Auswahl abgebildet: Eingebettete Schriften sind meist nicht für die Weiterverwendung lizenziert.
+- **Farbwelt der App (danach, bewusst eng):**
+  - Eine Auswahl von vier bis sechs geprüften Designwelten, jeweils hell und dunkel, dazu eine eigene Akzentfarbe. Die Software prüft den Kontrast nach WCAG AA, verdunkelt bei Bedarf und sagt das.
+  - Kein freies CSS und keine frei wählbaren Hintergrund- oder Textfarben: Lesbarkeit, Statusfarben (Ampeln, Fristen) und Barrierefreiheit hängen daran.
+  - Die Designwelt wählt jeder Nutzer für sich, die Akzentfarbe gehört der Eigentümerschaft.
+- **Technik:** Die Oberfläche läuft schon über Farb-Tokens (WP 1.3); eine Designwelt ist ein Satz Token-Werte, eine eigene Akzentfarbe überschreibt nur die Akzent-Tokens. Die PDF-Vorlagen in `packages/pdf` bekommen Kopf, Fuß und Akzent als Parameter statt fester Werte.
+
 ---
 
 ## 7 Querschnitt
