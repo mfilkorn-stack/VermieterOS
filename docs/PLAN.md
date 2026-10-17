@@ -345,10 +345,26 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 
 | WP  | Inhalt                                                                                                                                                                 |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.0 | Ausstattung je Einheit (Einbauküche, möbliert, Balkon, Bad, Aufzug …) als versioniertes Merkmal der Einheit, Grundlage für Mietspiegel und Möblierungszuschlag         |
 | 3.1 | Rechenkern Mieterhöhung: Sperrfrist, Kappungsgrenze (20/15 %), Indexberechnung aus VPI, Staffel, Modernisierung (8 %, 3 bzw. 2 €/m²), Zustimmungs- und Wirkungsfristen |
 | 3.2 | Referenzdaten: Mietspiegel pro Stadt mit Gültigkeit, Kappungsgebiete, VPI-Abruf (Destatis) als versionierte Referenzdaten                                              |
 | 3.3 | Workflow mit harten Schranken (rot, nicht umgehbar), Anschreiben, Berechnungsblatt, Fristenkalender, neue Mietkonditions-Version ab Wirkungsdatum                      |
 | 3.4 | Juristische Prüfung der Vorlagen einarbeiten                                                                                                                           |
+
+**Ausstattung (WP 3.0).**
+
+- **Merkmale an der Einheit:** Die Einheit bekommt eine Merkmalsliste mit festen Codes, z. B. Einbauküche, möbliert oder teilmöbliert, Balkon oder Terrasse, Bad mit Fenster, Gäste-WC, Aufzug, Keller, Stellplatz, Bodenbelag und Heizungsart. Dazu kommt eine Freitext-Notiz. Die Merkmale sind versioniert wie jede Fachangabe: Eine neue Küche ist ein neuer Stand ab Datum, damit der Mietspiegel-Abgleich den Zustand zum Stichtag kennt.
+- **Anzeige:**
+  - Akte: als Kurzliste an jeder Einheit, etwa „EBK · möbliert · Balkon“.
+  - Mietverhältnis und Mieterportal (Vertrag): die Merkmale der vermieteten Einheit.
+  - Bearbeitet wird im Formular der Einheit.
+- **Wofür:**
+  - Einordnung in den Mietspiegel (WP 3.2, 3.3): Die Merkmale entsprechen den Wohnwertmerkmalen der Spiegel; welche Merkmale eine Stadt abfragt, kommt aus den Referenzdaten.
+  - Möblierungszuschlag bei möblierter Vermietung.
+  - Hinweis an den Steuerberater: Eine Einbauküche wird gesondert abgeschrieben. Die Software markiert das nur, die AfA bleibt im Rechenkern.
+  - KI-Kontext für Antwortentwürfe.
+- **Nicht jetzt:** eine Inventarliste mit Einzelstücken und Kaufbelegen. Sie kommt erst, wenn Übergabeprotokolle gebraucht werden.
+- **Reihenfolge:** Die Merkmalsliste ist klein und unabhängig. Sie lässt sich sofort bauen und muss vor WP 3.2 stehen.
 
 ### Phase 4 · Finanzen (Wo 16–18)
 
@@ -383,6 +399,12 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 - **Darlehen:** Rate, Zins, Restschuld und Ende der Zinsbindung, sortiert nach Fälligkeit (WP 4.3).
 - **Offen:** offene Posten (WP 4.4), nicht gebuchte Belege und Betriebskosten-Fristen, jeweils mit Link zum Erledigen.
 - **Aufteilung:** eine Tabelle je Immobilie mit denselben Zahlen; dazu ein Filter je Eigentümer, der nach den Eigentumsanteilen rechnet (Bruchteil, GbR). Der Steuerberater sieht die Seite lesend.
+- **Grafik je Jahr und Immobilie:** Im Mittelpunkt steht der Cashflow.
+  - Je Monat: Balken für Mieteingang, Bewirtschaftungsausgaben und Kapitaldienst (Zins und Tilgung), dazu eine Linie für den kumulierten Cashflow vor Steuern.
+  - Daneben die offenen Mieten: Sollmiete gegen Eingang je Monat und Einheit als Raster. Offene Monate sind markiert und führen zur Einheit beziehungsweise zum Mahnschreiben (WP 4.4).
+  - Umschalter für Jahr und Immobilie, „alle“ zeigt den Bestand.
+  - Gezeichnet als SVG ohne Diagramm-Bibliothek, mit gleicher Datentabelle darunter, damit jede Zahl auch ohne Grafik lesbar ist.
+- **Offene Mieten brauchen den Mieteingang.** Die Sollmiete steht in den Konditionen. Den Eingang liefert verlässlich erst der Bank-Import (WP 4.4); bis dahin zählen nur von Hand gebuchte Mieteingänge, und die Grafik sagt das dazu. Ohne Import wäre „offen“ eine Behauptung.
 - **Schrittweise:** Journal-Summen und Darlehen gibt es schon. Die erste Fassung (Jahr, Darlehen, Offen) lässt sich deshalb sofort bauen. Die übrigen Kacheln füllen sich mit den jeweiligen Arbeitspaketen. Fehlt ein Eingangswert, zeigt die Kachel „fehlt: …“ mit Link statt einer Null.
 
 ### Phase 5 · Ausbau (ab Wo 19)
