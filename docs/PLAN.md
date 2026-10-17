@@ -360,6 +360,7 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 | 4.4 | Bank-CSV-Import (CAMT/CSV der gängigen Banken), Abgleich mit Sollmieten, offene Posten, Mahnschreiben aus Vorlage, Kautionskonto                            |
 | 4.5 | Marktwert (Schätzung) je Haus und Eigentumswohnung im Ertragswertverfahren nach ImmoWertV, mit Spanne, Rechenweg und Verlauf je Stichtag                    |
 | 4.6 | Beleihungswert nach BelWertV, Beleihungsauslauf aller Darlehen, freier Beleihungsraum; auf der Übersicht und in der Akte, verknüpft mit dem Radar aus 4.3   |
+| 4.7 | Finanzen-Überblick: Gesamtbild über alle Immobilien als erster Reiter im Bereich Finanzen, je Immobilie und je Eigentümer aufteilbar                        |
 
 **Wert und Beleihung (WP 4.5, 4.6).** Ziel ist eine belastbare Schätzung für Anschlussfinanzierung, Nachbeleihung und den nächsten Ankauf, kein Gutachten.
 
@@ -369,10 +370,20 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 - **Eingangswerte:** Bodenrichtwert, Liegenschaftszins und Vergleichsfaktor stehen je Lage als Referenzdaten mit Quelle, Stichtag und Prüffrist (Entscheidung 8). Die Parameter der BelWertV werden vor der Umsetzung gegen den Verordnungstext geprüft und ebenfalls als Referenzdaten mit Fundstelle gepflegt, nicht im Code.
 - **Ergebnis:** eine Spanne mit Mittelwert, dazu die Empfindlichkeit für den Liegenschaftszins ±0,5 Prozentpunkte. Jede Eingangsgröße hat ihre Herkunft. Festgehalten wird als versionierte Entität `wertermittlung` je Stichtag, damit der Verlauf sichtbar ist. Rechnung im Rechenkern als reine Funktion mit Sollwert-Tests.
 - **Oberfläche:**
-  - Übersicht: Die Karte jeder Immobilie zeigt Marktwert und Beleihungsauslauf. Darüber steht die Summe des Bestands: Marktwert, Restschuld, Eigenkapital im Bestand und freier Beleihungsraum.
+  - Übersicht: Die Karte jeder Immobilie zeigt Marktwert und Beleihungsauslauf. Die Summe des Bestands steht im Finanzen-Überblick (WP 4.7), nicht doppelt auf der Übersicht.
   - Akte: Abschnitt „Wert und Beleihung“ mit Rechenweg, Spanne und Verlauf.
   - Ein Beleihungsauslauf über 60 % oder eine Zinsbindung, die in 18 Monaten endet, wird Teil von „Zu erledigen“.
 - **Abhängigkeiten:** Gebraucht werden nur Mieten, Wohnfläche, Baujahr und Grundbuch, also Daten, die schon vorhanden sind; WP 4.5 und 4.6 lassen sich deshalb vor Phase 3 ziehen. Der Mietspiegel-Abgleich kommt mit WP 3.2 dazu, das Radar mit WP 4.3.
+
+**Finanzen-Überblick (WP 4.7).** Eine Seite für die Frage „Wie steht der Bestand?“. Die Übersicht bleibt die Seite für „Was ist zu tun?“. Der Menüpunkt Finanzen öffnet den Überblick; Belege, Journal und Betriebskosten folgen als Reiter.
+
+- **Bestand:** Marktwert (Spanne), Restschuld, Eigenkapital im Bestand, Beleihungsauslauf gesamt und freier Beleihungsraum (WP 4.5, 4.6).
+- **Jahr:** laufendes Jahr und Vorjahr aus dem Journal. Gezeigt werden Sollmiete gegen Mieteingang, Ausgaben nach Kategorie, Zins und Tilgung sowie der Cashflow vor Steuern, dazu der Verlauf je Monat.
+- **Rendite:** Brutto- und Nettorendite sowie Eigenkapitalrendite (WP 4.2).
+- **Darlehen:** Rate, Zins, Restschuld und Ende der Zinsbindung, sortiert nach Fälligkeit (WP 4.3).
+- **Offen:** offene Posten (WP 4.4), nicht gebuchte Belege und Betriebskosten-Fristen, jeweils mit Link zum Erledigen.
+- **Aufteilung:** eine Tabelle je Immobilie mit denselben Zahlen; dazu ein Filter je Eigentümer, der nach den Eigentumsanteilen rechnet (Bruchteil, GbR). Der Steuerberater sieht die Seite lesend.
+- **Schrittweise:** Journal-Summen und Darlehen gibt es schon. Die erste Fassung (Jahr, Darlehen, Offen) lässt sich deshalb sofort bauen. Die übrigen Kacheln füllen sich mit den jeweiligen Arbeitspaketen. Fehlt ein Eingangswert, zeigt die Kachel „fehlt: …“ mit Link statt einer Null.
 
 ### Phase 5 · Ausbau (ab Wo 19)
 
