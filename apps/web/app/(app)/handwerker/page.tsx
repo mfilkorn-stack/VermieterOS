@@ -1,5 +1,5 @@
-import { listeHandwerker } from '@vermieteros/db'
-import { Globe, HardHat, Mail, MapPin, Phone, Plus, Siren, Star } from 'lucide-react'
+import { handwerkerAuftragszahlen, listeHandwerker } from '@vermieteros/db'
+import { ClipboardList, Globe, HardHat, Mail, MapPin, Phone, Plus, Siren, Star } from 'lucide-react'
 import Link from 'next/link'
 import { Status } from '@/components/status'
 import { GEWERK_TEXT } from '@/lib/betrieb-text'
@@ -7,7 +7,10 @@ import { darf, mitMandant } from '@/lib/sitzung'
 import { BereichReiter } from '@/components/bereich-reiter'
 
 export default async function HandwerkerSeite() {
-  const liste = await mitMandant((tx) => listeHandwerker(tx))
+  const { liste, zahlen } = await mitMandant(async (tx) => ({
+    liste: await listeHandwerker(tx),
+    zahlen: await handwerkerAuftragszahlen(tx),
+  }))
   const schreiben = await darf({ stammdaten: ['schreiben'] })
   return (
     <>
@@ -90,6 +93,15 @@ export default async function HandwerkerSeite() {
               {h.ort ? (
                 <span>
                   <MapPin size={14} aria-hidden /> {[h.plz, h.ort].filter(Boolean).join(' ')}
+                </span>
+              ) : null}
+              {zahlen.get(h.id) ? (
+                <span data-testid="handwerker-auftragszahl">
+                  <ClipboardList size={14} aria-hidden />{' '}
+                  {zahlen.get(h.id)!.gesamt === 1
+                    ? '1 Auftrag'
+                    : zahlen.get(h.id)!.gesamt + ' Aufträge'}
+                  {zahlen.get(h.id)!.offen ? ', ' + zahlen.get(h.id)!.offen + ' offen' : ''}
                 </span>
               ) : null}
             </p>

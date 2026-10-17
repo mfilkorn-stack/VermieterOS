@@ -150,6 +150,34 @@ export async function listeTickets(
              t.erstellt_am DESC`)
 }
 
+/**
+ * Aufträge eines Handwerkers: Tickets, die ihm zugewiesen sind oder zu denen er per App-Mail
+ * beauftragt wurde, auch abgeschlossene und verworfene; jüngste zuerst.
+ */
+export async function handwerkerAuftraege(tx: Tx, handwerkerId: string): Promise<TicketZeile[]> {
+  return tx.execute<TicketZeile>(sql`${TICKET_SELECT}
+    WHERE a.auftragnehmer_id = ${handwerkerId}
+       OR EXISTS (SELECT 1 FROM antworten w WHERE w.ticket_id = t.id AND w.handwerker_id = ${handwerkerId})
+    ORDER BY t.erstellt_am DESC`)
+}
+
+/** Auftragszahlen je Handwerker für das Verzeichnis (gleiche Abgrenzung wie `handwerkerAuftraege`). */
+export async function handwerkerAuftragszahlen(
+  tx: Tx,
+): Promise<Map<string, { gesamt: number; offen: number }>> {
+  const rows = await tx.execute<{ id: string; gesamt: number; offen: number }>(sql`
+    SELECT h.handwerker_id AS id, count(a.ticket_id)::int AS gesamt,
+           count(a.ticket_id) FILTER (WHERE a.status NOT IN ('abgeschlossen', 'verworfen'))::int AS offen
+    FROM handwerker_aktuell h
+    JOIN tickets_aktuell a
+      ON a.auftragnehmer_id = h.handwerker_id
+      OR EXISTS (SELECT 1 FROM antworten w WHERE w.ticket_id = a.ticket_id AND w.handwerker_id = h.handwerker_id)
+    JOIN tickets t ON t.id = a.ticket_id
+    JOIN objekte_aktuell o ON o.objekt_id = t.objekt_id
+    GROUP BY h.handwerker_id`)
+  return new Map(rows.map((r) => [r.id, { gesamt: r.gesamt, offen: r.offen }]))
+}
+
 export async function ladeTicket(tx: Tx, id: string): Promise<TicketZeile | null> {
   const [t] = await tx.execute<TicketZeile>(sql`${TICKET_SELECT} WHERE t.id = ${id}`)
   return t ?? null
