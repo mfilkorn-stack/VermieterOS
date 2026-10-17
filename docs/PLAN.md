@@ -345,10 +345,26 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 
 | WP  | Inhalt                                                                                                                                                                 |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.0 | Ausstattung je Einheit (Einbauküche, möbliert, Balkon, Bad, Aufzug …) als versioniertes Merkmal der Einheit, Grundlage für Mietspiegel und Möblierungszuschlag         |
 | 3.1 | Rechenkern Mieterhöhung: Sperrfrist, Kappungsgrenze (20/15 %), Indexberechnung aus VPI, Staffel, Modernisierung (8 %, 3 bzw. 2 €/m²), Zustimmungs- und Wirkungsfristen |
 | 3.2 | Referenzdaten: Mietspiegel pro Stadt mit Gültigkeit, Kappungsgebiete, VPI-Abruf (Destatis) als versionierte Referenzdaten                                              |
 | 3.3 | Workflow mit harten Schranken (rot, nicht umgehbar), Anschreiben, Berechnungsblatt, Fristenkalender, neue Mietkonditions-Version ab Wirkungsdatum                      |
 | 3.4 | Juristische Prüfung der Vorlagen einarbeiten                                                                                                                           |
+
+**Ausstattung (WP 3.0).**
+
+- **Merkmale an der Einheit:** Die Einheit bekommt eine Merkmalsliste mit festen Codes, z. B. Einbauküche, möbliert oder teilmöbliert, Balkon oder Terrasse, Bad mit Fenster, Gäste-WC, Aufzug, Keller, Stellplatz, Bodenbelag und Heizungsart. Dazu kommt eine Freitext-Notiz. Die Merkmale sind versioniert wie jede Fachangabe: Eine neue Küche ist ein neuer Stand ab Datum, damit der Mietspiegel-Abgleich den Zustand zum Stichtag kennt.
+- **Anzeige:**
+  - Akte: als Kurzliste an jeder Einheit, etwa „EBK · möbliert · Balkon“.
+  - Mietverhältnis und Mieterportal (Vertrag): die Merkmale der vermieteten Einheit.
+  - Bearbeitet wird im Formular der Einheit.
+- **Wofür:**
+  - Einordnung in den Mietspiegel (WP 3.2, 3.3): Die Merkmale entsprechen den Wohnwertmerkmalen der Spiegel; welche Merkmale eine Stadt abfragt, kommt aus den Referenzdaten.
+  - Möblierungszuschlag bei möblierter Vermietung.
+  - Hinweis an den Steuerberater: Eine Einbauküche wird gesondert abgeschrieben. Die Software markiert das nur, die AfA bleibt im Rechenkern.
+  - KI-Kontext für Antwortentwürfe.
+- **Nicht jetzt:** eine Inventarliste mit Einzelstücken und Kaufbelegen. Sie kommt erst, wenn Übergabeprotokolle gebraucht werden.
+- **Reihenfolge:** Die Merkmalsliste ist klein und unabhängig. Sie lässt sich sofort bauen und muss vor WP 3.2 stehen.
 
 ### Phase 4 · Finanzen (Wo 16–18)
 
@@ -358,10 +374,56 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 | 4.2 | Bestand: Kaltmiete, Nebenkosten, Instandhaltung, Rücklage, AfA, Brutto-/Nettorendite, Cashflow, EK-Rendite, Miete/m² vs. Mietspiegel, alles aus dem Journal |
 | 4.3 | Kredite: Restschuldverlauf, Anschlussfinanzierungs-Radar (18/12/6 Monate)                                                                                   |
 | 4.4 | Bank-CSV-Import (CAMT/CSV der gängigen Banken), Abgleich mit Sollmieten, offene Posten, Mahnschreiben aus Vorlage, Kautionskonto                            |
+| 4.5 | Marktwert (Schätzung) je Haus und Eigentumswohnung im Ertragswertverfahren nach ImmoWertV, mit Spanne, Rechenweg und Verlauf je Stichtag                    |
+| 4.6 | Beleihungswert nach BelWertV, Beleihungsauslauf aller Darlehen, freier Beleihungsraum; auf der Übersicht und in der Akte, verknüpft mit dem Radar aus 4.3   |
+| 4.7 | Finanzen-Überblick: Gesamtbild über alle Immobilien als erster Reiter im Bereich Finanzen, je Immobilie und je Eigentümer aufteilbar                        |
+
+**Wert und Beleihung (WP 4.5, 4.6).** Ziel ist eine belastbare Schätzung für Anschlussfinanzierung, Nachbeleihung und den nächsten Ankauf, kein Gutachten.
+
+- **Ebene:** Bewertet wird die Immobilie, nicht die einzelne Einheit. Die Bank beleiht das Pfandobjekt aus dem Grundbuch: bei der Eigentumswohnung das Wohnungseigentum (samt Stellplatz, wenn mitbelastet), beim Haus das ganze Grundstück. Einheiten erscheinen als Aufschlüsselung (Ertragsanteil je Einheit), damit sichtbar ist, welche Wohnung den Wert trägt.
+- **Marktwert:** Ertragswertverfahren (ImmoWertV §§ 27 ff.). Rohertrag aus den Sollmieten des Journals, wahlweise aus der marktüblichen Miete (Mietspiegel, WP 3.2). Bewirtschaftungskosten nach Anlage 3 ImmoWertV. Restnutzungsdauer aus Baujahr und Gesamtnutzungsdauer, optional mit Modernisierungspunkten. Bodenwert aus Bodenrichtwert × anteiliger Grundstücksfläche, die die Akte schon rechnet. Optional ein Vergleichswert aus einem Vergleichsfaktor €/m² aus dem Grundstücksmarktbericht; weichen beide stark ab, zeigt die Akte das an.
+- **Beleihungswert:** Ertragswert mit den Mindestansätzen der BelWertV (Bewirtschaftungskosten, Kapitalisierungszins, Abschläge). Daraus folgen der Beleihungsauslauf (Restschuld aller Darlehen ÷ Beleihungswert) und der freie Raum bis zur Beleihungsgrenze von 60 % (Pfandbrief).
+- **Eingangswerte:** Bodenrichtwert, Liegenschaftszins und Vergleichsfaktor stehen je Lage als Referenzdaten mit Quelle, Stichtag und Prüffrist (Entscheidung 8). Die Parameter der BelWertV werden vor der Umsetzung gegen den Verordnungstext geprüft und ebenfalls als Referenzdaten mit Fundstelle gepflegt, nicht im Code.
+- **Ergebnis:** eine Spanne mit Mittelwert, dazu die Empfindlichkeit für den Liegenschaftszins ±0,5 Prozentpunkte. Jede Eingangsgröße hat ihre Herkunft. Festgehalten wird als versionierte Entität `wertermittlung` je Stichtag, damit der Verlauf sichtbar ist. Rechnung im Rechenkern als reine Funktion mit Sollwert-Tests.
+- **Oberfläche:**
+  - Übersicht: Die Karte jeder Immobilie zeigt Marktwert und Beleihungsauslauf. Die Summe des Bestands steht im Finanzen-Überblick (WP 4.7), nicht doppelt auf der Übersicht.
+  - Akte: Abschnitt „Wert und Beleihung“ mit Rechenweg, Spanne und Verlauf.
+  - Ein Beleihungsauslauf über 60 % oder eine Zinsbindung, die in 18 Monaten endet, wird Teil von „Zu erledigen“.
+- **Abhängigkeiten:** Gebraucht werden nur Mieten, Wohnfläche, Baujahr und Grundbuch, also Daten, die schon vorhanden sind; WP 4.5 und 4.6 lassen sich deshalb vor Phase 3 ziehen. Der Mietspiegel-Abgleich kommt mit WP 3.2 dazu, das Radar mit WP 4.3.
+
+**Finanzen-Überblick (WP 4.7).** Eine Seite für die Frage „Wie steht der Bestand?“. Die Übersicht bleibt die Seite für „Was ist zu tun?“. Der Menüpunkt Finanzen öffnet den Überblick; Belege, Journal und Betriebskosten folgen als Reiter.
+
+- **Bestand:** Marktwert (Spanne), Restschuld, Eigenkapital im Bestand, Beleihungsauslauf gesamt und freier Beleihungsraum (WP 4.5, 4.6).
+- **Jahr:** laufendes Jahr und Vorjahr aus dem Journal. Gezeigt werden Sollmiete gegen Mieteingang, Ausgaben nach Kategorie, Zins und Tilgung sowie der Cashflow vor Steuern, dazu der Verlauf je Monat.
+- **Rendite:** Brutto- und Nettorendite sowie Eigenkapitalrendite (WP 4.2).
+- **Darlehen:** Rate, Zins, Restschuld und Ende der Zinsbindung, sortiert nach Fälligkeit (WP 4.3).
+- **Offen:** offene Posten (WP 4.4), nicht gebuchte Belege und Betriebskosten-Fristen, jeweils mit Link zum Erledigen.
+- **Aufteilung:** eine Tabelle je Immobilie mit denselben Zahlen; dazu ein Filter je Eigentümer, der nach den Eigentumsanteilen rechnet (Bruchteil, GbR). Der Steuerberater sieht die Seite lesend.
+- **Grafik je Jahr und Immobilie:** Im Mittelpunkt steht der Cashflow.
+  - Je Monat: Balken für Mieteingang, Bewirtschaftungsausgaben und Kapitaldienst (Zins und Tilgung), dazu eine Linie für den kumulierten Cashflow vor Steuern.
+  - Daneben die offenen Mieten: Sollmiete gegen Eingang je Monat und Einheit als Raster. Offene Monate sind markiert und führen zur Einheit beziehungsweise zum Mahnschreiben (WP 4.4).
+  - Umschalter für Jahr und Immobilie, „alle“ zeigt den Bestand.
+  - Gezeichnet als SVG ohne Diagramm-Bibliothek, mit gleicher Datentabelle darunter, damit jede Zahl auch ohne Grafik lesbar ist.
+- **Offene Mieten brauchen den Mieteingang.** Die Sollmiete steht in den Konditionen. Den Eingang liefert verlässlich erst der Bank-Import (WP 4.4); bis dahin zählen nur von Hand gebuchte Mieteingänge, und die Grafik sagt das dazu. Ohne Import wäre „offen“ eine Behauptung.
+- **Schrittweise:** Journal-Summen und Darlehen gibt es schon. Die erste Fassung (Jahr, Darlehen, Offen) lässt sich deshalb sofort bauen. Die übrigen Kacheln füllen sich mit den jeweiligen Arbeitspaketen. Fehlt ein Eingangswert, zeigt die Kachel „fehlt: …“ mit Link statt einer Null.
 
 ### Phase 5 · Ausbau (ab Wo 19)
 
 Mieterportal komplett (Zählerstand per Foto), WhatsApp Business API, Ankaufsprüfung als Modul 12 mit „Vom Ankauf in den Bestand“, pgvector für sinngemäße Suche, DATEV-Export nur auf konkreten Bedarf des Steuerberaters, E-Signatur, Neuvermietung.
+
+**Erscheinungsbild der Eigentümerschaft (WP 5.1).** Es sind zwei Dinge, die getrennt behandelt werden.
+
+- **Briefkopf und Hausfarbe nach außen (zuerst):** Logo, Akzentfarbe, Schrift aus einer festen Auswahl, Absenderzeile und Fußzeile mit Bankverbindung und Kontakt. Das gilt für alles, was Mieter und Handwerker erhalten: Standardschreiben, Betriebskostenabrechnung, Mails mit Signatur und das Mieterportal. Gespeichert wird es je Eigentümerschaft als versionierte Einstellung, damit ein festgeschriebenes Dokument sein damaliges Aussehen behält.
+- **PDF-Import:** Man lädt einen vorhandenen Briefbogen hoch, die Software schlägt die Werte vor, und man bestätigt sie (wie beim Auslesen von Verträgen).
+  - Das Logo ist das größte Bild der ersten Seite.
+  - Die Farben sind die vorherrschenden Farben der gerenderten Seite.
+  - Absender und Fußzeile liest die KI mit Fundstelle aus.
+  - Die Schrift wird nur erkannt und auf die nächstliegende aus der Auswahl abgebildet: Eingebettete Schriften sind meist nicht für die Weiterverwendung lizenziert.
+- **Farbwelt der App (danach, bewusst eng):**
+  - Eine Auswahl von vier bis sechs geprüften Designwelten, jeweils hell und dunkel, dazu eine eigene Akzentfarbe. Die Software prüft den Kontrast nach WCAG AA, verdunkelt bei Bedarf und sagt das.
+  - Kein freies CSS und keine frei wählbaren Hintergrund- oder Textfarben: Lesbarkeit, Statusfarben (Ampeln, Fristen) und Barrierefreiheit hängen daran.
+  - Die Designwelt wählt jeder Nutzer für sich, die Akzentfarbe gehört der Eigentümerschaft.
+- **Technik:** Die Oberfläche läuft schon über Farb-Tokens (WP 1.3); eine Designwelt ist ein Satz Token-Werte, eine eigene Akzentfarbe überschreibt nur die Akzent-Tokens. Die PDF-Vorlagen in `packages/pdf` bekommen Kopf, Fuß und Akzent als Parameter statt fester Werte.
 
 ---
 
@@ -381,7 +443,7 @@ Auskunft und Export pro Mieter (alle Nachrichten, Dokumente, Abrechnungen als ZI
 
 ### 7.4 Was die Software ausdrücklich nicht tut
 
-Keine automatische Aktion ohne Klick, keine Steuererklärung, keine Zustellungsbeweise, keine rechtliche Einzelfallbewertung, keine Übermittlung an das Finanzamt. Diese Grenzen stehen als Hinweistexte an den entsprechenden Stellen in der Oberfläche.
+Keine automatische Aktion ohne Klick, keine Steuererklärung, kein Verkehrswertgutachten (§ 194 BauGB) und keine Bankbewertung (Marktwert und Beleihungswert sind Schätzungen), keine Zustellungsbeweise, keine rechtliche Einzelfallbewertung, keine Übermittlung an das Finanzamt. Diese Grenzen stehen als Hinweistexte an den entsprechenden Stellen in der Oberfläche.
 
 ---
 
@@ -400,6 +462,8 @@ Keine automatische Aktion ohne Klick, keine Steuererklärung, keine Zustellungsb
 | Entscheidung Mail-Anbieter mit IMAP (deutsch, Vorschlag: mailbox.org Business oder Hetzner-Mail) | Mail-Eingang                                              | Beginn Phase 1                                       |
 | Rückmeldung des Steuerberaters zum Format                                                        | Steuerpaket                                               | Beginn Phase 2                                       |
 | Kontakt für juristische Prüfung der Vorlagen                                                     | Phase 3                                                   | Phase 3                                              |
+| Bodenrichtwerte, Liegenschaftszinsen und Vergleichsfaktoren der Lagen (Grundstücksmarktbericht)  | Marktwert und Beleihungswert                              | WP 4.5                                               |
+| Letzte Bankbewertung oder Gutachten zu einer Immobilie, falls vorhanden                          | Sollwert-Test für Marktwert und Beleihungswert            | WP 4.5                                               |
 
 ---
 
@@ -418,3 +482,5 @@ Keine automatische Aktion ohne Klick, keine Steuererklärung, keine Zustellungsb
 **Die Hash-Kette schützt vor stiller Manipulation, nicht vor einem Angreifer mit Datenbank-Zugang und Zeit.** Wer die Kette komplett neu schreibt, fällt nur auf, wenn ein externer Anker existiert. Deshalb hält jedes Backup den letzten Hash jedes Mandanten im Manifest fest, und die nächtliche Prüfung gleicht dagegen ab. Das wirkt nur, solange der Angreifer die Manifeste nicht ebenfalls ersetzt; eine zweite Kopie außerhalb der Reichweite des Servers ist offen (`docs/BETRIEB.md`).
 
 **Steuerlogik bleibt beim Berater.** Die Software markiert strittige Einordnungen (Erhaltung oder Herstellung), entscheidet sie aber nicht. Das muss in der Oberfläche jederzeit sichtbar bleiben, sonst entsteht ein Vertrauen, das die Software nicht einlösen kann.
+
+**Wertschätzungen wirken genauer, als sie sind.** Der Liegenschaftszins bestimmt das Ergebnis stärker als jede andere Größe: ein halber Prozentpunkt verschiebt den Ertragswert um grob 10 bis 15 %. Deshalb zeigt die Software eine Spanne statt eines Punktwerts, nennt die Empfindlichkeit und rechnet nicht mit Eingangswerten, deren Prüffrist abgelaufen ist. Für Verhandlungen mit der Bank zählt deren Bewertung, nicht diese.
