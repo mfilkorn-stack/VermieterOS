@@ -25,11 +25,13 @@ import {
   type LucideIcon,
   CircleCheck,
   ArrowRight,
+  Mail,
 } from 'lucide-react'
 import { sql } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AmpelStatus, MODUL_ICON, MODUL_TEXT } from '@/components/status'
+import { VERWALTUNG_TEXT } from '@/lib/verwalter'
 import {
   journalSummen,
   ladeNotfallkarte,
@@ -598,6 +600,31 @@ export default async function ObjektSeite({
           </span>
         </div>
       </div>
+      {o.verwalter?.length ? (
+        <ul className="liste-schlicht" data-testid="verwalter">
+          {o.verwalter.map((w) => (
+            <li key={w.art} className="zeile">
+              <span>
+                <span className="leise">{VERWALTUNG_TEXT[w.art]} · </span>
+                <strong>{w.firma}</strong>
+                {w.ansprechpartner ? ' · ' + w.ansprechpartner : ''}
+              </span>
+              <span className="meta">
+                {w.telefon ? (
+                  <a href={'tel:' + w.telefon.replace(/[^+\d]/g, '')}>
+                    <Phone size={14} aria-hidden /> {w.telefon}
+                  </a>
+                ) : null}
+                {w.email ? (
+                  <a href={'mailto:' + w.email}>
+                    <Mail size={14} aria-hidden /> {w.email}
+                  </a>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <Abschnitt titel="Darlehen">
         {schreiben ? (

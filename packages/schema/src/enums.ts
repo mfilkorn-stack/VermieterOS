@@ -26,6 +26,11 @@ export const PERSON_ROLLEN = ['mieter', 'miteigentuemer', 'kontakt'] as const
 export const PersonRolle = z.enum(PERSON_ROLLEN)
 export type PersonRolle = z.infer<typeof PersonRolle>
 
+/** Verwaltung einer Immobilie: WEG-Verwaltung der Gemeinschaft, Miet- bzw. Sondereigentumsverwaltung */
+export const VERWALTUNG_ARTEN = ['weg', 'miet'] as const
+export const VerwaltungArt = z.enum(VERWALTUNG_ARTEN)
+export type VerwaltungArt = z.infer<typeof VerwaltungArt>
+
 export const KAUTION_ARTEN = ['keine', 'bar', 'buergschaft', 'sparbuch', 'versicherung'] as const
 export const KautionArt = z.enum(KAUTION_ARTEN)
 export type KautionArt = z.infer<typeof KautionArt>

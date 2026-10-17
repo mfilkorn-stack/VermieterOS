@@ -10,6 +10,7 @@ Bezeichner im Code, in der Datenbank und in Prompts verwenden genau diese Formen
 | Eigentümerschaft                    | `eigentuemerschaft`   | Allein, Ehepaar, Bruchteilsgemeinschaft, GbR; Attribut des Mandanten                       |
 | Objekt                              | `objekt`              | Haus oder Eigentumswohnung als wirtschaftliche Einheit                                     |
 | Einheit                             | `einheit`             | Vermietbare Einheit innerhalb eines Objekts                                                |
+| Verwalter                           | `verwalter`           | WEG- oder Mietverwaltung einer Immobilie; Teil der Stammdaten, je Art höchstens eine       |
 | Mietverhältnis                      | `mietverhaeltnis`     | Vertrag zwischen Mandant und Mieter über eine Einheit                                      |
 | Mietkondition                       | `mietkondition`       | Versionierte Sollmiete, Vorauszahlungen, Mietart                                           |
 | Person                              | `person`              | Mieter, Miteigentümer, Kontakt                                                             |

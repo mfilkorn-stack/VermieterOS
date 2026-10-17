@@ -16,6 +16,7 @@ import type {
   GrundbuchEintrag,
   NebenkostenPosition,
   ObjektArt,
+  Verwalter,
 } from '@vermieteros/schema'
 
 /** Identität eines Objekts (Haus oder Eigentumswohnung). Ändert sich nie. */
@@ -44,6 +45,8 @@ export const objektVersionen = pgTable(
     weg: boolean('weg').notNull().default(false),
 
     grundbuch: jsonb('grundbuch').$type<GrundbuchEintrag[]>(),
+    /** WEG- und Mietverwaltung, je Art höchstens eine */
+    verwalter: jsonb('verwalter').$type<Verwalter[]>(),
 
     // Steuerliche Grunddaten (Anlage V, AfA)
     /** Beurkundung; Spekulationsfrist § 23 EStG */
