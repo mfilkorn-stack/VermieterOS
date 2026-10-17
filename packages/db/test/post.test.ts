@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { pruefeKette, neueVersion } from '../src/ledger'
 import { withMandant } from '../src/mandant'
+import { handwerkerAuftraege, handwerkerAuftragszahlen } from '../src/betrieb'
 import {
   aktivePostfaecherAllerMandanten,
   ladeAnhangZumHerunterladen,
@@ -18,6 +19,7 @@ import {
   offeneNachrichten,
   ordneNachrichtZu,
   setzePapierkorb,
+  handwerkerKommunikation,
   zuordnungImVerlauf,
   type NeueNachricht,
 } from '../src/post'
@@ -613,5 +615,88 @@ describe('Antworten aus der App', () => {
         ),
       /antworten_bezug_chk/,
     )
+  })
+})
+
+describe('Handwerker-Verlauf', () => {
+  it('Aufträge auch abgeschlossen, Mails in beide Richtungen, ohne Papierkorb, nur eigener Mandant', async () => {
+    const { hw, ticket } = await withMandant(v.app, a, async (tx) => {
+      const [o] = await tx.execute<{ objekt_id: string }>(
+        sql`select objekt_id from objekte_aktuell limit 1`,
+      )
+      const h = await neueVersion(tx, {
+        entitaet: 'handwerker',
+        mandantId: a,
+        akteur: NUTZER,
+        gueltigAb: '2026-01-01',
+        identitaet: {},
+        daten: { firma: 'Muster Sanitär', gewerke: ['heizung_sanitaer'] },
+      })
+      const t = await neueVersion(tx, {
+        entitaet: 'ticket',
+        mandantId: a,
+        akteur: NUTZER,
+        gueltigAb: '2026-02-01',
+        identitaet: { objektId: o!.objekt_id },
+        daten: {
+          titel: 'Therme warten',
+          status: 'abgeschlossen',
+          prioritaet: 'normal',
+          auftragnehmerId: h.identId,
+        },
+      })
+      return { hw: h.identId, ticket: t.identId }
+    })
+    const ein = async (betreff: string) => {
+      const id = (await withMandant(v.worker, a, (tx) =>
+        legeNachrichtAn(tx, nachricht(a, postfachA, { betreff }), SYSTEM),
+      ))!
+      await withMandant(v.app, a, (tx) =>
+        ordneNachrichtZu(tx, {
+          mandantId: a,
+          nachrichtId: id,
+          mietverhaeltnisId: null,
+          handwerkerId: hw,
+          art: 'manuell',
+          akteur: NUTZER,
+        }),
+      )
+      return id
+    }
+    await ein('Angebot Wartung')
+    const werbung = await ein('Werbung Sanitär')
+    await withMandant(v.app, a, async (tx) => {
+      await setzePapierkorb(tx, {
+        mandantId: a,
+        nachrichtId: werbung,
+        geloescht: true,
+        akteur: NUTZER,
+      })
+      await legeAntwortAn(tx, {
+        mandantId: a,
+        nachrichtId: null,
+        ticketId: ticket,
+        handwerkerId: hw,
+        mietverhaeltnisId: null,
+        an: ['info@example.org'],
+        betreff: 'Auftrag: Therme warten',
+        text: 'Bitte warten.',
+        messageId: '<auftrag-therme@example.org>',
+        akteur: NUTZER,
+      })
+    })
+
+    const auftraege = await withMandant(v.app, a, (tx) => handwerkerAuftraege(tx, hw))
+    expect(auftraege.map((t) => [t.id, t.status])).toEqual([[ticket, 'abgeschlossen']])
+    const k = await withMandant(v.app, a, (tx) => handwerkerKommunikation(tx, hw))
+    expect(k.map((m) => [m.richtung, m.betreff]).sort()).toEqual([
+      ['ausgang', 'Auftrag: Therme warten'],
+      ['eingang', 'Angebot Wartung'],
+    ])
+    expect(k.find((m) => m.richtung === 'ausgang')?.ticketId).toBe(ticket)
+    const zahlen = await withMandant(v.app, a, (tx) => handwerkerAuftragszahlen(tx))
+    expect(zahlen.get(hw)).toEqual({ gesamt: 1, offen: 0 })
+    expect(await withMandant(v.app, b, (tx) => handwerkerAuftraege(tx, hw))).toEqual([])
+    expect(await withMandant(v.app, b, (tx) => handwerkerKommunikation(tx, hw))).toEqual([])
   })
 })

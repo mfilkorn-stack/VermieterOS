@@ -82,6 +82,16 @@ test('Eigentümerschaft, Mieter am Ticket, Auftrag per Mail, Dokumentliste', asy
   // Nach dem Versand ist der Text leer, damit nichts doppelt rausgeht
   await expect(page.getByTestId('auftrag-formular').getByLabel('Text')).toHaveValue('')
 
+  // Handwerker-Verzeichnis: Zahl der Aufträge; auf der Seite Aufträge und gesendete Mail
+  await page.goto('/handwerker')
+  await expect(page.getByTestId('handwerker-auftragszahl')).toHaveText('1 Auftrag, 1 offen')
+  await page.getByTestId('handwerkerliste').getByRole('link', { name: 'Sanitär Muster' }).click()
+  await expect(page.getByTestId('handwerker-auftraege')).toContainText('Wasserhahn')
+  await expect(page.getByTestId('handwerker-auftraege')).toContainText('beauftragt')
+  await expect(
+    page.getByTestId('handwerker-post').locator('[data-richtung="ausgang"]'),
+  ).toContainText('Auftrag: Wasserhahn')
+
   // N2: Dokument am Objekt, Gesamtliste mit Ort und Filtern
   await page.goto('/dokumente/neu?objekt=' + objektId)
   const d = page.getByTestId('dokument-hochladen')

@@ -1,11 +1,13 @@
-import { ladePosteingang, listeHandwerker } from '@vermieteros/db'
+import { handwerkerAuftraege, handwerkerKommunikation, listeHandwerker } from '@vermieteros/db'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Formular } from '@/components/formular'
 import { HandwerkerFormular } from '@/components/handwerker-formular'
+import { Status } from '@/components/status'
 import { adresssucheAn } from '@/lib/adresse'
+import { TICKET_STATUS_TEXT } from '@/lib/betrieb-text'
 import { firmensucheAn } from '@/lib/firma'
-import { zeitpunktAnzeige } from '@/lib/format'
+import { datumAnzeige, zeitpunktAnzeige } from '@/lib/format'
 import { objektliste } from '@/lib/objekte'
 import { darf, mitMandant } from '@/lib/sitzung'
 import { heuteBerlin } from '@/lib/zeit'
@@ -19,12 +21,14 @@ export default async function HandwerkerBearbeiten({
   const { id } = await params
   if (!(await darf({ stammdaten: ['schreiben'] }))) redirect('/handwerker')
   const post = await darf({ post: ['lesen'] })
-  const { h, objekte, postMails } = await mitMandant(async (tx) => ({
+  const { h, objekte, auftraege, mails } = await mitMandant(async (tx) => ({
     h: (await listeHandwerker(tx)).find((x) => x.id === id),
     objekte: await objektliste(tx),
-    postMails: post ? await ladePosteingang(tx, { handwerkerId: id, limit: 10 }) : [],
+    auftraege: await handwerkerAuftraege(tx, id),
+    mails: post ? await handwerkerKommunikation(tx, id) : [],
   }))
   if (!h) notFound()
+  const offen = auftraege.filter((t) => !['abgeschlossen', 'verworfen'].includes(t.status)).length
   return (
     <>
       <nav className="brotkrumen" aria-label="Pfad">
@@ -42,19 +46,71 @@ export default async function HandwerkerBearbeiten({
           adresssuche={adresssucheAn()}
         />
       </div>
-      {post ? (
-        <div className="karte">
-          <h2>Post</h2>
-          {postMails.length === 0 ? (
-            <p className="leise">Keine Mails diesem Handwerker zugeordnet.</p>
-          ) : (
-            <ul className="liste-schlicht" data-testid="handwerker-post">
-              {postMails.map((m) => (
-                <li key={m.id} className="zeile">
-                  <Link href={`/posteingang/${m.id}`}>{m.betreff || '(ohne Betreff)'}</Link>
-                  <span className="leise">{zeitpunktAnzeige(m.gesendetAm ?? m.empfangenAm)}</span>
+      <div className="karte">
+        <h2>Aufträge</h2>
+        {auftraege.length === 0 ? (
+          <p className="leise">Noch keine Aufträge an diesen Handwerker.</p>
+        ) : (
+          <>
+            <p className="leise">
+              {auftraege.length === 1 ? '1 Auftrag' : auftraege.length + ' Aufträge'}, davon {offen}{' '}
+              offen.
+            </p>
+            <ul className="liste-schlicht" data-testid="handwerker-auftraege">
+              {auftraege.map((t) => (
+                <li key={t.id} className="zeile">
+                  <span>
+                    <Link href={`/tickets/${t.id}`}>{t.titel}</Link>
+                    <span className="leise">
+                      {' · '}
+                      {[t.objekt, t.einheit].filter(Boolean).join(' · ')}
+                      {' · '}
+                      {datumAnzeige(t.angelegtAm)}
+                    </span>
+                  </span>
+                  <Status
+                    ton={
+                      t.status === 'abgeschlossen' || t.status === 'verworfen' ? 'neutral' : 'gelb'
+                    }
+                  >
+                    {TICKET_STATUS_TEXT[t.status]}
+                  </Status>
                 </li>
               ))}
+            </ul>
+          </>
+        )}
+      </div>
+      {post ? (
+        <div className="karte">
+          <h2>Kommunikation</h2>
+          {mails.length === 0 ? (
+            <p className="leise">Keine Mails mit diesem Handwerker.</p>
+          ) : (
+            <ul className="liste-schlicht" data-testid="handwerker-post">
+              {mails.map((m) => {
+                const ziel =
+                  m.richtung === 'eingang' || !m.ticketId
+                    ? m.nachrichtId
+                      ? `/posteingang/${m.nachrichtId}`
+                      : null
+                    : `/tickets/${m.ticketId}`
+                return (
+                  <li key={m.id} className="zeile" data-richtung={m.richtung}>
+                    <span>
+                      <span className="leise">
+                        {m.richtung === 'eingang' ? 'Eingang · ' : 'Gesendet · '}
+                      </span>
+                      {ziel ? (
+                        <Link href={ziel}>{m.betreff || '(ohne Betreff)'}</Link>
+                      ) : (
+                        m.betreff || '(ohne Betreff)'
+                      )}
+                    </span>
+                    <span className="leise">{zeitpunktAnzeige(m.zeitpunkt)}</span>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

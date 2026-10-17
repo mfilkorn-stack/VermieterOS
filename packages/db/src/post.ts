@@ -819,6 +819,46 @@ export type Antwort = {
   gesendetAm: string
 }
 
+export type HandwerkerMail = {
+  id: string
+  richtung: 'eingang' | 'ausgang'
+  betreff: string
+  zeitpunkt: string
+  /** Eingang: die Mail selbst; Ausgang: die Mail, auf die geantwortet wurde */
+  nachrichtId: string | null
+  ticketId: string | null
+}
+
+/**
+ * Gesamte Mail-Kommunikation mit einem Handwerker, jüngste zuerst: zugeordnete Mails (auch
+ * erledigte) und alles, was an ihn ging (Aufträge aus Tickets, Antworten auf seine Mails).
+ * Mails im Papierkorb fehlen.
+ */
+export async function handwerkerKommunikation(
+  tx: Tx,
+  handwerkerId: string,
+  limit = 200,
+): Promise<HandwerkerMail[]> {
+  return tx.execute<HandwerkerMail>(sql`
+    SELECT * FROM (
+      SELECT n.id, 'eingang' AS richtung, n.betreff,
+             coalesce(n.gesendet_am, n.empfangen_am) AS zeitpunkt,
+             n.id AS "nachrichtId", NULL::uuid AS "ticketId"
+      FROM nachrichten n
+      JOIN postfaecher pf ON pf.id = n.postfach_id AND pf.zweck = 'post'
+      JOIN nachrichten_zuordnung_aktuell za ON za.nachricht_id = n.id
+      WHERE za.handwerker_id = ${handwerkerId} AND ${NICHT_GELOESCHT}
+      UNION ALL
+      SELECT w.id, 'ausgang', w.betreff, w.gesendet_am, w.nachricht_id, w.ticket_id
+      FROM antworten w
+      WHERE w.handwerker_id = ${handwerkerId}
+         OR w.nachricht_id IN (SELECT za.nachricht_id FROM nachrichten_zuordnung_aktuell za
+                               WHERE za.handwerker_id = ${handwerkerId})
+    ) k
+    ORDER BY zeitpunkt DESC
+    LIMIT ${limit}`)
+}
+
 export async function antwortenZuPortalNachricht(tx: Tx, id: string): Promise<Antwort[]> {
   return tx
     .select({
