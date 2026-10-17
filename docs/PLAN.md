@@ -358,6 +358,21 @@ Jeder offene Punkt verlinkt dorthin, wo er sich erledigen lässt; der Upload ist
 | 4.2 | Bestand: Kaltmiete, Nebenkosten, Instandhaltung, Rücklage, AfA, Brutto-/Nettorendite, Cashflow, EK-Rendite, Miete/m² vs. Mietspiegel, alles aus dem Journal |
 | 4.3 | Kredite: Restschuldverlauf, Anschlussfinanzierungs-Radar (18/12/6 Monate)                                                                                   |
 | 4.4 | Bank-CSV-Import (CAMT/CSV der gängigen Banken), Abgleich mit Sollmieten, offene Posten, Mahnschreiben aus Vorlage, Kautionskonto                            |
+| 4.5 | Marktwert (Schätzung) je Haus und Eigentumswohnung im Ertragswertverfahren nach ImmoWertV, mit Spanne, Rechenweg und Verlauf je Stichtag                    |
+| 4.6 | Beleihungswert nach BelWertV, Beleihungsauslauf aller Darlehen, freier Beleihungsraum; auf der Übersicht und in der Akte, verknüpft mit dem Radar aus 4.3   |
+
+**Wert und Beleihung (WP 4.5, 4.6).** Ziel ist eine belastbare Schätzung für Anschlussfinanzierung, Nachbeleihung und den nächsten Ankauf, kein Gutachten.
+
+- **Ebene:** Bewertet wird die Immobilie, nicht die einzelne Einheit. Die Bank beleiht das Pfandobjekt aus dem Grundbuch: bei der Eigentumswohnung das Wohnungseigentum (samt Stellplatz, wenn mitbelastet), beim Haus das ganze Grundstück. Einheiten erscheinen als Aufschlüsselung (Ertragsanteil je Einheit), damit sichtbar ist, welche Wohnung den Wert trägt.
+- **Marktwert:** Ertragswertverfahren (ImmoWertV §§ 27 ff.). Rohertrag aus den Sollmieten des Journals, wahlweise aus der marktüblichen Miete (Mietspiegel, WP 3.2). Bewirtschaftungskosten nach Anlage 3 ImmoWertV. Restnutzungsdauer aus Baujahr und Gesamtnutzungsdauer, optional mit Modernisierungspunkten. Bodenwert aus Bodenrichtwert × anteiliger Grundstücksfläche, die die Akte schon rechnet. Optional ein Vergleichswert aus einem Vergleichsfaktor €/m² aus dem Grundstücksmarktbericht; weichen beide stark ab, zeigt die Akte das an.
+- **Beleihungswert:** Ertragswert mit den Mindestansätzen der BelWertV (Bewirtschaftungskosten, Kapitalisierungszins, Abschläge). Daraus folgen der Beleihungsauslauf (Restschuld aller Darlehen ÷ Beleihungswert) und der freie Raum bis zur Beleihungsgrenze von 60 % (Pfandbrief).
+- **Eingangswerte:** Bodenrichtwert, Liegenschaftszins und Vergleichsfaktor stehen je Lage als Referenzdaten mit Quelle, Stichtag und Prüffrist (Entscheidung 8). Die Parameter der BelWertV werden vor der Umsetzung gegen den Verordnungstext geprüft und ebenfalls als Referenzdaten mit Fundstelle gepflegt, nicht im Code.
+- **Ergebnis:** eine Spanne mit Mittelwert, dazu die Empfindlichkeit für den Liegenschaftszins ±0,5 Prozentpunkte. Jede Eingangsgröße hat ihre Herkunft. Festgehalten wird als versionierte Entität `wertermittlung` je Stichtag, damit der Verlauf sichtbar ist. Rechnung im Rechenkern als reine Funktion mit Sollwert-Tests.
+- **Oberfläche:**
+  - Übersicht: Die Karte jeder Immobilie zeigt Marktwert und Beleihungsauslauf. Darüber steht die Summe des Bestands: Marktwert, Restschuld, Eigenkapital im Bestand und freier Beleihungsraum.
+  - Akte: Abschnitt „Wert und Beleihung“ mit Rechenweg, Spanne und Verlauf.
+  - Ein Beleihungsauslauf über 60 % oder eine Zinsbindung, die in 18 Monaten endet, wird Teil von „Zu erledigen“.
+- **Abhängigkeiten:** Gebraucht werden nur Mieten, Wohnfläche, Baujahr und Grundbuch, also Daten, die schon vorhanden sind; WP 4.5 und 4.6 lassen sich deshalb vor Phase 3 ziehen. Der Mietspiegel-Abgleich kommt mit WP 3.2 dazu, das Radar mit WP 4.3.
 
 ### Phase 5 · Ausbau (ab Wo 19)
 
@@ -381,7 +396,7 @@ Auskunft und Export pro Mieter (alle Nachrichten, Dokumente, Abrechnungen als ZI
 
 ### 7.4 Was die Software ausdrücklich nicht tut
 
-Keine automatische Aktion ohne Klick, keine Steuererklärung, keine Zustellungsbeweise, keine rechtliche Einzelfallbewertung, keine Übermittlung an das Finanzamt. Diese Grenzen stehen als Hinweistexte an den entsprechenden Stellen in der Oberfläche.
+Keine automatische Aktion ohne Klick, keine Steuererklärung, kein Verkehrswertgutachten (§ 194 BauGB) und keine Bankbewertung (Marktwert und Beleihungswert sind Schätzungen), keine Zustellungsbeweise, keine rechtliche Einzelfallbewertung, keine Übermittlung an das Finanzamt. Diese Grenzen stehen als Hinweistexte an den entsprechenden Stellen in der Oberfläche.
 
 ---
 
@@ -400,6 +415,8 @@ Keine automatische Aktion ohne Klick, keine Steuererklärung, keine Zustellungsb
 | Entscheidung Mail-Anbieter mit IMAP (deutsch, Vorschlag: mailbox.org Business oder Hetzner-Mail) | Mail-Eingang                                              | Beginn Phase 1                                       |
 | Rückmeldung des Steuerberaters zum Format                                                        | Steuerpaket                                               | Beginn Phase 2                                       |
 | Kontakt für juristische Prüfung der Vorlagen                                                     | Phase 3                                                   | Phase 3                                              |
+| Bodenrichtwerte, Liegenschaftszinsen und Vergleichsfaktoren der Lagen (Grundstücksmarktbericht)  | Marktwert und Beleihungswert                              | WP 4.5                                               |
+| Letzte Bankbewertung oder Gutachten zu einer Immobilie, falls vorhanden                          | Sollwert-Test für Marktwert und Beleihungswert            | WP 4.5                                               |
 
 ---
 
@@ -418,3 +435,5 @@ Keine automatische Aktion ohne Klick, keine Steuererklärung, keine Zustellungsb
 **Die Hash-Kette schützt vor stiller Manipulation, nicht vor einem Angreifer mit Datenbank-Zugang und Zeit.** Wer die Kette komplett neu schreibt, fällt nur auf, wenn ein externer Anker existiert. Deshalb hält jedes Backup den letzten Hash jedes Mandanten im Manifest fest, und die nächtliche Prüfung gleicht dagegen ab. Das wirkt nur, solange der Angreifer die Manifeste nicht ebenfalls ersetzt; eine zweite Kopie außerhalb der Reichweite des Servers ist offen (`docs/BETRIEB.md`).
 
 **Steuerlogik bleibt beim Berater.** Die Software markiert strittige Einordnungen (Erhaltung oder Herstellung), entscheidet sie aber nicht. Das muss in der Oberfläche jederzeit sichtbar bleiben, sonst entsteht ein Vertrauen, das die Software nicht einlösen kann.
+
+**Wertschätzungen wirken genauer, als sie sind.** Der Liegenschaftszins bestimmt das Ergebnis stärker als jede andere Größe: ein halber Prozentpunkt verschiebt den Ertragswert um grob 10 bis 15 %. Deshalb zeigt die Software eine Spanne statt eines Punktwerts, nennt die Empfindlichkeit und rechnet nicht mit Eingangswerten, deren Prüffrist abgelaufen ist. Für Verhandlungen mit der Bank zählt deren Bewertung, nicht diese.

@@ -47,6 +47,12 @@ Bezeichner im Code, in der Datenbank und in Prompts verwenden genau diese Formen
 | Vorschlag                           | `vorschlag`           | KI-Ausgabe mit Versionsstempel und Ablaufdatum, erst nach Bestätigung Daten                |
 | Versionsstempel                     | `versionsstempel`     | Ledger-Sequenz, Dokument-Hashes, Prompt-Version, Modell                                    |
 | Referenzdaten                       | `referenzdaten`       | Mietspiegel, VPI, GrESt, AfA-Sätze, Kappungsgebiete mit Gültigkeit und Quelle              |
+| Wertermittlung                      | `wertermittlung`      | Marktwert und Beleihungswert einer Immobilie zu einem Stichtag, mit Rechenweg              |
+| Marktwert                           | `marktwert`           | Geschätzter Wert nach ImmoWertV (Ertragswert, optional Vergleichswert), als Spanne         |
+| Beleihungswert                      | `beleihungswert`      | Vorsichtiger, dauerhaft erzielbarer Wert nach BelWertV; Grundlage der Bank                 |
+| Beleihungsauslauf                   | `beleihungsauslauf`   | Restschuld aller Darlehen einer Immobilie ÷ Beleihungswert, in Prozent                     |
+| Liegenschaftszins                   | `liegenschaftszins`   | Zins zur Kapitalisierung des Reinertrags, laut Grundstücksmarktbericht                     |
+| Bodenrichtwert                      | `bodenrichtwert`      | Durchschnittlicher Bodenwert je m² einer Lage, vom Gutachterausschuss                      |
 | Steuerpaket                         | `steuerpaket`         | ZIP pro Jahr und Mandant für den Steuerberater                                             |
 | Notfallkarte                        | `notfallkarte`        | Notfallkontakte pro Objekt                                                                 |
 | Wissensbasis                        | `wissensbasis`        | Hausordnung, Anleitungen, Müllkalender pro Objekt                                          |
